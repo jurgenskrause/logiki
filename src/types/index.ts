@@ -38,7 +38,21 @@ export type ClueType =
   | 'ADJACENT' 
   | 'SANDWICH' 
   | 'NOT_SANDWICH' 
-  | 'DIRECTIONAL';
+  | 'DIRECTIONAL'
+  | 'VERTICAL_PAIR'
+  | 'VERTICAL_TRIPLE'
+  | 'VERTICAL_OR'
+  | 'ADJACENT_PAIR'
+  | 'SPACED_PAIR'
+  | 'ADJACENT_TRIO';
+
+/**
+ * Legacy ClueItem definition for older scanners
+ */
+export interface ClueItem {
+  cat: CategoryIndex;
+  idx: ItemIndex;
+}
 
 /**
  * Clue: Unified structure for all logic hints.
