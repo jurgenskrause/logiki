@@ -18,6 +18,8 @@ import {
   IS_LEFT_OF,
   IS_SEQUENCE_THREE,
   IS_GAPPED_EXCLUSION,
+  IS_VERTICAL_TRIO,
+  IS_VERTICAL_NOT,
 } from './RuleTemplates';
 
 // ---------------------------------------------------------------------------
@@ -29,7 +31,10 @@ export type TopologyType =
   | 'VERTICAL'
   | 'LEFT_OF'
   | 'SEQUENCE_THREE'
-  | 'GAPPED_EXCLUSION';
+  | 'GAPPED_EXCLUSION'
+  | 'VERTICAL_TRIO'
+  | 'VERTICAL_DISJUNCTIVE_EXCLUSION'
+  | 'VERTICAL_NOT';
 
 export interface TopologyEntry {
   /** Deterministic, unique identifier for this geometric relationship. */
@@ -83,6 +88,9 @@ function getPrefix(type: TopologyType): string {
     case 'LEFT_OF': return 'LEFT';
     case 'SEQUENCE_THREE': return 'SEQ3';
     case 'GAPPED_EXCLUSION': return 'GPEX';
+    case 'VERTICAL_TRIO': return 'VTRIO';
+    case 'VERTICAL_DISJUNCTIVE_EXCLUSION': return 'VDEX';
+    case 'VERTICAL_NOT': return 'VNOT';
   }
 }
 
@@ -94,11 +102,14 @@ function getWeight(type: TopologyType): number {
   switch (type) {
     case 'VERTICAL':
     case 'ADJACENT':
+    case 'VERTICAL_NOT':
       return 1;
     case 'LEFT_OF':
     case 'SEQUENCE_THREE':
+    case 'VERTICAL_TRIO':
       return 2;
     case 'GAPPED_EXCLUSION':
+    case 'VERTICAL_DISJUNCTIVE_EXCLUSION':
       return 3;
     default:
       return 0;
@@ -126,6 +137,9 @@ export class TopologyManifest {
       LEFT_OF: all.filter(e => e.type === 'LEFT_OF').sort((a, b) => a.topologyID.localeCompare(b.topologyID)),
       SEQUENCE_THREE: all.filter(e => e.type === 'SEQUENCE_THREE').sort((a, b) => a.topologyID.localeCompare(b.topologyID)),
       GAPPED_EXCLUSION: all.filter(e => e.type === 'GAPPED_EXCLUSION').sort((a, b) => a.topologyID.localeCompare(b.topologyID)),
+      VERTICAL_TRIO: all.filter(e => e.type === 'VERTICAL_TRIO').sort((a, b) => a.topologyID.localeCompare(b.topologyID)),
+      VERTICAL_DISJUNCTIVE_EXCLUSION: all.filter(e => e.type === 'VERTICAL_DISJUNCTIVE_EXCLUSION').sort((a, b) => a.topologyID.localeCompare(b.topologyID)),
+      VERTICAL_NOT: all.filter(e => e.type === 'VERTICAL_NOT').sort((a, b) => a.topologyID.localeCompare(b.topologyID)),
     };
 
     // Deep freeze the entire structure to guarantee Immutability
@@ -208,12 +222,95 @@ export class TopologyManifest {
             weight: getWeight('LEFT_OF'),
           });
         }
+        
+        if (IS_VERTICAL_NOT(si, sj)) {
+          const sorted = sortSlots([si, sj]);
+          this.add({
+            topologyID: makeID('VERTICAL_NOT', sorted),
+            type: 'VERTICAL_NOT',
+            slots: sorted,
+            weight: getWeight('VERTICAL_NOT'),
+          });
+        }
       }
     }
   }
 
   // -------------------------------------------------------------------------
-  // B. Triadic Sweep (3-slot relationships)
+  // B. Vertical Triadic Sweep (column-aligned 3-slot relationships)
+  // -------------------------------------------------------------------------
+
+  public sweepVerticalTriads(space: CoordinateSpace): void {
+
+    // 1. VERTICAL_TRIO Sweep
+    // All combinations of 3 distinct rows sharing the same column: C(rows, 3) × cols
+    if (space.rows >= 3) {
+      for (let col = 0; col < space.cols; col++) {
+        for (let rA = 0; rA < space.rows - 2; rA++) {
+          for (let rB = rA + 1; rB < space.rows - 1; rB++) {
+            for (let rC = rB + 1; rC < space.rows; rC++) {
+              const sa = space.getSlot(rA, col);
+              const sb = space.getSlot(rB, col);
+              const sc = space.getSlot(rC, col);
+
+              if (IS_VERTICAL_TRIO(sa, sb, sc)) {
+                const sorted = sortSlots([sa, sb, sc]);
+                this.add({
+                  topologyID: makeID('VERTICAL_TRIO', sorted),
+                  type: 'VERTICAL_TRIO',
+                  slots: sorted,
+                  weight: getWeight('VERTICAL_TRIO'),
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // 2. VERTICAL_DISJUNCTIVE_EXCLUSION Sweep
+    // Anchor = slot A. Pick an unordered pair of distinct columns {colB, colC}.
+    // For each valid rowB ≠ rowA and rowC ≠ rowA, the XOR column check is
+    // satisfied when exactly one of colB / colC equals colA.
+    if (space.cols >= 2) {
+      for (const sa of space.ALL_SLOTS) {
+        // Unordered column pairs guarantee colB < colC, so each {colB,colC} pair is visited once
+        for (let colB = 0; colB < space.cols - 1; colB++) {
+          for (let colC = colB + 1; colC < space.cols; colC++) {
+            // Exactly one of colB / colC must equal sa.c for XOR to hold
+            const aMatchesB = sa.c === colB;
+            const aMatchesC = sa.c === colC;
+            if (aMatchesB === aMatchesC) continue; // neither or both — skip
+
+            for (let rB = 0; rB < space.rows; rB++) {
+              if (rB === sa.r) continue; // rowA ≠ rowB
+              for (let rC = 0; rC < space.rows; rC++) {
+                if (rC === sa.r) continue; // rowA ≠ rowC
+                // rB === rC is allowed — B and C may share a row
+
+                const sb = space.getSlot(rB, colB);
+                const sc = space.getSlot(rC, colC);
+
+                // ID: anchor A is primary; B and C are an unordered pair
+                // (sortSlots on [sb, sc] gives deterministic B_C order in the ID)
+                const sortedBC = sortSlots([sb, sc]);
+                const id = `VDEX_${slotToken(sa)}_${slotToken(sortedBC[0])}_${slotToken(sortedBC[1])}`;
+                this.add({
+                  topologyID: id,
+                  type: 'VERTICAL_DISJUNCTIVE_EXCLUSION',
+                  slots: [sa, sortedBC[0], sortedBC[1]],
+                  weight: getWeight('VERTICAL_DISJUNCTIVE_EXCLUSION'),
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // C. Horizontal / Gapped Triadic Sweep (3-slot relationships)
   // -------------------------------------------------------------------------
 
   public sweepTriads(space: CoordinateSpace): void {
@@ -253,36 +350,35 @@ export class TopologyManifest {
       }
     }
 
-    // 2. GAPPED_EXCLUSION Sweep
-    // Identify all spans of exactly 2 columns.
+    // 2. GAPPED_EXCLUSION Sweep (Triplet Expansion)
+    // Identify all spans of exactly 2 columns (Anchor Pair A and C)
     for (let c = 0; c < space.cols - 2; c++) {
       const colA = c;
-      const colB = c + 1; // The forced middle column
       const colC = c + 2;
 
-      // Expand into the 3D row space: every slot can theoretically be on any row independently.
+      // Iterate through every possible Row-Pair for the Anchors
       for (let rA = 0; rA < space.rows; rA++) {
-        for (let rB = 0; rB < space.rows; rB++) {
-          for (let rC = 0; rC < space.rows; rC++) {
-            
-            const sa = space.getSlot(rA, colA);
-            const sb = space.getSlot(rB, colB);
-            const sc = space.getSlot(rC, colC);
+        for (let rC = 0; rC < space.rows; rC++) {
+          const sa = space.getSlot(rA, colA);
+          const sc = space.getSlot(rC, colC);
 
-            // Validated geometrically inside IS_GAPPED_EXCLUSION (though guaranteed by loop bounds)
-            if (IS_GAPPED_EXCLUSION(sa, sc, sb)) {
+          // We now have our solid A and C anchors. 
+          // Sweep the ENTIRE board to find every single safe B candidate.
+          for (let i = 0; i < total; i++) {
+            const slotSweep = slots[i];
+
+            // If the tested slot is NOT in the gap, and is not A or C...
+            if (IS_GAPPED_EXCLUSION(sa, sc, slotSweep)) {
               const sortedOuter = sortSlots([sa, sc]);
-              // Format: GPEX_R0C0_R0C2_NOT_R3C1
-              const id = `GPEX_${slotToken(sortedOuter[0])}_${slotToken(sortedOuter[1])}_NOT_${slotToken(sb)}`;
+              const id = `GPEX_${slotToken(sortedOuter[0])}_${slotToken(sortedOuter[1])}_IS_${slotToken(slotSweep)}`;
               
               this.add({
                 topologyID: id,
                 type: 'GAPPED_EXCLUSION',
-                slots: [sortedOuter[0], sortedOuter[1], sb],
+                slots: [sortedOuter[0], sortedOuter[1], slotSweep],
                 weight: getWeight('GAPPED_EXCLUSION'),
               });
             }
-
           }
         }
       }
@@ -315,6 +411,7 @@ export function buildTopologyLibrary(rows: number, cols: number, forceAudit: boo
   const manifest = new TopologyManifest();
 
   manifest.sweepPairs(space);
+  manifest.sweepVerticalTriads(space);
   manifest.sweepTriads(space);
 
   const library = manifest.finalizeLibrary();

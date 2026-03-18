@@ -55,10 +55,10 @@ export function IS_SEQUENCE_THREE(slotA: Slot, slotB: Slot, slotC: Slot): boolea
 
 // ---------------------------------------------------------------------------
 // 5. IS_GAPPED_EXCLUSION(slotA, slotC, slotB)
-//    |cA - cC| = 2  AND  cB = (cA + cC) / 2
+//    |cA - cC| = 2  AND  cB != (cA + cC) / 2
 //
-//    True when A and C are exactly two columns apart and B is the unique
-//    middle column between them.  rB is unconstrained — B can be any row.
+//    True when A and C are exactly two columns apart and B is ANY slot 
+//    that does NOT sit in the unique middle column between them.
 //
 //    Clue intent (applied later during hydration):
 //      "Item A and Item C have exactly one column between them,
@@ -66,6 +66,63 @@ export function IS_SEQUENCE_THREE(slotA: Slot, slotB: Slot, slotC: Slot): boolea
 // ---------------------------------------------------------------------------
 export function IS_GAPPED_EXCLUSION(slotA: Slot, slotC: Slot, slotB: Slot): boolean {
   if (Math.abs(slotA.c - slotC.c) !== 2) return false;
-  const midCol = (slotA.c + slotC.c) / 2;
-  return slotB.c === midCol;
+  // B cannot be A or C
+  if (slotB === slotA || slotB === slotC) return false;
+  
+  const forbiddenCol = (slotA.c + slotC.c) / 2;
+  return slotB.c !== forbiddenCol;
+}
+
+// ---------------------------------------------------------------------------
+// 8. IS_VERTICAL_NOT(slotA, slotB)
+//    cA ≠ cB  AND  rA ≠ rB
+//
+//    True when two slots are in different columns AND different rows.
+//    Same-row exclusion: items in the same row belong to the same category
+//    and can never share a column by rule, so such pairs carry zero solver value.
+//
+//    Clue intent (applied later during hydration):
+//      "Item A is NOT in the same column as Item B."
+// ---------------------------------------------------------------------------
+export function IS_VERTICAL_NOT(slotA: Slot, slotB: Slot): boolean {
+  return slotA.r !== slotB.r && slotA.c !== slotB.c;
+}
+
+
+// ---------------------------------------------------------------------------
+// 6. IS_VERTICAL_TRIO(slotA, slotB, slotC)
+//    cA = cB = cC  AND  rA ≠ rB  AND  rB ≠ rC  AND  rA ≠ rC
+//
+//    True when all three slots share exactly one column but occupy
+//    three distinct rows.
+//
+//    Clue intent (applied later during hydration):
+//      "Item A, Item B, and Item C are all in the same column."
+//      Category Rule: A, B, C must belong to different categories.
+// ---------------------------------------------------------------------------
+export function IS_VERTICAL_TRIO(slotA: Slot, slotB: Slot, slotC: Slot): boolean {
+  if (slotA.c !== slotB.c || slotB.c !== slotC.c) return false;
+  return slotA.r !== slotB.r && slotB.r !== slotC.r && slotA.r !== slotC.r;
+}
+
+// ---------------------------------------------------------------------------
+// 7. IS_VERTICAL_DISJUNCTIVE_EXCLUSION(slotA, slotB, slotC)
+//    (cA = cB  XOR  cA = cC)  AND  cB ≠ cC  AND  rA ≠ rB  AND  rA ≠ rC
+//
+//    True when slot A shares a column with exactly one of B or C,
+//    and B and C are themselves in different columns.
+//
+//    Clue intent (applied later during hydration):
+//      "Item A is in the same column as Item B or Item C, but not both."
+//      Category Rule: A must be from a different category than B and C.
+//                     B and C may share a category.
+// ---------------------------------------------------------------------------
+export function IS_VERTICAL_DISJUNCTIVE_EXCLUSION(slotA: Slot, slotB: Slot, slotC: Slot): boolean {
+  if (slotA.r === slotB.r || slotA.r === slotC.r) return false;
+  if (slotB.c === slotC.c) return false; // B and C must be in different columns
+
+  const aMatchesB = slotA.c === slotB.c;
+  const aMatchesC = slotA.c === slotC.c;
+  // XOR: exactly one must be true
+  return aMatchesB !== aMatchesC;
 }
