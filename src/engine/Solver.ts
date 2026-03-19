@@ -143,6 +143,24 @@ export class Solver {
   }
 
   /**
+   * Helper Method: The Dry Run
+   * Performs a non-destructive state check to see if a clue reveals NEW information.
+   * Internally clones the matrix, applies the bitwise logic, and returns true only 
+   * if at least one bit changed from 1 to 0.
+   * 
+   * @param clue The clue to test
+   * @param canvas The current true puzzle state
+   */
+  public testClue(clue: ActiveClue, canvas: LogicCanvas): boolean {
+    // 1. Clone the current matrix state
+    const dryRunCanvas = canvas.clone();
+    
+    // 2 & 3 & 4. Apply the clue's bitwise logic to the clone
+    // executeClueHandler intrinsically returns true if ANY bit was pruned.
+    return this.executeClueHandler(clue, dryRunCanvas);
+  }
+
+  /**
    * Phase 3.3.3: Internal Inference Handlers
    * 
    * These logic patterns represent the "Rules of the Universe" for a logic grid.

@@ -9,7 +9,7 @@ function testVerticalNotTrio() {
   const clues = [
     {
       type: 'VERTICAL_NOT_TRIO',
-      targets: [
+      params: [
         { row: 0, item: 0 }, // A
         { row: 1, item: 1 }, // B
         { row: 2, item: 2 }, // C
@@ -20,7 +20,7 @@ function testVerticalNotTrio() {
 
   // Pattern A: Vertical Sync (A <-> B)
   console.log("\nPattern A: Vertical Anchor Sync");
-  const lc1 = new LogicCanvas(N);
+  const lc1 = new LogicCanvas(N, N);
   lc1.prune(0, 2, 0); // Prune A from col 2
   solver.solve(clues, lc1);
   if (!lc1.isPossible(1, 2, 1)) {
@@ -31,7 +31,7 @@ function testVerticalNotTrio() {
 
   // Pattern B: Direct Exclusion (A solved -> C excluded)
   console.log("\nPattern B: Direct Exclusion");
-  const lc2 = new LogicCanvas(N);
+  const lc2 = new LogicCanvas(N, N);
   lc2.isolateItem(0, 1, 0); // Solve A at col 1
   solver.solve(clues, lc2);
   if (!lc2.isPossible(2, 1, 2)) {
@@ -42,7 +42,7 @@ function testVerticalNotTrio() {
 
   // Pattern C: Inverse Exclusion (C solved -> A and B excluded)
   console.log("\nPattern C: Inverse Exclusion");
-  const lc3 = new LogicCanvas(N);
+  const lc3 = new LogicCanvas(N, N);
   lc3.isolateItem(2, 3, 2); // Solve C at col 3
   solver.solve(clues, lc3);
   if (!lc3.isPossible(0, 3, 0) && !lc3.isPossible(1, 3, 1)) {
@@ -53,7 +53,7 @@ function testVerticalNotTrio() {
 
   // Pattern D: Shadow Pruning (C's last stand)
   console.log("\nPattern D: Shadow Pruning (C's last stand)");
-  const lc4 = new LogicCanvas(N);
+  const lc4 = new LogicCanvas(N, N);
   // Prune C from all columns except col 0.
   lc4.prune(2, 1, 2);
   lc4.prune(2, 2, 2);

@@ -1,14 +1,13 @@
-```typescript
 import { LogicCanvas } from '../LogicCanvas';
 import type { ActiveClue } from '../Solver';
 
 /**
  * Phase 3.2.3.4: ADJACENT Logic Handler
  * 
- * A LEFT_OF(A, B) ensures that A is immediately to the left of B:
- * Col(B) = Col(A) + 1.
+ * An ADJACENT(A, B) ensures that A and B are in adjacent columns in the same row:
+ * |Col(B) - Col(A)| = 1.
  * 
- * @param clue The LEFT_OF clue to process. params[0]=A, params[1]=B.
+ * @param clue The ADJACENT clue to process. params[0]=A, params[1]=B.
  * @param canvas The logic canvas to prune.
  * @returns true if any bits were pruned.
  */

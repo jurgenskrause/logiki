@@ -10,23 +10,47 @@ import type { CategoryIndex, ColumnIndex, ItemIndex, Bitmask } from '../types';
  * It is forward-only, memory-efficient, and strictly partitioned by category.
  */
 export class LogicCanvas {
-  private readonly _size: number;
+  private readonly _height: number;
+  private readonly _width: number;
   private _matrix: Uint8Array;
   private _hasContradiction: boolean = false;
 
   /**
-   * Initializes a new Logic Canvas for an N x N puzzle.
-   * @param size The dimension N of the puzzle (typically 4 or 8).
+   * Initializes a new Logic Canvas for an N x M puzzle.
+   * @param height The number of categories (Rows, N).
+   * @param width The number of houses/items (Columns, M).
    */
-  constructor(size: number) {
-    this._size = size;
-    // Memory: N x N x 1 byte (e.g., 64 bytes for 8x8).
-    this._matrix = new Uint8Array(size * size);
+  constructor(height: number, width: number) {
+    this._height = height;
+    this._width = width;
+    // Memory: N x M x 1 byte (e.g., 64 bytes for 8x8).
+    this._matrix = new Uint8Array(height * width);
 
-    // Initialization Rule: Every cell in Row i must be initialized with all N bits set to 1.
-    // Example (4x4): 1111 (decimal 15).
-    const initialMask: Bitmask = (1 << size) - 1;
+    // Initialization Rule: Every cell in Row i must be initialized with all M bits set to 1.
+    // Example (M=4): 1111 (decimal 15).
+    const initialMask: Bitmask = (1 << width) - 1;
     this._matrix.fill(initialMask);
+  }
+
+  /**
+   * Resets the canvas back to the initial "Superposition of Truth".
+   * This allows the canvas to be reused without reallocating arrays.
+   */
+  public reset(): void {
+    const initialMask: Bitmask = (1 << this._width) - 1;
+    this._matrix.fill(initialMask);
+    this._hasContradiction = false;
+  }
+
+  /**
+   * Creates a deep copy of the current LogicCanvas state.
+   * Useful for "Dry Run" non-destructive clue testing.
+   */
+  public clone(): LogicCanvas {
+    const cloned = new LogicCanvas(this._height, this._width);
+    cloned._matrix.set(this._matrix);
+    cloned._hasContradiction = this._hasContradiction;
+    return cloned;
   }
 
   /**
@@ -35,7 +59,7 @@ export class LogicCanvas {
    * @returns true if a bit was actually flipped, false if the bit was already 0.
    */
   public prune(row: CategoryIndex, col: ColumnIndex, itemIndex: ItemIndex): boolean {
-    const index = row * this._size + col;
+    const index = row * this._width + col;
     const oldMask = this._matrix[index];
     const newMask = oldMask & ~(1 << itemIndex);
     if (oldMask !== newMask) {
@@ -54,7 +78,7 @@ export class LogicCanvas {
    * @returns true if any bits were actually flipped.
    */
   public pruneByMask(row: CategoryIndex, col: ColumnIndex, mask: Bitmask): boolean {
-    const index = row * this._size + col;
+    const index = row * this._width + col;
     const oldMask = this._matrix[index];
     const newMask = oldMask & ~mask;
     if (oldMask !== newMask) {
@@ -68,10 +92,29 @@ export class LogicCanvas {
   }
 
   /**
+   * Applies a bitmask by performing a bitwise AND.
+   * Matrix[r][c] &= mask
+   * @returns true if the mask changed (New Information).
+   */
+  public applyMask(row: CategoryIndex, col: ColumnIndex, mask: Bitmask): boolean {
+    const idx = row * this._width + col;
+    const oldMask = this._matrix[idx];
+    const newMask = oldMask & mask;
+    if (oldMask !== newMask) {
+      this._matrix[idx] = newMask;
+      if (newMask === 0) {
+        this._hasContradiction = true;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  /**
    * Returns true if the bitmask is a power of two (exactly one bit remains).
    */
   public isSolved(row: CategoryIndex, col: ColumnIndex): boolean {
-    const mask = this._matrix[row * this._size + col];
+    const mask = this._matrix[row * this._width + col];
     // A value x is a power of two if (x > 0) and (x & (x - 1) === 0).
     return mask !== 0 && (mask & (mask - 1)) === 0;
   }
@@ -80,7 +123,7 @@ export class LogicCanvas {
    * Returns true if the bitmask is 0 (a logical contradiction has occurred).
    */
   public isInvalid(row: CategoryIndex, col: ColumnIndex): boolean {
-    return this._matrix[row * this._size + col] === 0;
+    return this._matrix[row * this._width + col] === 0;
   }
 
   /**
@@ -105,9 +148,9 @@ export class LogicCanvas {
    * Returns an array of indices where bits are still set to 1.
    */
   public getRemainingOptions(row: CategoryIndex, col: ColumnIndex): ItemIndex[] {
-    const mask = this._matrix[row * this._size + col];
+    const mask = this._matrix[row * this._width + col];
     const options: ItemIndex[] = [];
-    for (let i = 0; i < this._size; i++) {
+    for (let i = 0; i < this._width; i++) {
       if ((mask & (1 << i)) !== 0) {
         options.push(i);
       }
@@ -121,7 +164,7 @@ export class LogicCanvas {
    */
   public getRemainingColumns(row: CategoryIndex, itemIndex: ItemIndex): ColumnIndex[] {
     const columns: ColumnIndex[] = [];
-    for (let col = 0; col < this._size; col++) {
+    for (let col = 0; col < this._width; col++) {
       if (this.isPossible(row, col, itemIndex)) {
         columns.push(col);
       }
@@ -134,7 +177,7 @@ export class LogicCanvas {
    * Useful for Rule Interpreters and verification.
    */
   public getMask(row: CategoryIndex, col: ColumnIndex): Bitmask {
-    return this._matrix[row * this._size + col];
+    return this._matrix[row * this._width + col];
   }
 
   /**
@@ -159,7 +202,7 @@ export class LogicCanvas {
     const mask = this.getMask(row, col);
     // Power of two check
     if (mask !== 0 && (mask & (mask - 1)) === 0) {
-      for (let i = 0; i < this._size; i++) {
+      for (let i = 0; i < this._width; i++) {
         if ((mask & (1 << i)) !== 0) return i;
       }
     }
@@ -172,7 +215,7 @@ export class LogicCanvas {
    * @returns true if any bits were actually pruned.
    */
   public isolateItem(row: CategoryIndex, col: ColumnIndex, itemIndex: ItemIndex): boolean {
-    const index = row * this._size + col;
+    const index = row * this._width + col;
     const oldMask = this._matrix[index];
     const targetBit = 1 << itemIndex;
     const newMask = oldMask & targetBit;
@@ -188,30 +231,23 @@ export class LogicCanvas {
   }
 
   /**
-   * Dimension of the puzzle (N).
-   */
-  public get size(): number {
-    return this._size;
-  }
-
-  /**
-   * Width of the puzzle (number of columns). Alias for size.
+   * Width of the puzzle (number of columns / houses).
    */
   public get width(): number {
-    return this._size;
+    return this._width;
   }
 
   /**
-   * Height of the logic grid (number of category rows). Alias for size.
+   * Height of the logic grid (number of category rows).
    */
   public get height(): number {
-    return this._size;
+    return this._height;
   }
 
   /**
-   * Dimension N of the puzzle.
+   * Backward compatibility: returns width as N
    */
   public get N(): number {
-    return this._size;
+    return this._width;
   }
 }

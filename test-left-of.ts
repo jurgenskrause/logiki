@@ -9,7 +9,7 @@ function testLeftOf() {
   const clues = [
     {
       type: 'LEFT_OF',
-      targets: [
+      params: [
         { row: 0, item: 0 }, // A
         { row: 1, item: 1 }  // B
       ]
@@ -20,7 +20,7 @@ function testLeftOf() {
 
   // 1. Boundary Pruning
   console.log("\nTesting Pattern 1: Boundary Pruning");
-  const lc1 = new LogicCanvas(N);
+  const lc1 = new LogicCanvas(N, N);
   solver.solve(clues, lc1);
 
   if (!lc1.isPossible(0, 3, 0) && !lc1.isPossible(1, 0, 1)) {
@@ -31,7 +31,7 @@ function testLeftOf() {
 
   // 2. Shadow Pruning
   console.log("\nTesting Pattern 2: Shadow Pruning");
-  const lc2 = new LogicCanvas(N);
+  const lc2 = new LogicCanvas(N, N);
   // Prune B from col 2. If B is pruned from 2, then A cannot be in its left-neighbor (1).
   lc2.prune(1, 2, 1);
   solver.solve(clues, lc2);
@@ -44,7 +44,7 @@ function testLeftOf() {
 
   // 3. Anchor Propagation
   console.log("\nTesting Pattern 3: Anchor Propagation");
-  const lc3 = new LogicCanvas(N);
+  const lc3 = new LogicCanvas(N, N);
   // Solve A at Col 1. B is forced to Col 2.
   lc3.isolateItem(0, 1, 0);
   solver.solve(clues, lc3);

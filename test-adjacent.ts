@@ -9,7 +9,7 @@ function testAdjacent() {
   const clues = [
     {
       type: 'ADJACENT',
-      targets: [
+      params: [
         { row: 0, item: 0 }, // A
         { row: 1, item: 1 }  // B
       ]
@@ -20,7 +20,7 @@ function testAdjacent() {
 
   // 1. Shadow Pruning (Boundary Check)
   console.log("\nTesting Pattern 1: Shadow Pruning (Edge Case)");
-  const lc1 = new LogicCanvas(N);
+  const lc1 = new LogicCanvas(N, N);
   // Prune A from col 1. 
   // If A is in col 0, B must be in col 1.
   // If B is in col 0, A must be in col 1.
@@ -36,7 +36,7 @@ function testAdjacent() {
 
   // 2. Anchor Propagation
   console.log("\nTesting Pattern 2: Anchor Propagation");
-  const lc2 = new LogicCanvas(N);
+  const lc2 = new LogicCanvas(N, N);
   // Solve A at Col 0. This should restrict B to Col 1.
   lc2.isolateItem(0, 0, 0);
   solver.solve(clues, lc2);
@@ -49,7 +49,7 @@ function testAdjacent() {
 
   // 3. Shadow Pruning (Central)
   console.log("\nTesting Pattern 3: Shadow Pruning (Central)");
-  const lc3 = new LogicCanvas(N);
+  const lc3 = new LogicCanvas(N, N);
   // Prune A from Col 0 and Col 2. 
   // B is at Col 1. Its neighbors are 0 and 2. 
   // If both are impossible for A, then B is impossible at 1.
