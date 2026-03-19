@@ -12,10 +12,10 @@ import type { ActiveClue } from '../Solver';
  * @returns true if any bits were pruned.
  */
 export function handleVerticalNot(clue: ActiveClue, canvas: LogicCanvas): boolean {
-  if (clue.targets.length < 2) return false;
+  if (clue.params.length < 2) return false;
 
-  const itemA = clue.targets[0];
-  const itemB = clue.targets[1];
+  const itemA = clue.params[0];
+  const itemB = clue.params[1];
   let hasChanged = false;
 
   // Check every column for a "Found" state

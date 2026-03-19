@@ -8,17 +8,17 @@ import type { ActiveClue } from '../Solver';
  * Item A must share a column with exactly one of the target items (B or C).
  * Consequence: B and C can never occupy the same column.
  *
- * @param clue The VERTICAL_DISJUNCTIVE_EXCLUSION clue to process.
- *             targets[0]=A, targets[1]=B, targets[2]=C.
  * @param canvas The logic canvas to prune.
+ * @param clue The DISJUNCTIVE_XOR clue to process.
+ *             params[0]=A, params[1]=B, params[2]=C.
  * @returns true if any bits were pruned.
  */
 export function handleVerticalDisjunctiveXor(clue: ActiveClue, canvas: LogicCanvas): boolean {
-  if (clue.targets.length < 3) return false;
+  if (clue.params.length < 3) return false;
 
-  const itemA = clue.targets[0];
-  const itemB = clue.targets[1];
-  const itemC = clue.targets[2];
+  const itemA = clue.params[0];
+  const itemB = clue.params[1];
+  const itemC = clue.params[2];
   let hasChanged = false;
 
   for (let col = 0; col < canvas.width; col++) {

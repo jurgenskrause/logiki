@@ -1,9 +1,9 @@
 import { CoordinateSpace } from '../CoordinateSpace';
 import { TopologyManifest, makeID, getWeight, sortSlots } from '../PermutationGenerator';
-import { IS_VERTICAL } from '../RuleTemplates';
+import { IS_ADJACENT } from '../RuleTemplates';
 import type { TopologyScanner } from './TopologyScanner';
 
-export class VerticalScanner implements TopologyScanner {
+export class AdjacentScanner implements TopologyScanner {
   public scan(space: CoordinateSpace, manifest: TopologyManifest): void {
     const slots = space.ALL_SLOTS;
     const total = slots.length;
@@ -13,13 +13,13 @@ export class VerticalScanner implements TopologyScanner {
         const si = slots[i];
         const sj = slots[j];
 
-        if (IS_VERTICAL(si, sj)) {
+        if (IS_ADJACENT(si, sj)) {
           const sorted = sortSlots([si, sj]);
           manifest.addEntry({
-            topologyID: makeID('VERTICAL', sorted),
-            type: 'VERTICAL',
+            topologyID: makeID('ADJACENT', sorted),
+            type: 'ADJACENT',
             slots: sorted,
-            weight: getWeight('VERTICAL'),
+            weight: getWeight('ADJACENT'),
           });
         }
       }

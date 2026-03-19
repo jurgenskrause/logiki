@@ -12,11 +12,11 @@ import type { ActiveClue } from '../Solver';
  * @returns true if any bits were pruned.
  */
 export function handleVerticalTrio(clue: ActiveClue, canvas: LogicCanvas): boolean {
-  if (clue.targets.length < 3) return false;
+  if (clue.params.length < 3) return false;
 
-  const itemA = clue.targets[0];
-  const itemB = clue.targets[1];
-  const itemC = clue.targets[2];
+  const itemA = clue.params[0];
+  const itemB = clue.params[1];
+  const itemC = clue.params[2];
   let hasChanged = false;
 
   for (let col = 0; col < canvas.width; col++) {

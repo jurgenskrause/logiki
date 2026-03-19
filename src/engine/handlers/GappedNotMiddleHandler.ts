@@ -10,16 +10,16 @@ import type { ActiveClue } from '../Solver';
  * Note: The relationship between A and C is reversible.
  *
  * @param clue The GAPPED_EXCLUSION clue to process. 
- *             By convention, targets[0]=A, targets[1]=C (the bounds), and targets[2]=B (the exclusion).
+ *             By convention, params[0]=A, params[1]=C (the bounds), and params[2]=B (the exclusion).
  * @param canvas The logic canvas to prune.
  * @returns true if any bits were pruned.
  */
 export function handleGappedNotMiddle(clue: ActiveClue, canvas: LogicCanvas): boolean {
-  if (clue.targets.length < 3) return false;
+  if (clue.params.length < 3) return false;
 
-  const itemA = clue.targets[0];
-  const itemC = clue.targets[1]; // Target 1 is the other bound (C)
-  const itemB = clue.targets[2]; // Target 2 is the excluded middle (B)
+  const itemA = clue.params[0];
+  const itemC = clue.params[1]; // Target 1 is the other bound (C)
+  const itemB = clue.params[2]; // Target 2 is the excluded middle (B)
   let hasChanged = false;
 
   for (let i = 0; i < canvas.width; i++) {

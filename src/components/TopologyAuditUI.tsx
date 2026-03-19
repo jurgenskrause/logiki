@@ -19,15 +19,16 @@ export function TopologyAuditUI() {
 
   const { library, timeMs, collisions } = report;
 
-  const adj = library.ADJACENT.length;
-  const vert = library.VERTICAL.length;
-  const left = library.LEFT_OF.length;
-  const seq = library.SEQUENCE_THREE.length;
-  const gpe = library.GAPPED_EXCLUSION.length;
-  const vtrio = library.VERTICAL_TRIO.length;
-  const vdex = library.VERTICAL_DISJUNCTIVE_EXCLUSION.length;
-  const vnot = library.VERTICAL_NOT.length;
-  const total = adj + vert + left + seq + gpe + vtrio + vdex + vnot;
+  const adj = library.HORIZONTAL.ADJACENT.length;
+  const vert = library.VERTICAL.VERTICAL.length;
+  const left = library.HORIZONTAL.LEFT_OF.length;
+  const seq = library.HORIZONTAL.SEQUENCE_THREE.length;
+  const gpe = library.HORIZONTAL.GAPPED_EXCLUSION.length;
+  const vtrio = library.VERTICAL.VERTICAL_TRIO.length;
+  const vdex = library.VERTICAL.VERTICAL_DISJUNCTIVE_EXCLUSION.length;
+  const vnot3 = library.VERTICAL.VERTICAL_NOT_TRIO.length;
+  const vnot = library.VERTICAL.VERTICAL_NOT.length;
+  const total = adj + vert + left + seq + gpe + vtrio + vdex + vnot3 + vnot;
 
   // C(rows, 3) × cols
   const comb3 = rows < 3 ? 0 : (rows * (rows - 1) * (rows - 2)) / 6;
@@ -158,6 +159,10 @@ export function TopologyAuditUI() {
           <div>
             <span className="text-[10px] text-slate-500 block mb-1">Vert. Disj.</span>
             <code className="text-md font-bold text-purple-400">{vdex}</code>
+          </div>
+          <div>
+            <span className="text-[10px] text-slate-500 block mb-1">V-Not Trio</span>
+            <code className="text-md font-bold text-pink-400">{vnot3}</code>
           </div>
           <div>
             <span className="text-[10px] text-slate-500 block mb-1">V-Not Same</span>
@@ -328,7 +333,7 @@ export function TopologyAuditUI() {
         )}
       </div>
 
-      <ClueShowcase />
+      <ClueShowcase library={library} />
     </section>
   );
 }

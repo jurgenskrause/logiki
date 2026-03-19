@@ -5,6 +5,9 @@ import { handleVerticalTrio } from './handlers/VerticalTrioHandler';
 import { handleGappedNotMiddle } from './handlers/GappedNotMiddleHandler';
 import { handleVerticalDisjunctiveXor } from './handlers/VerticalDisjunctiveXorHandler';
 import { handleSequenceThree } from './handlers/SequenceThreeHandler';
+import { handleAdjacent } from './handlers/AdjacentHandler';
+import { handleLeftOf } from './handlers/LeftOfHandler';
+import { handleVerticalNotTrio } from './handlers/VerticalNotTrioHandler';
 import type { CategoryIndex, ItemIndex } from '../types';
 
 /**
@@ -23,10 +26,10 @@ export type SolverResult = (typeof SolverResult)[keyof typeof SolverResult];
  */
 export interface ActiveClue {
   type: string;
-  targets: {
+  params: Array<{
     row: CategoryIndex;
     item: ItemIndex;
-  }[];
+  }>;
 }
 
 /**
@@ -37,57 +40,79 @@ export interface ActiveClue {
  * until no further information can be pruned (a "Fixed Point" is reached).
  */
 export class Solver {
-  private readonly MAX_ITERATIONS = 100; // Performance Circuit Breaker
-
   /**
-   * Solves the given puzzle state using recursive fixed-point iteration.
-   * @param clues The set of hydrated clues to apply.
-   * @param canvas The logic canvas representing the current superposition of truths.
-   * @returns The final verdict of the solver.
+   * Phase 3.3.1: The Fixed-Point Solver Engine
+   * 
+   * Iterates until the LogicCanvas reaches a stable state (Zero further prunes).
+   * 
+   * @param clues The set of Active Clues to apply.
+   * @param canvas The possibility matrix to solve.
+   * @returns SolverResult based on the final convergent state.
    */
   public solve(clues: ActiveClue[], canvas: LogicCanvas): SolverResult {
-    let hasChanged = true;
     let iterationCount = 0;
+    const MAX_ITERATIONS = 200; // Phase 3.3.1 Safety circuit breaker
 
-    // The Deduction Cycle: Continues until the matrix reaches a Fixed Point.
-    while (hasChanged && iterationCount < this.MAX_ITERATIONS) {
-      hasChanged = false;
-      iterationCount++;
+    while (iterationCount < MAX_ITERATIONS) {
+      let hasChangedInThisPass = false;
 
-      // 1. External Clue Pass
-      // Dispatch every clue to its rule handler.
+      // ----------------------------------------------------------------------
+      // Step 1: External Clue Pass
+      // ----------------------------------------------------------------------
       for (const clue of clues) {
-        if (this.applyRule(clue, canvas)) {
-          hasChanged = true;
+        // Handlers return true ONLY if they prune/modify the canvas
+        if (this.executeClueHandler(clue, canvas)) {
+          hasChangedInThisPass = true;
         }
       }
 
-      // 2. Internal Inference Pass (Grid Constraints)
-      // Handles logical constraints like Naked Singles and Hidden Singles.
+      // ----------------------------------------------------------------------
+      // Step 2: Internal Inference Pass (Phase 3.3.3)
+      // ----------------------------------------------------------------------
       if (this.applyInferences(canvas)) {
-        hasChanged = true;
+        hasChangedInThisPass = true;
       }
 
-      // 3. Early Exit on Contradiction
-      // If any cell becomes empty, the current state is logically impossible.
+      // ----------------------------------------------------------------------
+      // Step 3: Cross-Category Cleaning (Phase 3.3.4)
+      // ----------------------------------------------------------------------
+      if (this.applyCleaning(canvas)) {
+        hasChangedInThisPass = true;
+      }
+
+      // ----------------------------------------------------------------------
+      // Step 4: Check for Contradictions
+      // ----------------------------------------------------------------------
       if (canvas.hasAnyInvalidCells()) {
         return SolverResult.CONTRADICTION;
       }
+
+      // ----------------------------------------------------------------------
+      // Step 4: Check for Convergence
+      // If no handler modified the canvas, we have reached the fixed point.
+      // ----------------------------------------------------------------------
+      if (!hasChangedInThisPass) {
+        break;
+      }
+
+      iterationCount++;
     }
 
-    // 4. Final Verdict
-    // If the loop stabilizes, we check if we've reached a unique solution.
+    if (iterationCount >= MAX_ITERATIONS) {
+      console.error(`Solver timed out after ${MAX_ITERATIONS} iterations. Potential infinite loop.`);
+    }
+
+    // Determine final state
     return canvas.isFullySolved() ? SolverResult.SOLVED : SolverResult.AMBIGUOUS;
   }
 
   /**
-   * Central dispatcher for individual clue rules.
-   * To be populated with handlers in Phase 3.2.3.
-   * @returns true if at least one bit was pruned.
+   * Phase 3.3.2: Topological Logic Switchboard (The Router)
+   * 
+   * Routes a clue to its specific topological logic handler.
+   * Returns true if the canvas was modified.
    */
-  private applyRule(clue: ActiveClue, canvas: LogicCanvas): boolean {
-    // Dispatch logic based on clue type.
-    // Specific handlers like VERTICAL_NOT and GAPPED_EXCLUSION go here.
+  private executeClueHandler(clue: ActiveClue, canvas: LogicCanvas): boolean {
     switch (clue.type) {
       case 'VERTICAL_PAIR':
         return handleVerticalPair(clue, canvas);
@@ -95,24 +120,147 @@ export class Solver {
         return handleVerticalNot(clue, canvas);
       case 'VERTICAL_TRIO':
         return handleVerticalTrio(clue, canvas);
-      case 'GAPPED_EXCLUSION':
-        return handleGappedNotMiddle(clue, canvas);
-      case 'VERTICAL_DISJUNCTIVE_EXCLUSION':
-        return handleVerticalDisjunctiveXor(clue, canvas);
+      case 'VERTICAL_NOT_TRIO':
+        return handleVerticalNotTrio(clue, canvas);
+      case 'ADJACENT':
+        return handleAdjacent(clue, canvas);
+      case 'LEFT_OF':
+        return handleLeftOf(clue, canvas);
       case 'SEQUENCE_THREE':
         return handleSequenceThree(clue, canvas);
+      case 'GAPPED_EXCLUSION':
+        // Note: In our current engine, this handles the A (!B) C relationship
+        return handleGappedNotMiddle(clue, canvas);
+      case 'GAPPED_NOT_MIDDLE':
+        return handleGappedNotMiddle(clue, canvas);
+      case 'VERTICAL_DISJUNCTIVE_EXCLUSION':
+      case 'DISJUNCTIVE_XOR':
+        return handleVerticalDisjunctiveXor(clue, canvas);
       default:
+        console.warn(`Unknown clue type: ${clue.type}`);
         return false;
     }
   }
 
   /**
-   * Applies global grid inferences (Naked Singles, Hidden Singles, etc.).
-   * To be populated in Phase 3.2.4.
-   * @returns true if at least one bit was pruned.
+   * Phase 3.3.3: Internal Inference Handlers
+   * 
+   * These logic patterns represent the "Rules of the Universe" for a logic grid.
+   * They scan the LogicCanvas for bitmask patterns across category rows.
+   * 
+   * @param canvas The logic canvas to prune.
+   * @returns true if any bits were pruned.
+   */
+  /**
+   * Phase 3.3.3: Internal Inference Handlers
+   * 
+   * These logic patterns represent the "Rules of the Universe" for a logic grid.
+   * They scan the LogicCanvas for bitmask patterns across category rows.
+   * 
+   * @param canvas The logic canvas to prune.
+   * @returns true if any bits were pruned.
    */
   private applyInferences(canvas: LogicCanvas): boolean {
-    // Implementation coming in Phase 3.2.4
-    return false;
+    let hasChanged = false;
+
+    for (let r = 0; r < canvas.height; r++) {
+      // ----------------------------------------------------------------------
+      // Pattern A: Naked Singles (Horizontal Exhaustion)
+      // Logic: If item confirmed in Col X, it cannot be in any other column.
+      // ----------------------------------------------------------------------
+      for (let c = 0; c < canvas.width; c++) {
+        if (canvas.isSolved(r, c)) {
+          const solvedBit = canvas.getMask(r, c);
+          // Prune this bit from all other columns in this row
+          for (let targetCol = 0; targetCol < canvas.width; targetCol++) {
+            if (targetCol !== c) {
+              if (canvas.pruneByMask(r, targetCol, solvedBit)) {
+                hasChanged = true;
+              }
+            }
+          }
+        }
+      }
+
+      // ----------------------------------------------------------------------
+      // Pattern B: Hidden Singles (Columnar Necessity)
+      // Logic: If bit for Item I appears in only one column, that cell is solved.
+      // ----------------------------------------------------------------------
+      for (let itemIdx = 0; itemIdx < canvas.N; itemIdx++) {
+        let possibleCols: number[] = [];
+        
+        for (let c = 0; c < canvas.width; c++) {
+          if (canvas.isPossible(r, c, itemIdx)) {
+            possibleCols.push(c);
+          }
+        }
+
+        // Action: If item only has ONE possible column left in its category row
+        if (possibleCols.length === 1) {
+          const targetCol = possibleCols[0];
+          // If it's not already solved (isSolved means exactly one bit), isolate it
+          if (!canvas.isSolved(r, targetCol)) {
+            if (canvas.isolateItem(r, targetCol, itemIdx)) {
+              hasChanged = true;
+            }
+          }
+        }
+      }
+    }
+
+    return hasChanged;
+  }
+
+  /**
+   * Phase 3.3.4: Cross-Category Cleaning (Vertical Isolation)
+   * 
+   * Manages the vertical integrity of "Slots." 
+   * If two items from different categories are "locked" into the same column,
+   * any restriction applied to one must be applied to the other.
+   * 
+   * @param canvas The logic canvas to sync.
+   * @returns true if any bits were pruned.
+   */
+  private applyCleaning(canvas: LogicCanvas): boolean {
+    let hasChanged = false;
+
+    // Pattern A: The Solved Slot Linkage
+    // Logic: If Item A and Item B are solved in the SAME column, 
+    // their possibility patterns across the board should be identical.
+    for (let c = 0; c < canvas.width; c++) {
+      const solvedItemsInCol: Array<{ row: number; item: number }> = [];
+      
+      for (let r = 0; r < canvas.height; r++) {
+        const solvedIdx = canvas.getSolvedItemIndex(r, c);
+        if (solvedIdx !== -1) {
+          solvedItemsInCol.push({ row: r, item: solvedIdx });
+        }
+      }
+
+      // If we have multiple identities in this slot, they are effectively the same entity.
+      if (solvedItemsInCol.length > 1) {
+        for (let i = 0; i < solvedItemsInCol.length; i++) {
+          for (let j = 0; j < solvedItemsInCol.length; j++) {
+            if (i === j) continue;
+            const item1 = solvedItemsInCol[i];
+            const item2 = solvedItemsInCol[j];
+
+            // Sync: If Item 1 cannot be in Col K, then Item 2 cannot be in Col K.
+            // This propagates spatial clues (LeftOf, Adjacent) across solved column mates.
+            for (let k = 0; k < canvas.width; k++) {
+              if (k === c) continue;
+              if (!canvas.isPossible(item1.row, k, item1.item)) {
+                if (canvas.prune(item2.row, k, item2.item)) hasChanged = true;
+              }
+              if (!canvas.isPossible(item2.row, k, item2.item)) {
+                if (canvas.prune(item1.row, k, item1.item)) hasChanged = true;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return hasChanged;
   }
 }

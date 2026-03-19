@@ -1,5 +1,11 @@
 import { seededRandom, seedHash } from '../utils/random';
-import type { TopologyLibrary, TopologyEntry, TopologyType } from './PermutationGenerator';
+import { 
+  type TopologyLibrary, 
+  type TopologyEntry, 
+  type TopologyType,
+  VERTICAL_TYPES,
+  HORIZONTAL_TYPES
+} from './PermutationGenerator';
 
 /**
  * Phase 3.2.1: The Seed-Based Shuffler
@@ -21,54 +27,39 @@ export class SelectionDeck {
     // Initialize stateful function once at start of Selection Phase
     this._nextRandom = seededRandom(seedInt);
 
-    // 4. Critical Constraints: Stability
+    // Critical Constraints: Stability
     // Fixed Category Order: strictly shuffle categories in this order to keep PRNG sync.
-    const categoriesToShuffle: TopologyType[] = [
-      'VERTICAL',
-      'ADJACENT',
-      'LEFT_OF',
-      'SEQUENCE_THREE',
-      'GAPPED_EXCLUSION',
-      'VERTICAL_TRIO',
-      'VERTICAL_DISJUNCTIVE_EXCLUSION',
-      'VERTICAL_NOT',
+    const allTypes: TopologyType[] = [
+      ...VERTICAL_TYPES,
+      ...HORIZONTAL_TYPES,
     ];
 
     // Initialize an empty record for the shuffled decks
-    this.decks = {
-      VERTICAL: [],
-      ADJACENT: [],
-      LEFT_OF: [],
-      SEQUENCE_THREE: [],
-      GAPPED_EXCLUSION: [],
-      VERTICAL_TRIO: [],
-      VERTICAL_DISJUNCTIVE_EXCLUSION: [],
-      VERTICAL_NOT: [],
-    };
+    this.decks = {} as Record<TopologyType, TopologyEntry[]>;
 
     // 3. The Task: Per-Category Fisher-Yates Shuffle
-    for (const category of categoriesToShuffle) {
-      const sourceArray = library[category];
+    for (const type of allTypes) {
+      // Find the source array in the nested library
+      let sourceArray: readonly TopologyEntry[] = [];
+      if ((VERTICAL_TYPES as readonly string[]).includes(type)) {
+        sourceArray = library.VERTICAL[type as keyof typeof library.VERTICAL];
+      } else {
+        sourceArray = library.HORIZONTAL[type as keyof typeof library.HORIZONTAL];
+      }
       
       // Pre-Sort Requirement: verify the source arrays are in alphabetical topologyID order
-      this.verifyAlphabeticalOrder(sourceArray, category);
+      this.verifyAlphabeticalOrder(sourceArray, type);
 
-      // Clone: Create a shallow copy to keep Master Library immutable
       const deckCopy = [...sourceArray];
 
-      // Shuffle: Iterate from the last element down to the first (i from n-1 to 1)
       for (let i = deckCopy.length - 1; i > 0; i--) {
-        // Predictable Swap: Generate an index j using Mulberry32
         const j = Math.floor(this._nextRandom() * (i + 1));
-        
-        // Swap elements at i and j
         const temp = deckCopy[i];
         deckCopy[i] = deckCopy[j];
         deckCopy[j] = temp;
       }
 
-      // Store the shuffled deck
-      this.decks[category] = deckCopy;
+      this.decks[type] = deckCopy;
     }
   }
 

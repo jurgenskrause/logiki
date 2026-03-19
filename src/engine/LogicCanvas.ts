@@ -12,6 +12,7 @@ import type { CategoryIndex, ColumnIndex, ItemIndex, Bitmask } from '../types';
 export class LogicCanvas {
   private readonly _size: number;
   private _matrix: Uint8Array;
+  private _hasContradiction: boolean = false;
 
   /**
    * Initializes a new Logic Canvas for an N x N puzzle.
@@ -39,6 +40,28 @@ export class LogicCanvas {
     const newMask = oldMask & ~(1 << itemIndex);
     if (oldMask !== newMask) {
       this._matrix[index] = newMask;
+      if (newMask === 0) {
+        this._hasContradiction = true;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Performs a bitwise AND with the inverse of the provided mask.
+   * Matrix[r][c] &= ~mask
+   * @returns true if any bits were actually flipped.
+   */
+  public pruneByMask(row: CategoryIndex, col: ColumnIndex, mask: Bitmask): boolean {
+    const index = row * this._size + col;
+    const oldMask = this._matrix[index];
+    const newMask = oldMask & ~mask;
+    if (oldMask !== newMask) {
+      this._matrix[index] = newMask;
+      if (newMask === 0) {
+        this._hasContradiction = true;
+      }
       return true;
     }
     return false;
@@ -61,10 +84,10 @@ export class LogicCanvas {
   }
 
   /**
-   * Scans the matrix for any cells with a bitmask of 0.
+   * Scans the matrix for any cells with a bitmask of 0, or returns the cached flag.
    */
   public hasAnyInvalidCells(): boolean {
-    return this._matrix.some(mask => mask === 0);
+    return this._hasContradiction;
   }
 
   /**
@@ -130,6 +153,20 @@ export class LogicCanvas {
   }
 
   /**
+   * Returns the item index if the cell is solved, or -1 if it is still ambiguous or invalid.
+   */
+  public getSolvedItemIndex(row: CategoryIndex, col: ColumnIndex): ItemIndex | -1 {
+    const mask = this.getMask(row, col);
+    // Power of two check
+    if (mask !== 0 && (mask & (mask - 1)) === 0) {
+      for (let i = 0; i < this._size; i++) {
+        if ((mask & (1 << i)) !== 0) return i;
+      }
+    }
+    return -1;
+  }
+
+  /**
    * Forces a cell to contain only one specific item bit.
    * Prunes all other bits from the cell's mask.
    * @returns true if any bits were actually pruned.
@@ -142,6 +179,9 @@ export class LogicCanvas {
 
     if (oldMask !== newMask) {
       this._matrix[index] = newMask;
+      if (newMask === 0) {
+        this._hasContradiction = true;
+      }
       return true;
     }
     return false;
@@ -158,6 +198,20 @@ export class LogicCanvas {
    * Width of the puzzle (number of columns). Alias for size.
    */
   public get width(): number {
+    return this._size;
+  }
+
+  /**
+   * Height of the logic grid (number of category rows). Alias for size.
+   */
+  public get height(): number {
+    return this._size;
+  }
+
+  /**
+   * Dimension N of the puzzle.
+   */
+  public get N(): number {
     return this._size;
   }
 }

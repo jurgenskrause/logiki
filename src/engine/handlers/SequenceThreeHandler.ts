@@ -9,16 +9,16 @@ import type { ActiveClue } from '../Solver';
  * The sequence is reversible: (A, B, C) or (C, B, A). Item B is always the pivot.
  *
  * @param clue The SEQUENCE_THREE clue to process. 
- *             targets[0]=A (flank), targets[1]=B (pivot), targets[2]=C (flank).
+ *             params[0]=A (flank), params[1]=B (pivot), params[2]=C (flank).
  * @param canvas The logic canvas to prune.
  * @returns true if any bits were pruned.
  */
 export function handleSequenceThree(clue: ActiveClue, canvas: LogicCanvas): boolean {
-    if (clue.targets.length < 3) return false;
+    if (clue.params.length < 3) return false;
 
-    const itemA = clue.targets[0];
-    const itemB = clue.targets[1];
-    const itemC = clue.targets[2];
+    const itemA = clue.params[0];
+    const itemB = clue.params[1];
+    const itemC = clue.params[2];
     let hasChanged = false;
 
     // ----------------------------------------------------------------------
