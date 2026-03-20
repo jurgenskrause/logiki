@@ -18,55 +18,40 @@ export function handleLeftOf(clue: ActiveClue, canvas: LogicCanvas): boolean {
     const itemB = clue.params[1];
     let hasChanged = false;
 
-    // ----------------------------------------------------------------------
-    // Pattern 1: Boundary Pruning
-    // ----------------------------------------------------------------------
-    // A cannot be in the last column.
-    if (canvas.prune(itemA.row, canvas.width - 1, itemA.item)) hasChanged = true;
+    // v7.0: a is Left Of b (cA < cB)
     
-    // B cannot be in the first column.
-    if (canvas.prune(itemB.row, 0, itemB.item)) hasChanged = true;
+    // 1. Find min possible column for A
+    let minColA = -1;
+    for (let c = 0; c < canvas.width; c++) {
+      if (canvas.isPossible(itemA.row, c, itemA.item)) {
+        minColA = c;
+        break;
+      }
+    }
 
-    for (let i = 0; i < canvas.width; i++) {
-        const canA = canvas.isPossible(itemA.row, i, itemA.item);
-        const canB = canvas.isPossible(itemB.row, i, itemB.item);
+    // 2. Find max possible column for B
+    let maxColB = -1;
+    for (let c = canvas.width - 1; c >= 0; c--) {
+      if (canvas.isPossible(itemB.row, c, itemB.item)) {
+        maxColB = c;
+        break;
+      }
+    }
 
-        // ----------------------------------------------------------------------
-        // Pattern 2: Shadow Pruning (Forward: A -> B)
-        // ----------------------------------------------------------------------
-        // If A is in column i, B must be possible in i+1.
-        if (canA && i + 1 < canvas.width) {
-            if (!canvas.isPossible(itemB.row, i + 1, itemB.item)) {
-                if (canvas.prune(itemA.row, i, itemA.item)) hasChanged = true;
-            }
-        }
+    if (minColA === -1 || maxColB === -1) return false;
 
-        // ----------------------------------------------------------------------
-        // Pattern 3: Shadow Pruning (Backward: B -> A)
-        // ----------------------------------------------------------------------
-        // If B is in column i, A must be possible in i-1.
-        if (canB && i - 1 >= 0) {
-            if (!canvas.isPossible(itemA.row, i - 1, itemA.item)) {
-                if (canvas.prune(itemB.row, i, itemB.item)) hasChanged = true;
-            }
-        }
+    // ----------------------------------------------------------------------
+    // v7.0: Shifts relative boundaries
+    // ----------------------------------------------------------------------
+    
+    // b is pruned from columns <= minColA (Because b must be to the right of A's HOME)
+    for (let c = 0; c <= minColA; c++) {
+      if (canvas.prune(itemB.row, c, itemB.item)) hasChanged = true;
+    }
 
-        // ----------------------------------------------------------------------
-        // Pattern 4: Anchor Propagation (Solved State)
-        // ----------------------------------------------------------------------
-        // If A is solved at i, B is ABSOLUTELY forced into i+1.
-        if (canvas.isItemSolvedAt(itemA.row, i, itemA.item)) {
-            if (i + 1 < canvas.width) {
-                if (canvas.isolateItem(itemB.row, i + 1, itemB.item)) hasChanged = true;
-            }
-        }
-
-        // If B is solved at i, A is ABSOLUTELY forced into i-1.
-        if (canvas.isItemSolvedAt(itemB.row, i, itemB.item)) {
-            if (i - 1 >= 0) {
-                if (canvas.isolateItem(itemA.row, i - 1, itemA.item)) hasChanged = true;
-            }
-        }
+    // a is pruned from columns >= maxColB (Because a must be to the left of B's HOME)
+    for (let c = maxColB; c < canvas.width; c++) {
+      if (canvas.prune(itemA.row, c, itemA.item)) hasChanged = true;
     }
 
     return hasChanged;

@@ -222,31 +222,14 @@ export class Solver {
           }
         }
       }
+    }
 
-      // ----------------------------------------------------------------------
-      // Pattern B: Hidden Singles (Columnar Necessity)
-      // Logic: If bit for Item I appears in only one column, that cell is solved.
-      // ----------------------------------------------------------------------
-      for (let itemIdx = 0; itemIdx < canvas.N; itemIdx++) {
-        let possibleCols: number[] = [];
-        
-        for (let c = 0; c < canvas.width; c++) {
-          if (canvas.isPossible(r, c, itemIdx)) {
-            possibleCols.push(c);
-          }
-        }
-
-        // Action: If item only has ONE possible column left in its category row
-        if (possibleCols.length === 1) {
-          const targetCol = possibleCols[0];
-          // If it's not already solved (isSolved means exactly one bit), isolate it
-          if (!canvas.isSolved(r, targetCol)) {
-            if (canvas.isolateItem(r, targetCol, itemIdx)) {
-              hasChanged = true;
-            }
-          }
-        }
-      }
+    // ----------------------------------------------------------------------
+    // Pattern B: Hidden Singles (Columnar Necessity)
+    // Logic: If bit for Item I appears in only one column, that cell is solved.
+    // ----------------------------------------------------------------------
+    if (canvas.rowSweep()) {
+      hasChanged = true;
     }
 
     return hasChanged;

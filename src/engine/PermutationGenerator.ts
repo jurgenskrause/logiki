@@ -106,8 +106,8 @@ export function getPrefix(type: TopologyType): string {
   }
 }
 
-export function makeID(type: TopologyType, sortedSlots: Slot[]): string {
-  return `${getPrefix(type)}_${sortedSlots.map(slotToken).join('_')}`;
+export function makeID(type: TopologyType, slots: Slot[]): string {
+  return `${getPrefix(type)}_${slots.map(slotToken).join('_')}`;
 }
 
 export function getWeight(type: TopologyType): number {

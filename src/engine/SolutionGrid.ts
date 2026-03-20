@@ -13,6 +13,7 @@ export class SolutionGrid {
   
   // Mapping of a generic ItemID back to a Slot reference
   private readonly itemToSlot = new Map<number, Slot>();
+  private readonly numCols: number;
 
   /**
    * @param space The complete topological coordinate bounds
@@ -22,6 +23,7 @@ export class SolutionGrid {
     // The Categorized Row-by-Row Assignment
     const M = space.rows;
     const N = space.cols;
+    this.numCols = N;
 
     for (let r = 0; r < M; r++) {
       // 1. Generate a "Column Deck" [0, 1, 2, ..., N-1]
@@ -72,5 +74,17 @@ export class SolutionGrid {
       throw new Error(`Critical Fault: Missing Slot mapping for item ${itemID}`);
     }
     return slot;
+  }
+
+  /**
+   * Returns the row-local item index [0, N-1] for the item sitting in the given slot.
+   */
+  public getItemIndexAtSlot(slot: Slot): number {
+    const itemID = this.getItemAtSlot(slot);
+    // ItemID = r * N + c. Row r = slot.r. N = this._width (space.cols).
+    // So c = itemID - (r * N).
+    // We need to know N.
+    // Let's store N in the class.
+    return itemID % this.numCols;
   }
 }

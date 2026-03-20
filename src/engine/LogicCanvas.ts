@@ -9,6 +9,12 @@ import type { CategoryIndex, ColumnIndex, ItemIndex, Bitmask } from '../types';
  *
  * It is forward-only, memory-efficient, and strictly partitioned by category.
  */
+/** Lookup table: POPCOUNT_TABLE[n] = number of set bits in n, for 0 ≤ n ≤ 255. */
+const POPCOUNT_TABLE = new Uint8Array(256);
+for (let i = 1; i < 256; i++) {
+  POPCOUNT_TABLE[i] = (i & 1) + POPCOUNT_TABLE[i >> 1];
+}
+
 export class LogicCanvas {
   private readonly _height: number;
   private readonly _width: number;
@@ -163,15 +169,13 @@ export class LogicCanvas {
   /**
    * Returns the absolute number of possibility bits remaining across the entire matrix.
    * This operates as a raw metric of grid entropy/uncertainty.
+   * Uses a precomputed 256-entry lookup table for O(1)-per-cell performance.
    */
   public countTotalBits(): number {
     let count = 0;
-    for (let i = 0; i < this._matrix.length; i++) {
-      let mask = this._matrix[i];
-      while (mask > 0) {
-        count += mask & 1;
-        mask >>= 1;
-      }
+    const m = this._matrix;
+    for (let i = 0; i < m.length; i++) {
+      count += POPCOUNT_TABLE[m[i]];
     }
     return count;
   }
@@ -232,11 +236,10 @@ export class LogicCanvas {
    */
   public getSolvedItemIndex(row: CategoryIndex, col: ColumnIndex): ItemIndex | -1 {
     const mask = this.getMask(row, col);
-    // Power of two check
+    // Power-of-two check: exactly one bit set
     if (mask !== 0 && (mask & (mask - 1)) === 0) {
-      for (let i = 0; i < this._width; i++) {
-        if ((mask & (1 << i)) !== 0) return i;
-      }
+      // Math.log2 of a power-of-two gives the bit index exactly.
+      return Math.log2(mask) as ItemIndex;
     }
     return -1;
   }
@@ -260,6 +263,44 @@ export class LogicCanvas {
       return true;
     }
     return false;
+  }
+
+  /**
+   * Performs a Row Sweep (Hidden Singles).
+   * For every row, it identifies if a specific Item is possible in exactly one column.
+   * If so, that item is locked into that column (all other bits in that column are pruned).
+   * @returns true if any new deductions (bit flips) were made.
+   */
+  public rowSweep(): boolean {
+    let changed = false;
+
+    // 1. Loop through each Row: Iterate from 0 to _height - 1
+    for (let row = 0; row < this._height; row++) {
+      // 2. Loop through each Item (0 to _width - 1)
+      for (let itemIndex = 0; itemIndex < this._width; itemIndex++) {
+        
+        // 3. Track Column Possibilities
+        let possibleCount = 0;
+        let lastValidCol = -1;
+
+        for (let col = 0; col < this._width; col++) {
+          if (this.isPossible(row, col, itemIndex)) {
+            possibleCount++;
+            lastValidCol = col;
+          }
+        }
+
+        // 4. The "Hidden Single" Trigger
+        if (possibleCount === 1 && lastValidCol !== -1) {
+          // Action: Isolate the item in that specific cell
+          if (this.isolateItem(row, lastValidCol, itemIndex)) {
+            changed = true;
+          }
+        }
+      }
+    }
+
+    return changed;
   }
 
   /**

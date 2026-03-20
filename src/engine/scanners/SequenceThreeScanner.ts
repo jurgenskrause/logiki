@@ -1,8 +1,8 @@
 import { CoordinateSpace } from '../CoordinateSpace';
-import { TopologyManifest, makeID, getWeight, sortSlots } from '../PermutationGenerator';
+import { TopologyManifest, makeID, getWeight } from '../PermutationGenerator';
 import { IS_SEQUENCE_THREE } from '../RuleTemplates';
 import type { TopologyScanner } from './TopologyScanner';
-import type { Slot } from '../CoordinateSpace';
+
 
 export class SequenceThreeScanner implements TopologyScanner {
   public scan(space: CoordinateSpace, manifest: TopologyManifest): void {
@@ -10,34 +10,30 @@ export class SequenceThreeScanner implements TopologyScanner {
     const total = slots.length;
 
     for (let i = 0; i < total; i++) {
-      for (let j = i + 1; j < total; j++) {
-        for (let k = j + 1; k < total; k++) {
-          const sa = slots[i];
-          const sb = slots[j];
-          const sc = slots[k];
+        for (let j = 0; j < total; j++) {
+            if (i === j) continue;
+            for (let k = 0; k < total; k++) {
+                if (k === i || k === j) continue;
+                
+                const sa = slots[i];
+                const sb = slots[j];
+                const sc = slots[k];
 
-          // Test permutations since IS_SEQUENCE_THREE checks specific ordering
-          const orderings: [Slot, Slot, Slot][] = [
-            [sa, sb, sc], [sa, sc, sb],
-            [sb, sa, sc], [sb, sc, sa],
-            [sc, sa, sb], [sc, sb, sa],
-          ];
-
-          for (const [a, b, c] of orderings) {
-            if (IS_SEQUENCE_THREE(a, b, c)) {
-              const sorted = sortSlots([a, b, c]);
-              manifest.addEntry({
-                topologyID: makeID('SEQUENCE_THREE', sorted),
-                type: 'SEQUENCE_THREE',
-                slots: sorted,
-                weight: getWeight('SEQUENCE_THREE'),
-              });
-              // We've captured the sequence relationship for these three slots
-              break; 
+                if (IS_SEQUENCE_THREE(sa, sb, sc)) {
+                    // Logic: B is the pivot.
+                    // Dedup: A, B, C and C, B, A are logically identical.
+                    // We can choose the one where Slot ID of A < Slot ID of C.
+                    if (sa.r < sc.r || (sa.r === sc.r && sa.c < sc.c)) {
+                        manifest.addEntry({
+                            topologyID: makeID('SEQUENCE_THREE', [sa, sb, sc]),
+                            type: 'SEQUENCE_THREE',
+                            slots: [sa, sb, sc],
+                            weight: getWeight('SEQUENCE_THREE'),
+                        });
+                    }
+                }
             }
-          }
         }
-      }
     }
   }
 }

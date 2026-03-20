@@ -1,6 +1,7 @@
 import { buildTopologyLibrary } from './src/engine/PermutationGenerator';
 import { TieringService } from './src/engine/TieringService';
 import { StructuralSieve } from './src/engine/StructuralSieve';
+import { seededRandom } from './src/utils/random';
 
 // Parse command line arguments
 // Example: tsx test-batch-generator.ts --N=4 --M=4 --count=10
@@ -14,12 +15,12 @@ for (const arg of process.argv.slice(2)) {
     else if (arg.startsWith('--count=')) count = parseInt(arg.substring(8), 10);
 }
 
-console.log(`\n================================`);
-console.log(`Logiki Batch Puzzle Generator`);
-console.log(`================================`);
-console.log(`Parameters: N=${N}, M=${M}, count=${count}\n`);
-
 async function runBatch() {
+    console.log(`\n================================`);
+    console.log(`Logiki Batch Puzzle Generator`);
+    console.log(`================================`);
+    console.log(`Parameters: N=${N}, M=${M}, count=${count}\n`);
+
     console.log(`[1] Building Topology Library for ${N}x${M}...`);
     const libraryReport = buildTopologyLibrary(N, M);
     console.log(`    -> Done. Time: ${libraryReport.timeMs.toFixed(2)}ms, Collisions: ${libraryReport.collisions}`);
@@ -27,14 +28,22 @@ async function runBatch() {
     let passed = 0;
     let failed = 0;
     let totalTime = 0;
+    let totalClues = 0;
+    let maxClues = 0;
+    let minClues = Infinity;
+    let maxSeed = 0;
+    let minSeed = 0;
 
     for (let i = 1; i <= count; i++) {
-        // We use Math.random for shuffling the tiering service for random puzzles
+        // Generate a 32-bit seed for this run
+        const seed = Math.floor(Math.random() * 0xFFFFFFFF);
+        const rng = seededRandom(seed);
+
         const tieringService = new TieringService(libraryReport.library);
-        tieringService.shuffle(Math.random);
+        tieringService.shuffle(rng);
 
         const sieve = new StructuralSieve();
-        
+
         try {
             const telemetry = await sieve.generateAsync(
                 tieringService,
@@ -44,32 +53,44 @@ async function runBatch() {
                     if (msg.includes('⚓')) {
                         process.stdout.write(`\n  ${msg}\n`);
                     }
-                }
+                },
+                rng
             );
 
             passed++;
             totalTime += telemetry.timeMs;
+            totalClues += telemetry.finalClues;
+            
+            if (telemetry.finalClues > maxClues) {
+                maxClues = telemetry.finalClues;
+                maxSeed = seed;
+            }
+            if (telemetry.finalClues < minClues) {
+                minClues = telemetry.finalClues;
+                minSeed = seed;
+            }
+            
             process.stdout.write('✅');
         } catch (error: any) {
             failed++;
             process.stdout.write('❌');
-            console.error(`\n\n[Failure in Puzzle #${i}]`);
+            console.error(`\n\n[Failure in Puzzle #${i}] Seed: ${seed}`);
             console.error(error.message || error);
-            
+
             if (error.name === 'StalemateError') {
                 console.error(`\n--- BREADCRUMBS ---`);
                 console.error(`Accepted Clues (${error.acceptedClues.length}):`);
                 error.acceptedClues.forEach((c: any, idx: number) => {
-                    console.error(`  ${idx + 1}. [${c.type}] ${c.slots.map((s:any) => "R" + s.r + "C" + s.c).join(' ')}`);
+                    console.error(`  ${idx + 1}. [${c.type}] ${c.slots.map((s: any) => "R" + s.r + "C" + s.c).join(' ')}`);
                 });
                 console.error(`\nFinal Canvas State (bits right-to-left: Item 0, Item 1, etc):`);
-                
+
                 const canvas = error.canvas;
                 for (let r = 0; r < N; r++) {
                     for (let c = 0; c < M; c++) {
                         const mask = canvas.getMask(r, c);
                         const bits = mask.toString(2).padStart(M, '0').split('').reverse().join('');
-                        const solvedText = canvas.isSolved(r, c) ? `SOLVED as Item ${canvas.getSolvedItemIndex(r,c)}` : 'ambiguous';
+                        const solvedText = canvas.isSolved(r, c) ? `SOLVED as Item ${canvas.getSolvedItemIndex(r, c)}` : 'ambiguous';
                         console.error(`  R${r}C${c} -> [${bits}] (${solvedText})`);
                     }
                 }
@@ -79,7 +100,7 @@ async function runBatch() {
                 if (error.offendingEntry) console.error(`Offending Clue:`, error.offendingEntry.type, error.offendingEntry.slots);
             }
         }
-        
+
         if (i % 50 === 0) console.log(` (${i}/${count})`);
     }
 
@@ -92,6 +113,9 @@ async function runBatch() {
     console.log(`Total Failed:  ${failed}`);
     if (passed > 0) {
         console.log(`Avg Gen Time:  ${(totalTime / passed).toFixed(2)}ms (successful puzzles)`);
+        console.log(`Max Clues:     ${maxClues} (Seed: ${maxSeed})`);
+        console.log(`Min Clues:     ${minClues} (Seed: ${minSeed})`);
+        console.log(`Avg Clues:     ${(totalClues / passed).toFixed(2)}`);
     }
 
     if (failed > 0) {

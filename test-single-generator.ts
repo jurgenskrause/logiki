@@ -1,22 +1,13 @@
 import { buildTopologyLibrary } from './src/engine/PermutationGenerator';
 import { TieringService } from './src/engine/TieringService';
 import { StructuralSieve } from './src/engine/StructuralSieve';
-
-// Simple Mulberry32 Seeded PRNG
-function mulberry32(a: number) {
-    return function() {
-      var t = a += 0x6D2B79F5;
-      t = Math.imul(t ^ t >>> 15, t | 1);
-      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-      return ((t ^ t >>> 14) >>> 0) / 4294967296;
-    }
-}
+import { seededRandom } from './src/utils/random';
 
 // Parse command line arguments
 // Example: tsx test-single-generator.ts --N=4 --M=4 --seed=12345
 let N = 4;
 let M = 4;
-let seed = Math.floor(Math.random() * 1000000);
+let seed = Math.floor(Math.random() * 0xFFFFFFFF);
 
 for (const arg of process.argv.slice(2)) {
     const key = arg.toLowerCase();
@@ -26,15 +17,15 @@ for (const arg of process.argv.slice(2)) {
 }
 
 async function runSingle(runSeed: number, isQuiet: boolean): Promise<string> {
-    const randomFn = mulberry32(runSeed);
+    const rng = seededRandom(runSeed);
 
     if (!isQuiet) console.log(`[1] Building/Loading Topology Library for ${N}x${M}...`);
     const libraryReport = buildTopologyLibrary(N, M);
     if (!isQuiet) console.log(`    -> Done. Time: ${libraryReport.timeMs.toFixed(2)}ms, Collisions: ${libraryReport.collisions}\n`);
 
-    if (!isQuiet) console.log(`[2] Initiating Structural Sieve...`);
+    if (!isQuiet) console.log(`[2] Initiating Structural Sieve (v7.0)...`);
     const tieringService = new TieringService(libraryReport.library);
-    tieringService.shuffle(randomFn);
+    tieringService.shuffle(rng);
 
     const sieve = new StructuralSieve();
     let resultString = '';
@@ -46,7 +37,8 @@ async function runSingle(runSeed: number, isQuiet: boolean): Promise<string> {
             M,
             async (canvas, stats, msg, entry) => {
                 if (!isQuiet) console.log(`  [S:${stats.simple} M:${stats.moderate} C:${stats.complex}] -> ${msg}`);
-            }
+            },
+            rng
         );
 
         if (!isQuiet) {
@@ -61,6 +53,17 @@ async function runSingle(runSeed: number, isQuiet: boolean): Promise<string> {
             telemetry.clues.forEach((c, idx) => {
                 console.log(`${(idx + 1).toString().padStart(2, ' ')}. [${c.type}] ${c.slots.map(s => "R" + s.r + "C" + s.c).join(' ')}`);
             });
+
+            console.log(`\nFinal Canvas State:`);
+            const canvas = telemetry.finalCanvas;
+            for (let r = 0; r < canvas.height; r++) {
+                let rowStr = `R${r}: `;
+                for (let c = 0; c < canvas.width; c++) {
+                    const mask = canvas.getMask(r, c);
+                    rowStr += `[${mask.toString(2).padStart(canvas.width, '0')}] `;
+                }
+                console.log(rowStr);
+            }
         }
         
         resultString = telemetry.clues.map((c, idx) => `${idx + 1}. [${c.type}] ` + c.slots.map(s => `R${s.r}C${s.c}`).join(' ')).join('\n');

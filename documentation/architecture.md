@@ -42,3 +42,24 @@ Scanners traverse a finalized `SolutionGrid` to discover valid relationships tha
 ### User Interface Layer
 - **App**: Main React entry point assembling the views.
 - **Components**: UI modules such as `TopologyAuditUI` (a diagnostic debug dashboard for library density) and `ClueShowcase`.
+
+### Clue notation
+Vertical Clues
+Vertical Pair: (r,i) = (r,i)
+
+Vertical Trio: (r,i) = (r,i) = (r,i)
+
+Vertical Not Pair: (r,i) = !(r,i)
+
+Vertical Not Trio: (r,i) = !(r,i) = (r,i)
+
+Vertical XOR: (r,i) = [ (r,i) ^ (r,i) ]
+
+Horizontal Clues
+Left Of: (r,i) > (r,i)
+
+Adjacent: (r,i) || (r,i)
+
+Sequence Three: (r,i) || (r,i) || (r,i)
+
+Gapped Not Middle: (r,i) || !(r,i) || (r,i)
