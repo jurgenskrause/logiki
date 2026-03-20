@@ -8,6 +8,32 @@ import { getFallbackEmoji } from '../utils/themeRegistry';
 /** A structured log event: the text message plus the optional accepted clue. */
 type LogEvent = { msg: string; entry?: TopologyEntry; isContradiction?: boolean; deadCells?: { row: number; col: number }[] };
 
+const isExcluded = (type: string, idx: number): boolean => {
+  if (type === 'NEGATIVE_ANCHOR') return true;
+  if (type === 'VERTICAL_NOT' || type === 'VERTICAL_NOT_TRIO') {
+      return idx === 2 || (type === 'VERTICAL_NOT' && idx === 1);
+  }
+  if (type === 'GAPPED_EXCLUSION') return idx === 2;
+  return false;
+};
+
+const getClueText = (entry: TopologyEntry): string => {
+  const coords = entry.slots.map(s => `(${s.r}, ${s.c})`);
+  const typeLabel = entry.type.toLowerCase().replace(/_/g, '_');
+  
+  if (entry.slots.length === 2) {
+    return `${coords[0]} ${typeLabel} ${coords[1]}`;
+  }
+  if (entry.slots.length === 3) {
+    if (entry.type.includes('SEQ') || entry.type.includes('TRIO')) {
+      return `${coords[0]}, ${coords[1]}, ${coords[2]} ${typeLabel}`;
+    }
+    return `${coords[0]}, ${coords[1]} ${typeLabel} ${coords[2]}`;
+  }
+  
+  return `${entry.type} ${coords.join(' ')}`;
+};
+
 export function StructuralSandboxUI() {
   const [N, setN] = useState(4);
   const [M, setM] = useState(4);
@@ -16,7 +42,6 @@ export function StructuralSandboxUI() {
   const [events, setEvents] = useState<LogEvent[]>([]);
   const [stats, setStats] = useState({ simple: 0, moderate: 0, complex: 0 });
   
-  // Track previous and current bitmasks to visually highlight changes ($1 \to 0$)
   const [masks, setMasks] = useState<number[]>([]);
   const [prevMasks, setPrevMasks] = useState<number[]>([]);
   
@@ -24,13 +49,11 @@ export function StructuralSandboxUI() {
   const [mode, setMode] = useState<'AUTO' | 'MANUAL'>('AUTO');
   const [delay, setDelay] = useState(50);
   
-  // Controls for manual stepping
   const stepResolverRef = useRef<(() => void) | null>(null);
   const isSteppingRef = useRef(false);
 
   const endRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll the event log
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [events]);
@@ -40,13 +63,11 @@ export function StructuralSandboxUI() {
     setEvents([]);
     setTelemetry(null);
     
-    // Initial 0xFF equivalent state
     const initialMask = (1 << M) - 1;
     setMasks(new Array(N * M).fill(initialMask));
     setPrevMasks(new Array(N * M).fill(initialMask));
 
     try {
-      // 1. Generate Manifest Offline
       const tStart = performance.now();
       const report = buildTopologyLibrary(N, M);
       const tiering = new TieringService(report.library);
@@ -66,7 +87,6 @@ export function StructuralSandboxUI() {
       const sieve = new StructuralSieve();
       let currentMasks = new Array(N * M).fill(initialMask);
 
-      // Async yield hook for visualization
       const result = await sieve.generateAsync(tiering, N, M, async (canvas: LogicCanvas, currentStats, msg, entry) => {
         const newMasks = [];
         for (let r = 0; r < N; r++) {
@@ -82,7 +102,6 @@ export function StructuralSandboxUI() {
         setStats(currentStats);
         setEvents(prev => [...prev, { msg, entry }]);
 
-        // Mode Logic
         if (isSteppingRef.current) {
           await new Promise<void>(resolve => {
             stepResolverRef.current = resolve;
@@ -94,7 +113,7 @@ export function StructuralSandboxUI() {
 
       setTelemetry(result);
       setEvents(prev => [...prev, { msg: `✓ Generation Pipeline finished in ${result.timeMs.toFixed(1)}ms` }]);
-      setPrevMasks(currentMasks); // Clear active highlights
+      setPrevMasks(currentMasks);
 
     } catch (e: any) {
       if (e instanceof ContradictionError) {
@@ -120,7 +139,6 @@ export function StructuralSandboxUI() {
         Sandbox: Structural Sieve Generation
       </h2>
       
-      {/* 1. Grid Controls */}
       <div className="flex flex-wrap gap-6 mb-8 bg-slate-950 p-6 rounded-2xl border border-slate-800 items-end">
         <label className="flex flex-col text-[10px] font-bold tracking-widest text-slate-500 uppercase">
           Categories (Rows / N)
@@ -141,7 +159,7 @@ export function StructuralSandboxUI() {
             setMode(newMode);
             isSteppingRef.current = newMode === 'MANUAL';
             if (newMode === 'AUTO' && stepResolverRef.current) {
-              stepResolverRef.current(); // Unblock if switching to auto
+              stepResolverRef.current();
               stepResolverRef.current = null;
             }
           }} className="bg-slate-900 border border-slate-700 rounded p-2 text-white font-mono text-sm mt-1 w-32 outline-none focus:border-orange-500">
@@ -180,7 +198,6 @@ export function StructuralSandboxUI() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Visualizer Canvas */}
         <div className="col-span-2 bg-slate-950/80 border border-slate-800 rounded-3xl p-8">
           <h3 className="text-xs font-bold tracking-widest text-slate-500 mb-6 uppercase flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -192,14 +209,10 @@ export function StructuralSandboxUI() {
               const prev = prevMasks[idx];
               const isChanged = mask !== prev;
               const isSolved = mask !== 0 && (mask & (mask - 1)) === 0;
-              
               const row = Math.floor(idx / M);
-              
               const remainingOptions = [];
               for (let i = 0; i < M; i++) {
-                if ((mask & (1 << i)) !== 0) {
-                  remainingOptions.push(i);
-                }
+                if ((mask & (1 << i)) !== 0) remainingOptions.push(i);
               }
 
               return (
@@ -221,7 +234,6 @@ export function StructuralSandboxUI() {
           </div>
         </div>
 
-        {/* Live Stacks & Logs */}
         <div className="flex flex-col gap-6">
           <div className="bg-slate-950/80 border border-slate-800 rounded-3xl p-6 flex justify-between items-center text-center">
              <div className="flex-1">
@@ -245,6 +257,7 @@ export function StructuralSandboxUI() {
             <div className="overflow-y-auto text-[11px] font-mono space-y-1.5 pr-2 custom-scrollbar max-h-[500px]">
               {events.map((ev, i) => {
                 const isEscalation = ev.msg.includes('Escalating') || ev.msg.includes('CRITICAL');
+
                 const connector = ev.entry
                   ? ev.entry.type === 'LEFT_OF'   ? '→'
                   : ev.entry.type === 'ADJACENT'  ? '↔'
@@ -256,32 +269,40 @@ export function StructuralSandboxUI() {
                   : ev.msg.includes('MODERATE Clue') ? 'Moderate'
                   : ev.msg.includes('COMPLEX Clue') ? 'Complex'
                   : ev.msg.includes('Pruning Pass') ? 'Prune'
+                  : ev.msg.includes('Committed') ? 'Discovery'
+                  : ev.msg.includes('Stalemate') ? 'Anchor'
                   : null;
 
                 if (ev.entry && stepLabel) {
                   const isPrune = stepLabel === 'Prune';
-                  // ── 3-line accepted/pruned clue card ──────────────────────────
+                  const isDiscovery = stepLabel === 'Discovery';
+                  const isAnchor = stepLabel === 'Anchor';
+
                   return (
                     <div key={i} className={`shrink-0 rounded-lg border overflow-hidden ${
                       isPrune 
                         ? 'border-purple-900/40 bg-purple-950/20 border-l-[3px] border-l-purple-500/60' 
+                        : isDiscovery
+                        ? 'border-blue-900/40 bg-blue-950/20 border-l-[3px] border-l-blue-500/60'
                         : 'border-emerald-900/40 bg-emerald-950/20 border-l-[3px] border-l-emerald-500/60'
                     }`}>
-                      {/* Line 1: index + accepted label + type badge */}
                       <div className="flex items-center gap-2 px-2 pt-2 pb-1">
                         <span className="text-[9px] text-slate-600 shrink-0 tabular-nums">[{String(i).padStart(3, '0')}]</span>
-                        <span className={`text-[9px] font-bold tracking-widest uppercase ${isPrune ? 'text-purple-400' : 'text-emerald-400'}`}>
-                          {isPrune ? '✂️ Pruned Clue' : `✓ Accepted ${stepLabel} Clue`}
+                        <span className={`text-[9px] font-bold tracking-widest uppercase ${
+                          isPrune ? 'text-purple-400' : 
+                          isDiscovery ? 'text-blue-400' :
+                          'text-emerald-400'
+                        }`}>
+                          {isPrune ? '✂️ Pruned Clue' : isAnchor ? '⚓ Anchor Clue' : `✓ ${stepLabel} Clue`}
                         </span>
                         <span className="ml-auto text-[9px] font-bold text-slate-500 tracking-wider uppercase shrink-0">
                           {ev.entry.type.replace(/_/g, ' ')}
                         </span>
                       </div>
-                      {/* Line 2: full text description */}
                       <div className="px-2 pb-1.5 text-[10px] text-slate-400 leading-snug">
                         {ev.msg}
                       </div>
-                      {/* Line 3: emoji graphic representation */}
+
                       <div className={`flex items-center gap-1.5 px-2 pb-2 pt-1 border-t flex-wrap ${
                         isPrune ? 'border-purple-900/30 grayscale opacity-50' : 'border-emerald-900/30'
                       }`}>
@@ -290,9 +311,16 @@ export function StructuralSandboxUI() {
                             {si > 0 && (
                               <span className="text-sm text-slate-500 font-bold">{connector}</span>
                             )}
-                            <span title={`Row ${s.r}, Col ${s.c}`} className="text-xl leading-none">
-                              {getFallbackEmoji(s.r, s.c)}
-                            </span>
+                            <div className="relative flex items-center justify-center">
+                              <span title={`Row ${s.r}, Col ${s.c}`} className={`text-xl leading-none ${isExcluded(ev.entry!.type, si) ? 'opacity-40 grayscale' : ''}`}>
+                                {getFallbackEmoji(s.r, s.c)}
+                              </span>
+                              {isExcluded(ev.entry!.type, si) && (
+                                <div className="absolute inset-0 flex items-center justify-center text-red-500/80 font-black text-xs pointer-events-none">
+                                  <span className="material-icons !text-lg select-none">close</span>
+                                </div>
+                              )}
+                            </div>
                           </span>
                         ))}
                       </div>
@@ -300,12 +328,10 @@ export function StructuralSandboxUI() {
                   );
                 }
 
-                // ── contradiction card ─────────────────────────────────────
                 if ((ev as any).isContradiction && ev.entry) {
                   const deadCells: { row: number; col: number }[] = (ev as any).deadCells ?? [];
                   return (
                     <div key={i} className="shrink-0 rounded-lg border border-red-900/50 bg-red-950/20 border-l-[3px] border-l-red-500 overflow-hidden">
-                      {/* Line 1: index + CONTRADICTION header */}
                       <div className="flex items-center gap-2 px-2 pt-2 pb-1">
                         <span className="text-[9px] text-slate-600 shrink-0 tabular-nums">[{String(i).padStart(3, '0')}]</span>
                         <span className="text-[9px] font-bold tracking-widest text-red-400 uppercase">⚠ CONTRADICTION DETECTED</span>
@@ -313,7 +339,6 @@ export function StructuralSandboxUI() {
                           {ev.entry.type.replace(/_/g, ' ')}
                         </span>
                       </div>
-                      {/* Line 2: message + dead cell coords */}
                       <div className="px-2 pb-1.5 text-[10px] text-red-300/80 leading-snug">
                         {ev.msg}
                         {deadCells.length > 0 && (
@@ -322,16 +347,22 @@ export function StructuralSandboxUI() {
                           </span>
                         )}
                       </div>
-                      {/* Line 3: clue graphic — same style as accepted clue */}
                       <div className="flex items-center gap-1.5 px-2 pb-2 pt-1 border-t border-red-900/40 flex-wrap">
                         {ev.entry.slots.map((s, si) => (
                           <span key={si} className="flex items-center gap-1">
                             {si > 0 && (
                               <span className="text-sm text-slate-500 font-bold">{connector}</span>
                             )}
-                            <span title={`Row ${s.r}, Col ${s.c}`} className="text-xl leading-none">
-                              {getFallbackEmoji(s.r, s.c)}
-                            </span>
+                            <div className="relative flex items-center justify-center">
+                              <span title={`Row ${s.r}, Col ${s.c}`} className={`text-xl leading-none ${isExcluded(ev.entry!.type, si) ? 'opacity-40 grayscale' : ''}`}>
+                                {getFallbackEmoji(s.r, s.c)}
+                              </span>
+                              {isExcluded(ev.entry!.type, si) && (
+                                <div className="absolute inset-0 flex items-center justify-center text-red-500/80 font-black text-xs pointer-events-none">
+                                  <span className="material-icons !text-lg select-none">close</span>
+                                </div>
+                              )}
+                            </div>
                           </span>
                         ))}
                       </div>
@@ -339,12 +370,9 @@ export function StructuralSandboxUI() {
                   );
                 }
 
-                // ── compact status / escalation row ────────────────────────
                 return (
                   <div key={i} className={`shrink-0 flex items-center gap-2 px-2 py-1.5 rounded border-l-[3px] ${
-                    isEscalation
-                      ? 'text-orange-400 border-orange-500/60 bg-orange-950/20'
-                      : 'text-slate-500 border-slate-800 bg-slate-900/30'
+                    isEscalation ? 'text-orange-400 border-orange-500/60 bg-orange-950/20' : 'text-slate-500 border-slate-800 bg-slate-900/30'
                   }`}>
                     <span className="text-[9px] opacity-40 shrink-0 tabular-nums">[{String(i).padStart(3, '0')}]</span>
                     <span className="text-[10px] opacity-80">{ev.msg}</span>
@@ -357,7 +385,6 @@ export function StructuralSandboxUI() {
         </div>
       </div>
 
-      {/* Structural Recipe Telemetry Payload */}
       {telemetry && (
         <div className="mt-8 bg-emerald-950/30 border border-emerald-900/50 rounded-3xl p-8 backdrop-blur animate-in fade-in slide-in-from-bottom-4 duration-500">
            <h3 className="text-emerald-400 font-black mb-6 uppercase tracking-widest text-sm flex items-center gap-2">
@@ -380,41 +407,15 @@ export function StructuralSandboxUI() {
              </div>
            </div>
 
-           {/* Deficit Distribution Table */}
-           <div className="mb-8 overflow-hidden rounded-2xl border border-emerald-900/40 bg-slate-950/60">
-             <div className="grid grid-cols-4 gap-px bg-emerald-900/40 text-[10px] uppercase tracking-widest font-bold text-center">
-               <div className="p-2 bg-emerald-950/80 text-emerald-500">Tier</div>
-               <div className="p-2 bg-emerald-950/80 text-emerald-500">Weight Ratio</div>
-               <div className="p-2 bg-emerald-950/80 text-emerald-500">Ideal Target</div>
-               <div className="p-2 bg-emerald-950/80 text-emerald-500">Actual Clues</div>
-             </div>
-             <div className="grid grid-cols-4 gap-px bg-emerald-900/20 text-xs font-mono text-center">
-               <div className="p-2 bg-slate-950/90 text-blue-400">Simple</div>
-               <div className="p-2 bg-slate-950/90 text-slate-500">17</div>
-               <div className="p-2 bg-slate-950/90 text-emerald-300/60">{telemetry.idealCounts.simple}</div>
-               <div className="p-2 bg-slate-950/90 text-blue-300 font-bold">{telemetry.actualCounts.simple}</div>
-               
-               <div className="p-2 bg-slate-950/90 text-purple-400">Moderate</div>
-               <div className="p-2 bg-slate-950/90 text-slate-500">7</div>
-               <div className="p-2 bg-slate-950/90 text-emerald-300/60">{telemetry.idealCounts.moderate}</div>
-               <div className="p-2 bg-slate-950/90 text-purple-300 font-bold">{telemetry.actualCounts.moderate}</div>
-               
-               <div className="p-2 bg-slate-950/90 text-orange-400">Complex</div>
-               <div className="p-2 bg-slate-950/90 text-slate-500">1</div>
-               <div className="p-2 bg-slate-950/90 text-emerald-300/60">{telemetry.idealCounts.complex}</div>
-               <div className="p-2 bg-slate-950/90 text-orange-300 font-bold">{telemetry.actualCounts.complex}</div>
-             </div>
-           </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
               {telemetry.clues.map((c: TopologyEntry, i: number) => {
                  const weight = getWeight(c.type);
                  const weightLabel = weight === 1 ? 'S' : weight === 2 ? 'M' : 'C';
                  const weightColor = weight === 1 ? 'border-blue-400/30 text-blue-400' : weight === 2 ? 'border-purple-400/30 text-purple-400' : 'border-orange-400/30 text-orange-400';
+                 const originalText = getClueText(c);
 
                  return (
-                  <div key={i} className="bg-slate-950/80 border border-slate-800 p-3 rounded-xl flex items-center gap-3 relative overflow-hidden">
-                    {/* Complexity Badge */}
+                  <div key={i} className="bg-slate-950/80 border border-slate-800 p-3 rounded-xl flex items-center gap-3 relative overflow-hidden h-full">
                     <div className={`absolute top-0 right-0 px-1.5 py-0.5 text-[8px] font-black border-l border-b rounded-bl-lg tracking-tighter ${weightColor}`}>
                       {weightLabel}
                     </div>
@@ -424,17 +425,29 @@ export function StructuralSandboxUI() {
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1 pr-6">
-                        <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">{c.type.replace(/_/g, ' ')}</span>
+                        <span className="text-[10px] font-bold text-emerald-500/80 uppercase tracking-wider">{c.type.replace(/_/g, ' ')}</span>
                       </div>
+                      
+                      <div className="text-[11px] text-slate-300 font-medium leading-relaxed mb-3 pr-2 italic">
+                        "{originalText}"
+                      </div>
+
                       <div className="flex items-center gap-2 bg-slate-900/50 p-1.5 rounded-lg border border-slate-800/50 text-[10px] font-bold text-slate-400">
                         {c.slots.map((s, si) => (
                           <div key={si} className="flex items-center gap-1 text-xl">
                             {si > 0 && <span className="text-[10px] text-slate-600 font-bold">
-                              {c.type === 'LEFT_OF' ? '→' : 
-                               c.type === 'ADJACENT' ? '↔' : 
-                               c.type.includes('NOT') ? '≠' : '•'}
+                              {c.type === 'LEFT_OF' ? '→' : c.type === 'ADJACENT' ? '↔' : c.type.includes('NOT') ? '≠' : '•'}
                             </span>}
-                            <span>{getFallbackEmoji(s.r, s.c)}</span>
+                            <div className="relative flex items-center justify-center">
+                              <span className={isExcluded(c.type, si) ? 'opacity-30 grayscale' : ''}>
+                                {getFallbackEmoji(s.r, s.c)}
+                              </span>
+                              {isExcluded(c.type, si) && (
+                                <div className="absolute inset-0 flex items-center justify-center text-red-500/80 font-black text-[10px] pointer-events-none">
+                                  <span className="material-icons !text-sm select-none">close</span>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -445,7 +458,6 @@ export function StructuralSandboxUI() {
             </div>
         </div>
       )}
-
     </section>
   );
 }

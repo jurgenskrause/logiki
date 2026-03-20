@@ -2,9 +2,12 @@ import { buildTopologyLibrary } from './src/engine/PermutationGenerator';
 import { TieringService } from './src/engine/TieringService';
 import { StructuralSieve } from './src/engine/StructuralSieve';
 import { seededRandom } from './src/utils/random';
+import { LogicCanvas } from './src/engine/LogicCanvas';
+import { Solver } from './src/engine/Solver';
+import { SolutionGrid } from './src/engine/SolutionGrid';
+import { CoordinateSpace } from './src/engine/CoordinateSpace';
 
 // Parse command line arguments
-// Example: tsx test-single-generator.ts --N=4 --M=4 --seed=12345
 let N = 4;
 let M = 4;
 let seed = Math.floor(Math.random() * 0xFFFFFFFF);
@@ -16,104 +19,86 @@ for (const arg of process.argv.slice(2)) {
     else if (key.startsWith('--seed=')) seed = parseInt(arg.substring(7), 10);
 }
 
-async function runSingle(runSeed: number, isQuiet: boolean): Promise<string> {
-    const rng = seededRandom(runSeed);
+async function runTestSingle() {
+    console.log(`\n================================`);
+    console.log(`Logiki Single Puzzle Verification`);
+    console.log(`================================`);
+    console.log(`Parameters: N=${N}, M=${M}, Seed=${seed}`);
 
-    if (!isQuiet) console.log(`[1] Building/Loading Topology Library for ${N}x${M}...`);
+    const rng = seededRandom(seed);
     const libraryReport = buildTopologyLibrary(N, M);
-    if (!isQuiet) console.log(`    -> Done. Time: ${libraryReport.timeMs.toFixed(2)}ms, Collisions: ${libraryReport.collisions}\n`);
-
-    if (!isQuiet) console.log(`[2] Initiating Structural Sieve (v7.0)...`);
     const tieringService = new TieringService(libraryReport.library);
     tieringService.shuffle(rng);
 
     const sieve = new StructuralSieve();
-    let resultString = '';
-    
-    try {
-        const telemetry = await sieve.generateAsync(
-            tieringService,
-            N,
-            M,
-            async (canvas, stats, msg, entry) => {
-                if (!isQuiet) console.log(`  [S:${stats.simple} M:${stats.moderate} C:${stats.complex}] -> ${msg}`);
-            },
-            rng
-        );
+    const telemetry = await sieve.generateAsync(
+        tieringService,
+        N,
+        M,
+        async (canvas, stats, msg, entry) => {
+            console.log(`  [Sieve] -> ${msg}`);
+        },
+        rng
+    );
 
-        if (!isQuiet) {
-            console.log(`\n================================`);
-            console.log(`Generation SUCCESS!`);
-            console.log(`================================`);
-            console.log(`Total Clues Kept: ${telemetry.finalClues} (Target: ${telemetry.targetClues})`);
-            console.log(`Time:             ${telemetry.timeMs.toFixed(2)}ms`);
-            console.log(`Redundant Pruned: ${telemetry.prunedCount}`);
-            
-            console.log(`\nFinal Structural Recipe:`);
-            telemetry.clues.forEach((c, idx) => {
-                console.log(`${(idx + 1).toString().padStart(2, ' ')}. [${c.type}] ${c.slots.map(s => "R" + s.r + "C" + s.c).join(' ')}`);
-            });
+    // Prepare fresh solver for proof phase
+    const space = new CoordinateSpace(N, M);
+    const rngProof = seededRandom(seed);
+    const solution = new SolutionGrid(space, rngProof);
 
-            console.log(`\nFinal Canvas State:`);
-            const canvas = telemetry.finalCanvas;
-            for (let r = 0; r < canvas.height; r++) {
-                let rowStr = `R${r}: `;
-                for (let c = 0; c < canvas.width; c++) {
-                    const mask = canvas.getMask(r, c);
-                    rowStr += `[${mask.toString(2).padStart(canvas.width, '0')}] `;
-                }
-                console.log(rowStr);
-            }
-        }
-        
-        resultString = telemetry.clues.map((c, idx) => `${idx + 1}. [${c.type}] ` + c.slots.map(s => `R${s.r}C${s.c}`).join(' ')).join('\n');
-        
-    } catch (error: any) {
-        if (!isQuiet) {
-            console.error(`\n================================`);
-            console.error(`Generation FAILED!`);
-            console.error(`================================`);
-            console.error(error.message || error);
-            
-            if (error.name === 'StalemateError') {
-                console.error(`\n--- BREADCRUMBS ---`);
-                console.error(`Accepted Clues (${error.acceptedClues.length}):`);
-                error.acceptedClues.forEach((c: any, idx: number) => {
-                    console.error(`  ${idx + 1}. [${c.type}] ${c.slots.map((s:any) => "R" + s.r + "C" + s.c).join(' ')}`);
-                });
-            }
-        }
-        resultString = `ERROR: ${error.name || error.message}`;
-    }
-    
-    return resultString;
-}
+    const hydrate = (entries: any[]) => entries.map(c => ({
+        type: c.type,
+        params: c.slots.map((s:any) => ({
+            row: s.r,
+            item: solution.getItemIndexAtSlot(s)
+        })),
+        targetCol: c.type.includes('ANCHOR') ? parseInt(c.topologyID.split('C')[1]) : undefined
+    }));
 
-async function verifyDeterminism() {
+    // --- PHASE 1: Proof with UNPRUNED CLUES ---
     console.log(`\n================================`);
-    console.log(`Logiki Single Puzzle Generator`);
+    console.log(`PHASE 1: Solving with UNPRUNED Clues (${telemetry.unprunedClues.length})`);
     console.log(`================================`);
-    console.log(`Parameters: N=${N}, M=${M}, Seed=${seed}\n`);
+    
+    const unprunedClues = hydrate(telemetry.unprunedClues);
+    const canvasUnpruned = new LogicCanvas(N, M);
+    const solver = new Solver();
+    
+    console.log(`Initial Entropy: ${canvasUnpruned.countTotalBits()} bits`);
+    for(let i=0; i < unprunedClues.length; i++) {
+        const c = unprunedClues[i];
+        const prevBits = canvasUnpruned.countTotalBits();
+        solver.solve([c], canvasUnpruned);
+        const delta = prevBits - canvasUnpruned.countTotalBits();
+        console.log(`  [Clue ${i+1}] Applying ${c.type}... Pruned: ${delta} bits`);
+    }
+    const resultUnpruned = solver.solve(unprunedClues, canvasUnpruned);
+    console.log(`Unpruned result: ${resultUnpruned} (${canvasUnpruned.countTotalBits()} bits remaining)`);
 
-    const run1 = await runSingle(seed, false);
-    
+    // --- PHASE 2: Proof with FINAL PRUNED CLUES ---
     console.log(`\n================================`);
-    console.log(`Verifying Determinism (Run 2)...`);
-    const run2 = await runSingle(seed, true);
+    console.log(`PHASE 2: Solving with MINIMAL Clues (${telemetry.finalClues})`);
+    console.log(`================================`);
     
-    if (run1 === run2) {
-        console.log(`✅ PASS: Run 2 produced the exact same output recipe.\n`);
-        
-        const numClues = run1.split('\n').filter(l => l.trim().length > 0 && !l.startsWith('ERROR')).length;
-        console.log(`================================`);
-        console.log(`NUMBER OF CLUES GENERATED: ${numClues}`);
-        console.log(`================================\n`);
-        
+    const finalClues = hydrate(telemetry.clues);
+    const canvasFinal = new LogicCanvas(N, M);
+    
+    for(let i=0; i < finalClues.length; i++) {
+        const c = finalClues[i];
+        const prevBits = canvasFinal.countTotalBits();
+        solver.solve([c], canvasFinal);
+        const delta = prevBits - canvasFinal.countTotalBits();
+        console.log(`  [Clue ${i+1}] Applying ${c.type}... Pruned: ${delta} bits`);
+    }
+    const resultFinal = solver.solve(finalClues, canvasFinal);
+    console.log(`Final result: ${resultFinal} (${canvasFinal.countTotalBits()} bits remaining)`);
+
+    if (resultFinal === 'SOLVED') {
         process.exit(0);
     } else {
-        console.error(`❌ FAIL: Run 2 output did not match Run 1!`);
+        console.error("CRITICAL: Minimal clue set did not produce unique victory!");
         process.exit(1);
     }
 }
 
-verifyDeterminism().catch(console.error);
+runTestSingle().catch(console.error);

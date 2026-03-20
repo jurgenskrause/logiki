@@ -52,6 +52,8 @@ export interface GenerationTelemetry {
   actualCounts: { simple: number; moderate: number; complex: number };
   prunedCount: number;
   finalCanvas: LogicCanvas;
+  unprunedClues: TopologyEntry[];
+  solution: SolutionGrid;
 }
 
 export class StructuralSieve {
@@ -127,7 +129,7 @@ export class StructuralSieve {
       }
 
       // 2. Sample
-      const K = 40;
+      const K = 15;
       const sample = this.pickRandomSample(masterPool, K, rng);
 
       // 3. Dry Run & Score
@@ -165,6 +167,7 @@ export class StructuralSieve {
     }
 
     // --- Minimization ---
+    await yieldState(canvas, `🏁 UNPRUNED RECIPE SECURED: Unique solution found at ${activeClues.length} clues. Starting Minimization...`);
     const finalClues = [...activeClues];
     for (let i = finalClues.length - 1; i >= 0; i--) {
       checkTimeout();
@@ -173,9 +176,9 @@ export class StructuralSieve {
       finalClues.splice(i, 1);
       const testList = finalClues.map(c => this.toActiveClue(c, solution));
       const testCanvas = new LogicCanvas(N, M);
-      this.logicSolver.solve(testList, testCanvas);
+      const result = this.logicSolver.solve(testList, testCanvas);
 
-      if (this.backtracker.count(testCanvas, testList, 2) === 1) {
+      if (result === 'SOLVED') {
         await yieldState(canvas, `✂️ Pruned redundant ${candidateClue.type}.`, candidateClue);
       } else {
         finalClues.splice(i, 0, candidateClue);
@@ -192,7 +195,9 @@ export class StructuralSieve {
       idealCounts: { simple: 0, moderate: 0, complex: 0 },
       actualCounts: { simple: 0, moderate: 0, complex: 0 },
       prunedCount: activeClues.length - finalClues.length,
-      finalCanvas: canvas
+      finalCanvas: canvas,
+      unprunedClues: [...activeClues],
+      solution: solution
     };
   }
 
