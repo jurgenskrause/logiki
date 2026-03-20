@@ -134,6 +134,22 @@ export class LogicCanvas {
   }
 
   /**
+   * Returns all cells whose bitmask has been reduced to 0 (no valid options remain).
+   * Only meaningful after hasAnyInvalidCells() returns true.
+   */
+  public getInvalidCells(): { row: number; col: number }[] {
+    const dead: { row: number; col: number }[] = [];
+    for (let r = 0; r < this._height; r++) {
+      for (let c = 0; c < this._width; c++) {
+        if (this._matrix[r * this._width + c] === 0) {
+          dead.push({ row: r, col: c });
+        }
+      }
+    }
+    return dead;
+  }
+
+  /**
    * Checks if every cell in the grid contains exactly one remaining possibility.
    */
   public isFullySolved(): boolean {

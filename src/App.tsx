@@ -3,6 +3,7 @@ import { seedHash, seededRandom } from './utils/random';
 import { getAsset } from './utils/themeRegistry';
 import { GameState } from './engine/GameState';
 import { TopologyAuditUI } from './components/TopologyAuditUI';
+import { StructuralSandboxUI } from './components/StructuralSandboxUI';
 
 function App() {
   // Use state to trigger re-renders for the audit tests if needed, 
@@ -204,9 +205,12 @@ function App() {
 
         {/* Phase 3.1.5: Topology Library Audit */}
         <TopologyAuditUI />
+
+        {/* Phase 4.4: Structural Sandbox */}
+        <StructuralSandboxUI />
       </div>
 
-      <footer className="text-slate-600 text-[10px] font-mono tracking-tighter">
+      <footer className="text-slate-600 text-[10px] font-mono tracking-tighter mt-12">
         LOGIKI_V1_CORE_FINAL_PROOF // BUILD_SUCCESS
       </footer>
     </div>

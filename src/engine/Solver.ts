@@ -143,21 +143,36 @@ export class Solver {
   }
 
   /**
-   * Helper Method: The Dry Run
-   * Performs a non-destructive state check to see if a clue reveals NEW information.
-   * Internally clones the matrix, applies the bitwise logic, and returns true only 
-   * if at least one bit changed from 1 to 0.
+   * Phase 3.3.2: Topological Logic Dry Run
+   * 
+   * Tests whether accepting a clue would produce NEW information WITHOUT causing a
+   * contradiction. Runs the full fixed-point solve loop on a canvas clone so that 
+   * inference and cleaning cascades are accounted for — a clue that passes a single
+   * handler pass can still cause a contradiction when inferences propagate.
+   * 
+   * Returns true only if:
+   *   1. The clue prunes at least one bit (new information), AND
+   *   2. The resulting fixed-point state has no invalid cells (no contradiction).
    * 
    * @param clue The clue to test
    * @param canvas The current true puzzle state
    */
   public testClue(clue: ActiveClue, canvas: LogicCanvas): boolean {
-    // 1. Clone the current matrix state
     const dryRunCanvas = canvas.clone();
-    
-    // 2 & 3 & 4. Apply the clue's bitwise logic to the clone
-    // executeClueHandler intrinsically returns true if ANY bit was pruned.
-    return this.executeClueHandler(clue, dryRunCanvas);
+
+    // Run the full fixed-point loop, not just a single handler pass
+    const result = this.solve([clue], dryRunCanvas);
+
+    // Reject if it produced no new information or caused a contradiction
+    if (result === SolverResult.CONTRADICTION) return false;
+
+    // Verify that at least one bit actually changed
+    for (let r = 0; r < canvas.height; r++) {
+      for (let c = 0; c < canvas.width; c++) {
+        if (dryRunCanvas.getMask(r, c) !== canvas.getMask(r, c)) return true;
+      }
+    }
+    return false;
   }
 
   /**
