@@ -1,7 +1,7 @@
 import { LogicCanvas } from './LogicCanvas';
 import { Solver, type ActiveClue } from './Solver';
 import type { TieringService } from './TieringService';
-import type { TopologyEntry } from './PermutationGenerator';
+import { getWeight, type TopologyEntry } from './PermutationGenerator';
 
 /**
  * Thrown when an accepted clue renders one or more cells unsolvable (mask → 0).
@@ -20,6 +20,18 @@ export class ContradictionError extends Error {
   }
 }
 
+export interface GenerationTelemetry {
+  clues: TopologyEntry[];
+  initialClues: number;
+  finalClues: number;
+  timeMs: number;
+  targetClues: number;
+  manifestVolume: number;
+  idealCounts: { simple: number; moderate: number; complex: number };
+  actualCounts: { simple: number; moderate: number; complex: number };
+  prunedCount: number;
+}
+
 export class StructuralSieve {
   /**
    * Phase 4.3: The Structural Sieve Pipeline
@@ -27,107 +39,6 @@ export class StructuralSieve {
    * Reduces a blank LogicCanvas to a unique solution state strictly by prioritizing 
    * Simple logic over Moderate logic, using Complex logic only as escalations.
    */
-  public generate(tieringService: TieringService, N: number, M: number): TopologyEntry[] {
-    const canvas = new LogicCanvas(N, M);
-    const solver = new Solver();
-    
-    // Memory-safe clones of the tier queues.
-    const simple = [...tieringService.simpleStack];
-    const moderate = [...tieringService.moderateStack];
-    const complex = [...tieringService.complexStack];
-
-    const acceptedClues: TopologyEntry[] = [];
-    
-    let simpleFailCounter = 0;
-    let moderateFailCounter = 0;
-    
-    const X = Math.floor(simple.length / (N * M)) + N;
-    const Y = Math.floor((N * M) / 2);
-
-    let state: 'SIMPLE' | 'MODERATE' | 'COMPLEX' = 'SIMPLE';
-
-    // Loop until the virtual matrix represents exactly 1 solved truth.
-    while (!canvas.isFullySolved()) {
-      if (state === 'SIMPLE') {
-        if (simple.length === 0 || simpleFailCounter > X) {
-          state = 'MODERATE';
-          continue;
-        }
-        
-        const entry = simple.shift()!;
-        const clue = this.toActiveClue(entry);
-        
-        if (solver.testClue(clue, canvas)) {
-          acceptedClues.push(entry);
-          solver.solve([clue], canvas); // Apply clue permanently
-          simpleFailCounter = 0;        // Reset tracker
-          // Remain in SIMPLE state
-        } else {
-          simple.push(entry);           // Re-queue to bottom
-          simpleFailCounter++;
-        }
-      } 
-      else if (state === 'MODERATE') {
-        if (moderate.length === 0 || moderateFailCounter > Y) {
-          state = 'COMPLEX';
-          continue;
-        }
-
-        const entry = moderate.shift()!;
-        const clue = this.toActiveClue(entry);
-
-        if (solver.testClue(clue, canvas)) {
-          acceptedClues.push(entry);
-          solver.solve([clue], canvas); // Apply clue permanently
-          
-          simpleFailCounter = 0;
-          moderateFailCounter = 0;
-          state = 'SIMPLE';             // Immediately downgrade upon success
-        } else {
-          moderate.push(entry);
-          moderateFailCounter++;
-        }
-      }
-      else if (state === 'COMPLEX') {
-        let found = false;
-        
-        for (let i = 0; i < complex.length; i++) {
-          const entry = complex[i];
-          const clue = this.toActiveClue(entry);
-          
-          if (solver.testClue(clue, canvas)) {
-            acceptedClues.push(entry);
-            solver.solve([clue], canvas);
-            
-            complex.splice(i, 1);       // Remove used clue
-            simpleFailCounter = 0;
-            moderateFailCounter = 0;
-            state = 'SIMPLE';
-            found = true;
-            break;
-          }
-        }
-        
-        if (!found) {
-          // Safety Net: Cycle remaining stacks once to ensure no possible combination was missed.
-          if (this.tryFallbackSweep(simple, canvas, solver, acceptedClues)) {
-            simpleFailCounter = 0;
-            moderateFailCounter = 0;
-            state = 'SIMPLE';
-          } else if (this.tryFallbackSweep(moderate, canvas, solver, acceptedClues)) {
-             simpleFailCounter = 0;
-             moderateFailCounter = 0;
-             state = 'SIMPLE';
-          } else {
-            throw new Error('GenerationError: Unsolvable Topology - Reached a logic stalemate.');
-          }
-        }
-      }
-    }
-
-    return acceptedClues;
-  }
-
   public async generateAsync(
     tieringService: TieringService, 
     N: number, 
@@ -138,172 +49,172 @@ export class StructuralSieve {
       eventMsg: string,
       entry?: TopologyEntry
     ) => Promise<void>
-  ): Promise<{ clues: TopologyEntry[]; initialClues: number; finalClues: number; timeMs: number }> {
+  ): Promise<GenerationTelemetry> {
     const startTime = performance.now();
     const canvas = new LogicCanvas(N, M);
     const solver = new Solver();
     
-    const simple = [...tieringService.simpleStack];
-    const moderate = [...tieringService.moderateStack];
-    const complex = [...tieringService.complexStack];
+    // Create copy of the stacks so we can modify them
+    const stacks = {
+      simple: [...tieringService.simpleStack],
+      moderate: [...tieringService.moderateStack],
+      complex: [...tieringService.complexStack]
+    };
     
-    const initialClues = simple.length + moderate.length + complex.length;
+    // Total combinatorial manifest volume
+    const V = stacks.simple.length + stacks.moderate.length + stacks.complex.length;
+    
+    // Dynamic Clue Budgeting (N_target)
+    const N_min = (N + M) - 1;
+    const N_target = N_min + Math.floor(Math.log10(V) * N);
 
     const acceptedClues: TopologyEntry[] = [];
+    const acceptedCounts = { simple: 0, moderate: 0, complex: 0 };
+    let totalAccepted = 0;
     
-    let simpleFailCounter = 0;
-    let moderateFailCounter = 0;
-    
-    const X = Math.floor(simple.length / (N * M)) + N;
-    const Y = Math.floor((N * M) / 2);
-
     // Hard iteration cap: 3× the total initial clue pool is a generous upper bound.
-    // Any healthy run converges well within this. Hitting it signals a logic stalemate
-    // that the escalation path alone could not resolve.
-    const MAX_SIEVE_ITERATIONS = initialClues * 3;
+    const MAX_SIEVE_ITERATIONS = V * 3;
     let iterationCount = 0;
 
-    let state: 'SIMPLE' | 'MODERATE' | 'COMPLEX' = 'SIMPLE';
-
+    // Proportional Deficit Weights
+    const W = { simple: 17, moderate: 7, complex: 1 };
+    
     const yieldState = async (msg: string, entry?: TopologyEntry) => {
-      await onYield(canvas, { simple: simple.length, moderate: moderate.length, complex: complex.length }, msg, entry);
+      await onYield(canvas, { simple: stacks.simple.length, moderate: stacks.moderate.length, complex: stacks.complex.length }, msg, entry);
     };
 
     while (!canvas.isFullySolved()) {
       if (++iterationCount > MAX_SIEVE_ITERATIONS) {
         throw new Error(
           `GenerationError: Sieve loop exceeded ${MAX_SIEVE_ITERATIONS} iterations ` +
-          `(accepted ${acceptedClues.length} of ${initialClues} clues). ` +
-          `Canvas has not converged — possible cycle in escalation logic.`
+          `(accepted ${acceptedClues.length} of ${V} clues). ` +
+          `Canvas has not converged — possible cycle in logic.`
         );
       }
 
-      if (state === 'SIMPLE') {
-        if (simple.length === 0 || simpleFailCounter > X) {
-          await yieldState(`Escalating to Step B (Moderate): SimpleFail > ${X}`);
-          state = 'MODERATE';
-          continue;
-        }
+      // 1. Calculate ideal allocations and deficits for each tier
+      const ideal = {
+        simple: (W.simple / 25) * totalAccepted,
+        moderate: (W.moderate / 25) * totalAccepted,
+        complex: (W.complex / 25) * totalAccepted
+      };
+      
+      type Tier = 'simple' | 'moderate' | 'complex';
+      const errors = [
+        { tier: 'complex' as Tier, error: ideal.complex - acceptedCounts.complex, weight: 3 },
+        { tier: 'moderate' as Tier, error: ideal.moderate - acceptedCounts.moderate, weight: 2 },
+        { tier: 'simple' as Tier, error: ideal.simple - acceptedCounts.simple, weight: 1 }
+      ];
+      
+      // Sort primarily by error descending, then by tie-breaker weight (complex > mod > simple)
+      errors.sort((a, b) => {
+        // give precedence to stacks that actually have items left
+        const aEmpty = stacks[a.tier].length === 0;
+        const bEmpty = stacks[b.tier].length === 0;
+        if (aEmpty && !bEmpty) return 1;
+        if (!aEmpty && bEmpty) return -1;
         
-        const entry = simple.shift()!;
-        const clue = this.toActiveClue(entry);
+        if (Math.abs(b.error - a.error) > 0.0001) {
+          return b.error - a.error;
+        }
+        return b.weight - a.weight;
+      });
+
+      let clueAccepted = false;
+      
+      for (const { tier } of errors) {
+        const stack = stacks[tier];
+        if (stack.length === 0) continue;
         
-        if (solver.testClue(clue, canvas)) {
-          acceptedClues.push(entry);
-          solver.solve([clue], canvas);
-          this.assertNoContradiction(canvas, entry);
-          simpleFailCounter = 0;
-          await yieldState(`Step A: Accepted Simple Clue (${entry.type}) [${entry.slots.map(s => `R${s.r}:I${s.c}`).join(', ')}]`, entry);
-        } else {
-          simple.push(entry);
-          simpleFailCounter++;
-        }
-      } 
-      else if (state === 'MODERATE') {
-        if (moderate.length === 0 || moderateFailCounter > Y) {
-          await yieldState(`Escalating to Step C (Complex): ModFail > ${Y}`);
-          state = 'COMPLEX';
-          continue;
-        }
-
-        const entry = moderate.shift()!;
-        const clue = this.toActiveClue(entry);
-
-        if (solver.testClue(clue, canvas)) {
-          acceptedClues.push(entry);
-          solver.solve([clue], canvas);
-          this.assertNoContradiction(canvas, entry);
-          simpleFailCounter = 0;
-          moderateFailCounter = 0;
-          state = 'SIMPLE';
-          await yieldState(`Step B: Accepted Moderate Clue (${entry.type}) [${entry.slots.map(s => `R${s.r}:I${s.c}`).join(', ')}]`, entry);
-        } else {
-          moderate.push(entry);
-          moderateFailCounter++;
-        }
-      }
-      else if (state === 'COMPLEX') {
-        let found = false;
-        for (let i = 0; i < complex.length; i++) {
-          const entry = complex[i];
+        const initialLength = stack.length;
+        let foundProductive = false;
+        
+        for (let i = 0; i < initialLength; i++) {
+          const entry = stack.shift()!;
           const clue = this.toActiveClue(entry);
           
           if (solver.testClue(clue, canvas)) {
             acceptedClues.push(entry);
+            acceptedCounts[tier]++;
+            totalAccepted++;
+            
             solver.solve([clue], canvas);
             this.assertNoContradiction(canvas, entry);
-            complex.splice(i, 1);
-            simpleFailCounter = 0;
-            moderateFailCounter = 0;
-            state = 'SIMPLE';
-            found = true;
-            await yieldState(`Step C: Accepted Complex Clue (${entry.type}) [${entry.slots.map(s => `R${s.r}:I${s.c}`).join(', ')}]`, entry);
+            
+            await yieldState(
+              `Targeting ${N_target} clues | Accepted ${tier.toUpperCase()}: Deficit [S:${(ideal.simple - acceptedCounts.simple).toFixed(1)} M:${(ideal.moderate - acceptedCounts.moderate).toFixed(1)} C:${(ideal.complex - acceptedCounts.complex).toFixed(1)}]`,
+              entry
+            );
+
+            foundProductive = true;
+            clueAccepted = true;
             break;
+          } else {
+            stack.push(entry);
           }
         }
         
-        if (!found) {
-          // Verify with fallback sweep natively synchronously inside async.
-          let fbFound = false;
-          for (let i = 0; i < simple.length; i++) {
-            const entry = simple[i];
-            const clue = this.toActiveClue(entry);
-            if (solver.testClue(clue, canvas)) {
-              acceptedClues.push(entry);
-              solver.solve([clue], canvas);
-              this.assertNoContradiction(canvas, entry);
-              simple.splice(i, 1);
-              simpleFailCounter = 0; moderateFailCounter = 0; state = 'SIMPLE';
-              fbFound = true;
-              await yieldState(`Fallback: Accepted Simple Clue (${entry.type})`, entry);
-              break;
-            }
-          }
-          if (!fbFound) {
-            for (let i = 0; i < moderate.length; i++) {
-              const entry = moderate[i];
-              const clue = this.toActiveClue(entry);
-              if (solver.testClue(clue, canvas)) {
-                acceptedClues.push(entry);
-                solver.solve([clue], canvas);
-                this.assertNoContradiction(canvas, entry);
-                moderate.splice(i, 1);
-                simpleFailCounter = 0; moderateFailCounter = 0; state = 'SIMPLE';
-                fbFound = true;
-                await yieldState(`Fallback: Accepted Mod Clue (${entry.type})`, entry);
-                break;
-              }
-            }
-          }
-
-          if (!fbFound) {
-            throw new Error('GenerationError: Unsolvable Topology - Reached a logic stalemate.');
-          }
+        if (foundProductive) {
+          break; // Start next iteration assessing deficits anew
         }
       }
-    }
-
-    const timeMs = performance.now() - startTime;
-    return { clues: acceptedClues, initialClues, finalClues: acceptedClues.length, timeMs };
-  }
-
-  private tryFallbackSweep(
-    queue: TopologyEntry[], 
-    canvas: LogicCanvas, 
-    solver: Solver, 
-    acceptedOut: TopologyEntry[]
-  ): boolean {
-    for (let i = 0; i < queue.length; i++) {
-      const entry = queue[i];
-      const clue = this.toActiveClue(entry);
-      if (solver.testClue(clue, canvas)) {
-        acceptedOut.push(entry);
-        solver.solve([clue], canvas);
-        queue.splice(i, 1);
-        return true;
+      
+      if (!clueAccepted) {
+        throw new Error('GenerationError: Unsolvable Topology - Reached a logic stalemate. No productive clues remaining in any tier.');
       }
     }
-    return false;
+
+    // 2. Load-Bearing Pruning (Subtractive Pass)
+    let prunedCount = 0;
+    const finalClues = [...acceptedClues];
+    
+    // We iterate backwards to prune
+    for (let i = finalClues.length - 1; i >= 0; i--) {
+      const candidateClue = finalClues[i];
+      const remainingClues = finalClues.filter((_, idx) => idx !== i);
+      
+      const pruneCanvas = new LogicCanvas(N, M);
+      const pruneSolver = new Solver();
+      
+      const activeRemaining = remainingClues.map(c => this.toActiveClue(c));
+      const res = pruneSolver.solve(activeRemaining, pruneCanvas);
+      
+      if (res === 'SOLVED') {
+        finalClues.splice(i, 1);
+        prunedCount++;
+        
+        await yieldState(
+          `✂️ Pruning Pass: Discarded redundant ${candidateClue.type} clue.`,
+          candidateClue
+        );
+      }
+    }
+
+    const actualTierCounts = { simple: 0, moderate: 0, complex: 0 };
+    for (const c of finalClues) {
+      const weight = getWeight(c.type);
+      if (weight === 1) actualTierCounts.simple++;
+      else if (weight === 2) actualTierCounts.moderate++;
+      else actualTierCounts.complex++;
+    }
+
+    const finalIdealCounts = {
+      simple: (W.simple / 25) * finalClues.length,
+      moderate: (W.moderate / 25) * finalClues.length,
+      complex: (W.complex / 25) * finalClues.length
+    };
+
+    return {
+      clues: finalClues,
+      initialClues: V,
+      finalClues: finalClues.length,
+      timeMs: performance.now() - startTime,
+      targetClues: N_target,
+      manifestVolume: V,
+      idealCounts: finalIdealCounts,
+      actualCounts: actualTierCounts,
+      prunedCount: prunedCount
+    };
   }
 
   /**

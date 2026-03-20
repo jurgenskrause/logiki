@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { TieringService } from '../engine/TieringService';
-import { StructuralSieve, ContradictionError } from '../engine/StructuralSieve';
-import { buildTopologyLibrary, type TopologyEntry } from '../engine/PermutationGenerator';
+import { StructuralSieve, ContradictionError, type GenerationTelemetry } from '../engine/StructuralSieve';
+import { buildTopologyLibrary, getWeight, type TopologyEntry } from '../engine/PermutationGenerator';
 import { LogicCanvas } from '../engine/LogicCanvas';
 import { getFallbackEmoji } from '../utils/themeRegistry';
 
@@ -20,7 +20,7 @@ export function StructuralSandboxUI() {
   const [masks, setMasks] = useState<number[]>([]);
   const [prevMasks, setPrevMasks] = useState<number[]>([]);
   
-  const [telemetry, setTelemetry] = useState<any>(null);
+  const [telemetry, setTelemetry] = useState<GenerationTelemetry | null>(null);
   const [mode, setMode] = useState<'AUTO' | 'MANUAL'>('AUTO');
   const [delay, setDelay] = useState(50);
   
@@ -252,20 +252,27 @@ export function StructuralSandboxUI() {
                   : ev.entry.type.includes('SEQ') ? '⋯'
                   : '•'
                   : null;
-                const stepLabel = ev.msg.startsWith('Step A')   ? 'Simple'
-                  : ev.msg.startsWith('Step B')   ? 'Moderate'
-                  : ev.msg.startsWith('Step C')   ? 'Complex'
-                  : ev.msg.startsWith('Fallback') ? 'Fallback'
+                const stepLabel = ev.msg.includes('SIMPLE Clue') ? 'Simple'
+                  : ev.msg.includes('MODERATE Clue') ? 'Moderate'
+                  : ev.msg.includes('COMPLEX Clue') ? 'Complex'
+                  : ev.msg.includes('Pruning Pass') ? 'Prune'
                   : null;
 
                 if (ev.entry && stepLabel) {
-                  // ── 3-line accepted clue card ──────────────────────────
+                  const isPrune = stepLabel === 'Prune';
+                  // ── 3-line accepted/pruned clue card ──────────────────────────
                   return (
-                    <div key={i} className="shrink-0 rounded-lg border border-emerald-900/40 bg-emerald-950/20 border-l-[3px] border-l-emerald-500/60 overflow-hidden">
+                    <div key={i} className={`shrink-0 rounded-lg border overflow-hidden ${
+                      isPrune 
+                        ? 'border-purple-900/40 bg-purple-950/20 border-l-[3px] border-l-purple-500/60' 
+                        : 'border-emerald-900/40 bg-emerald-950/20 border-l-[3px] border-l-emerald-500/60'
+                    }`}>
                       {/* Line 1: index + accepted label + type badge */}
                       <div className="flex items-center gap-2 px-2 pt-2 pb-1">
                         <span className="text-[9px] text-slate-600 shrink-0 tabular-nums">[{String(i).padStart(3, '0')}]</span>
-                        <span className="text-[9px] font-bold tracking-widest text-emerald-400 uppercase">✓ Accepted {stepLabel} Clue</span>
+                        <span className={`text-[9px] font-bold tracking-widest uppercase ${isPrune ? 'text-purple-400' : 'text-emerald-400'}`}>
+                          {isPrune ? '✂️ Pruned Clue' : `✓ Accepted ${stepLabel} Clue`}
+                        </span>
                         <span className="ml-auto text-[9px] font-bold text-slate-500 tracking-wider uppercase shrink-0">
                           {ev.entry.type.replace(/_/g, ' ')}
                         </span>
@@ -275,7 +282,9 @@ export function StructuralSandboxUI() {
                         {ev.msg}
                       </div>
                       {/* Line 3: emoji graphic representation */}
-                      <div className="flex items-center gap-1.5 px-2 pb-2 pt-1 border-t border-emerald-900/30 flex-wrap">
+                      <div className={`flex items-center gap-1.5 px-2 pb-2 pt-1 border-t flex-wrap ${
+                        isPrune ? 'border-purple-900/30 grayscale opacity-50' : 'border-emerald-900/30'
+                      }`}>
                         {ev.entry.slots.map((s, si) => (
                           <span key={si} className="flex items-center gap-1">
                             {si > 0 && (
@@ -356,44 +365,84 @@ export function StructuralSandboxUI() {
              Structural Recipe Finalized
            </h3>
            
-           <div className="grid grid-cols-3 gap-4 mb-6 text-xs font-mono text-emerald-100/70 p-4 bg-emerald-950/50 rounded-2xl border border-emerald-900/50">
-             <div><span className="text-emerald-500/50 uppercase tracking-widest block text-[9px] mb-1">Initial Pool (Manifest)</span> 
-               <span className="text-xl">{telemetry.initialClues}</span> clues
+           <div className="grid grid-cols-4 gap-4 mb-6 text-xs font-mono text-emerald-100/70 p-4 bg-emerald-950/50 rounded-2xl border border-emerald-900/50">
+             <div><span className="text-emerald-500/50 uppercase tracking-widest block text-[9px] mb-1">Manifest Volume (V)</span> 
+               <span className="text-xl">{telemetry.manifestVolume}</span> clues
              </div>
-             <div><span className="text-emerald-500/50 uppercase tracking-widest block text-[9px] mb-1">Final Puzzle Sieve</span> 
-               <span className="text-xl text-white">{telemetry.finalClues}</span> required clues
+             <div><span className="text-emerald-500/50 uppercase tracking-widest block text-[9px] mb-1">Target Clues (N_target)</span> 
+               <span className="text-xl">{telemetry.targetClues}</span> minimum
              </div>
-             <div><span className="text-emerald-500/50 uppercase tracking-widest block text-[9px] mb-1">CPU Execution Time</span> 
-               <span className="text-xl">{telemetry.timeMs.toFixed(2)}</span> ms
+             <div><span className="text-emerald-500/50 uppercase tracking-widest block text-[9px] mb-1">Final Accepted</span> 
+               <span className="text-xl text-white">{telemetry.finalClues}</span> clues
+             </div>
+             <div><span className="text-emerald-500/50 uppercase tracking-widest block text-[9px] mb-1">Pruning Efficiency</span> 
+               <span className="text-xl text-emerald-400">-{telemetry.prunedCount}</span> redundant
              </div>
            </div>
 
-           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-             {telemetry.clues.map((c: TopologyEntry, i: number) => (
-                <div key={i} className="bg-slate-950/80 border border-slate-800 p-3 rounded-xl flex items-center gap-3">
-                  <div className="text-[10px] font-bold text-slate-600 bg-slate-900 w-6 h-6 flex items-center justify-center rounded-full shrink-0">
-                    {i+1}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">{c.type}</span>
-                    </div>
-                    <div className="flex items-center gap-2 bg-slate-900/50 p-1.5 rounded-lg border border-slate-800/50">
-                      {c.slots.map((s, si) => (
-                        <div key={si} className="flex items-center gap-1 text-xl">
-                          {si > 0 && <span className="text-[10px] text-slate-600 font-bold">
-                            {c.type === 'LEFT_OF' ? '→' : 
-                             c.type === 'ADJACENT' ? '↔' : 
-                             c.type.includes('NOT') ? '≠' : '•'}
-                          </span>}
-                          <span>{getFallbackEmoji(s.r, s.c)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-             ))}
+           {/* Deficit Distribution Table */}
+           <div className="mb-8 overflow-hidden rounded-2xl border border-emerald-900/40 bg-slate-950/60">
+             <div className="grid grid-cols-4 gap-px bg-emerald-900/40 text-[10px] uppercase tracking-widest font-bold text-center">
+               <div className="p-2 bg-emerald-950/80 text-emerald-500">Tier</div>
+               <div className="p-2 bg-emerald-950/80 text-emerald-500">Weight Ratio</div>
+               <div className="p-2 bg-emerald-950/80 text-emerald-500">Ideal Target</div>
+               <div className="p-2 bg-emerald-950/80 text-emerald-500">Actual Clues</div>
+             </div>
+             <div className="grid grid-cols-4 gap-px bg-emerald-900/20 text-xs font-mono text-center">
+               <div className="p-2 bg-slate-950/90 text-blue-400">Simple</div>
+               <div className="p-2 bg-slate-950/90 text-slate-500">17</div>
+               <div className="p-2 bg-slate-950/90 text-emerald-300/60">{telemetry.idealCounts.simple}</div>
+               <div className="p-2 bg-slate-950/90 text-blue-300 font-bold">{telemetry.actualCounts.simple}</div>
+               
+               <div className="p-2 bg-slate-950/90 text-purple-400">Moderate</div>
+               <div className="p-2 bg-slate-950/90 text-slate-500">7</div>
+               <div className="p-2 bg-slate-950/90 text-emerald-300/60">{telemetry.idealCounts.moderate}</div>
+               <div className="p-2 bg-slate-950/90 text-purple-300 font-bold">{telemetry.actualCounts.moderate}</div>
+               
+               <div className="p-2 bg-slate-950/90 text-orange-400">Complex</div>
+               <div className="p-2 bg-slate-950/90 text-slate-500">1</div>
+               <div className="p-2 bg-slate-950/90 text-emerald-300/60">{telemetry.idealCounts.complex}</div>
+               <div className="p-2 bg-slate-950/90 text-orange-300 font-bold">{telemetry.actualCounts.complex}</div>
+             </div>
            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {telemetry.clues.map((c: TopologyEntry, i: number) => {
+                 const weight = getWeight(c.type);
+                 const weightLabel = weight === 1 ? 'S' : weight === 2 ? 'M' : 'C';
+                 const weightColor = weight === 1 ? 'border-blue-400/30 text-blue-400' : weight === 2 ? 'border-purple-400/30 text-purple-400' : 'border-orange-400/30 text-orange-400';
+
+                 return (
+                  <div key={i} className="bg-slate-950/80 border border-slate-800 p-3 rounded-xl flex items-center gap-3 relative overflow-hidden">
+                    {/* Complexity Badge */}
+                    <div className={`absolute top-0 right-0 px-1.5 py-0.5 text-[8px] font-black border-l border-b rounded-bl-lg tracking-tighter ${weightColor}`}>
+                      {weightLabel}
+                    </div>
+
+                    <div className="text-[10px] font-bold text-slate-600 bg-slate-900 w-6 h-6 flex items-center justify-center rounded-full shrink-0">
+                      {i+1}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1 pr-6">
+                        <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">{c.type.replace(/_/g, ' ')}</span>
+                      </div>
+                      <div className="flex items-center gap-2 bg-slate-900/50 p-1.5 rounded-lg border border-slate-800/50 text-[10px] font-bold text-slate-400">
+                        {c.slots.map((s, si) => (
+                          <div key={si} className="flex items-center gap-1 text-xl">
+                            {si > 0 && <span className="text-[10px] text-slate-600 font-bold">
+                              {c.type === 'LEFT_OF' ? '→' : 
+                               c.type === 'ADJACENT' ? '↔' : 
+                               c.type.includes('NOT') ? '≠' : '•'}
+                            </span>}
+                            <span>{getFallbackEmoji(s.r, s.c)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                 );
+              })}
+            </div>
         </div>
       )}
 

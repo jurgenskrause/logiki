@@ -128,45 +128,71 @@ export function TopologyAuditUI() {
         </div>
       </div>
 
-      {/* Library Breakdown */}
-      <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 mb-4">
-        <span className="text-[10px] text-slate-500 uppercase block mb-3 font-bold border-b border-slate-800 pb-2">The Library Index (By Type)</span>
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4">
-          <div>
-            <span className="text-[10px] text-slate-500 block mb-1">Adjacent</span>
-            <code className="text-md font-bold text-slate-300">{adj}</code>
+      {/* Library Breakdown By Complexity */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        {/* SIMPLE TIER */}
+        <div className="p-5 bg-slate-950 rounded-2xl border border-blue-900/30">
+          <div className="flex justify-between items-center mb-4 border-b border-blue-900/30 pb-2">
+            <span className="text-[10px] text-blue-400 uppercase font-black tracking-widest">Simple (Tier 1)</span>
+            <code className="text-sm font-bold text-blue-300">{adj + vert + vnot}</code>
           </div>
-          <div>
-            <span className="text-[10px] text-slate-500 block mb-1">Vertical</span>
-            <code className="text-md font-bold text-slate-300">{vert}</code>
+          <div className="grid grid-cols-1 gap-2 text-[11px]">
+            <div className="flex justify-between text-slate-500">
+              <span>Adjacent (Horizontal)</span>
+              <span className="text-slate-300 font-mono">{adj}</span>
+            </div>
+            <div className="flex justify-between text-slate-500">
+              <span>Vertical Pair</span>
+              <span className="text-slate-300 font-mono">{vert}</span>
+            </div>
+            <div className="flex justify-between text-slate-500">
+              <span>Vertical Not</span>
+              <span className="text-slate-300 font-mono">{vnot}</span>
+            </div>
           </div>
-          <div>
-            <span className="text-[10px] text-slate-500 block mb-1">Left Of</span>
-            <code className="text-md font-bold text-slate-300">{left}</code>
+        </div>
+
+        {/* MODERATE TIER */}
+        <div className="p-5 bg-slate-950 rounded-2xl border border-purple-900/30">
+          <div className="flex justify-between items-center mb-4 border-b border-purple-900/30 pb-2">
+            <span className="text-[10px] text-purple-400 uppercase font-black tracking-widest">Moderate (Tier 2)</span>
+            <code className="text-sm font-bold text-purple-300">{left + seq + vtrio + vnot3}</code>
           </div>
-          <div>
-            <span className="text-[10px] text-slate-500 block mb-1">Sequence (3)</span>
-            <code className="text-md font-bold text-slate-300">{seq}</code>
+          <div className="grid grid-cols-1 gap-2 text-[11px]">
+            <div className="flex justify-between text-slate-500">
+              <span>Left Of (Horizontal)</span>
+              <span className="text-slate-300 font-mono">{left}</span>
+            </div>
+            <div className="flex justify-between text-slate-500">
+              <span>Sequence 3</span>
+              <span className="text-slate-300 font-mono">{seq}</span>
+            </div>
+            <div className="flex justify-between text-slate-500">
+              <span>Vertical Trio</span>
+              <span className="text-slate-300 font-mono">{vtrio}</span>
+            </div>
+            <div className="flex justify-between text-slate-500">
+              <span>Vertical Not Trio</span>
+              <span className="text-slate-300 font-mono">{vnot3}</span>
+            </div>
           </div>
-          <div>
-            <span className="text-[10px] text-slate-500 block mb-1">Gapped Excl.</span>
-            <code className="text-md font-bold text-slate-300">{gpe}</code>
+        </div>
+
+        {/* COMPLEX TIER */}
+        <div className="p-5 bg-slate-950 rounded-2xl border border-orange-900/30">
+          <div className="flex justify-between items-center mb-4 border-b border-orange-900/30 pb-2">
+            <span className="text-[10px] text-orange-400 uppercase font-black tracking-widest">Complex (Tier 3)</span>
+            <code className="text-sm font-bold text-orange-300">{gpe + vdex}</code>
           </div>
-          <div>
-            <span className="text-[10px] text-slate-500 block mb-1">Vert. Trio</span>
-            <code className="text-md font-bold text-purple-400">{vtrio}</code>
-          </div>
-          <div>
-            <span className="text-[10px] text-slate-500 block mb-1">Vert. Disj.</span>
-            <code className="text-md font-bold text-purple-400">{vdex}</code>
-          </div>
-          <div>
-            <span className="text-[10px] text-slate-500 block mb-1">V-Not Trio</span>
-            <code className="text-md font-bold text-pink-400">{vnot3}</code>
-          </div>
-          <div>
-            <span className="text-[10px] text-slate-500 block mb-1">V-Not Same</span>
-            <code className="text-md font-bold text-pink-400">{vnot}</code>
+          <div className="grid grid-cols-1 gap-2 text-[11px]">
+            <div className="flex justify-between text-slate-500">
+              <span>Gapped Exclusion</span>
+              <span className="text-slate-300 font-mono">{gpe}</span>
+            </div>
+            <div className="flex justify-between text-slate-500">
+              <span>Vertical Disjunctive (XOR)</span>
+              <span className="text-slate-300 font-mono">{vdex}</span>
+            </div>
           </div>
         </div>
       </div>

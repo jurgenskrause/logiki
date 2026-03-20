@@ -38,10 +38,10 @@ export function ClueShowcase({ library }: { library?: TopologyLibrary }) {
   return (
     <div className="mt-8 pt-8 border-t border-slate-800 space-y-10">
       
-      {/* --- HORIZONTAL CLUES --- */}
+      {/* --- SIMPLE CLUES (TIER 1) --- */}
       <section>
         <div className="flex items-center gap-3 mb-6">
-            <h3 className="text-lg font-bold text-blue-400">Horizontal (Spatial) Clues</h3>
+            <h3 className="text-lg font-bold text-blue-400">Simple Clues (Tier 1)</h3>
             <div className="flex-1 h-px bg-blue-900/30"></div>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -57,6 +57,41 @@ export function ClueShowcase({ library }: { library?: TopologyLibrary }) {
             </div>
           </ClueBox>
 
+          <ClueBox 
+            title="Vertical Pair" 
+            tooltip="Vertical Pair: Two items must be in the same column."
+            count={library?.VERTICAL.VERTICAL.length}
+          >
+            <div className="flex flex-col items-center border-x-2 border-slate-700 px-2 text-2xl">
+              <span>{itemA}</span>
+              <span className="material-icons text-slate-600 text-[16px] my-1">link</span>
+              <span>{itemB}</span>
+            </div>
+          </ClueBox>
+
+          <ClueBox 
+            title="Vertical Not" 
+            tooltip="Vertical Not: Items cannot be in the same column."
+            count={library?.VERTICAL.VERTICAL_NOT.length}
+          >
+            <div className="flex flex-col items-center border-x-2 border-slate-700 border-dashed px-2 text-2xl relative">
+              <span>{itemA}</span>
+              <span>{itemB}</span>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="material-icons text-red-500/80 text-[48px]">block</span>
+              </div>
+            </div>
+          </ClueBox>
+        </div>
+      </section>
+
+      {/* --- MODERATE CLUES (TIER 2) --- */}
+      <section>
+        <div className="flex items-center gap-3 mb-6">
+            <h3 className="text-lg font-bold text-purple-400">Moderate Clues (Tier 2)</h3>
+            <div className="flex-1 h-px bg-purple-900/30"></div>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4">
           <ClueBox 
             title="Left Of" 
             tooltip="Left Of: Item A is immediately left of Item B."
@@ -84,56 +119,6 @@ export function ClueShowcase({ library }: { library?: TopologyLibrary }) {
           </ClueBox>
 
           <ClueBox 
-            title="Gapped Excl." 
-            tooltip="Gapped Exclusion: A and C are separated by a column where B is forbidden."
-            count={library?.HORIZONTAL.GAPPED_EXCLUSION.length}
-          >
-            <div className="flex items-center gap-1 text-2xl">
-              <span>{itemA}</span>
-              <div className="relative flex items-center justify-center grayscale opacity-50">
-                <span>{itemB}</span>
-                <span className="material-icons text-red-500/80 absolute text-[32px]">block</span>
-              </div>
-              <span>{itemC}</span>
-            </div>
-          </ClueBox>
-        </div>
-      </section>
-
-      {/* --- VERTICAL CLUES --- */}
-      <section>
-        <div className="flex items-center gap-3 mb-6">
-            <h3 className="text-lg font-bold text-purple-400">Vertical (Column) Clues</h3>
-            <div className="flex-1 h-px bg-purple-900/30"></div>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
-          <ClueBox 
-            title="Vertical Pair" 
-            tooltip="Vertical Pair: Two items must be in the same column."
-            count={library?.VERTICAL.VERTICAL.length}
-          >
-            <div className="flex flex-col items-center border-x-2 border-slate-700 px-2 text-2xl">
-              <span>{itemA}</span>
-              <span className="material-icons text-slate-600 text-[16px] my-1">link</span>
-              <span>{itemB}</span>
-            </div>
-          </ClueBox>
-
-          <ClueBox 
-            title="Vertical Not" 
-            tooltip="Vertical Not: Items cannot be in the same column."
-            count={library?.VERTICAL.VERTICAL_NOT.length}
-          >
-            <div className="flex flex-col items-center border-x-2 border-slate-700 border-dashed px-2 text-2xl relative">
-              <span>{itemA}</span>
-              <span>{itemB}</span>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="material-icons text-red-500/80 text-[48px]">block</span>
-              </div>
-            </div>
-          </ClueBox>
-
-          <ClueBox 
             title="Vertical Trio" 
             tooltip="Vertical Trio: Three items must all be in the same column."
             count={library?.VERTICAL.VERTICAL_TRIO.length}
@@ -142,22 +127,6 @@ export function ClueShowcase({ library }: { library?: TopologyLibrary }) {
               <span>{itemA}</span>
               <span>{itemB}</span>
               <span>{itemC}</span>
-            </div>
-          </ClueBox>
-
-          <ClueBox 
-            title="Vert. Disj." 
-            tooltip="Disjunctive XOR: A matches either B or C, but not both."
-            count={library?.VERTICAL.VERTICAL_DISJUNCTIVE_EXCLUSION.length}
-          >
-            <div className="flex flex-col items-center gap-1 text-2xl border-x-2 border-purple-900/50 px-2 rounded">
-              <span>{itemA}</span>
-              <div className="flex items-center gap-1 relative">
-                  <span className="text-[10px] absolute -top-3 left-1/2 -translate-x-1/2 text-slate-500 font-bold bg-slate-900 px-1 border border-slate-700 rounded-full">XOR</span>
-                  <span>{itemB}</span>
-                  <span className="material-icons text-slate-600 text-[16px]">call_split</span>
-                  <span>{itemC}</span>
-              </div>
             </div>
           </ClueBox>
 
@@ -179,6 +148,47 @@ export function ClueShowcase({ library }: { library?: TopologyLibrary }) {
           </ClueBox>
         </div>
       </section>
+
+      {/* --- COMPLEX CLUES (TIER 3) --- */}
+      <section>
+        <div className="flex items-center gap-3 mb-6">
+            <h3 className="text-lg font-bold text-orange-400">Complex Clues (Tier 3)</h3>
+            <div className="flex-1 h-px bg-orange-900/30"></div>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4">
+          <ClueBox 
+            title="Gapped Excl." 
+            tooltip="Gapped Exclusion: A and C are separated by a column where B is forbidden."
+            count={library?.HORIZONTAL.GAPPED_EXCLUSION.length}
+          >
+            <div className="flex items-center gap-1 text-2xl">
+              <span>{itemA}</span>
+              <div className="relative flex items-center justify-center grayscale opacity-50">
+                <span>{itemB}</span>
+                <span className="material-icons text-red-500/80 absolute text-[32px]">block</span>
+              </div>
+              <span>{itemC}</span>
+            </div>
+          </ClueBox>
+
+          <ClueBox 
+            title="Vert. Disj." 
+            tooltip="Disjunctive XOR: A matches either B or C, but not both."
+            count={library?.VERTICAL.VERTICAL_DISJUNCTIVE_EXCLUSION.length}
+          >
+            <div className="flex flex-col items-center gap-1 text-2xl border-x-2 border-purple-900/50 px-2 rounded">
+              <span>{itemA}</span>
+              <div className="flex items-center gap-1 relative">
+                  <span className="text-[10px] absolute -top-3 left-1/2 -translate-x-1/2 text-slate-500 font-bold bg-slate-900 px-1 border border-slate-700 rounded-full">XOR</span>
+                  <span>{itemB}</span>
+                  <span className="material-icons text-slate-600 text-[16px]">call_split</span>
+                  <span>{itemC}</span>
+              </div>
+            </div>
+          </ClueBox>
+        </div>
+      </section>
+
     </div>
   );
 }
