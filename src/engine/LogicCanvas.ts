@@ -161,6 +161,22 @@ export class LogicCanvas {
   }
 
   /**
+   * Returns the absolute number of possibility bits remaining across the entire matrix.
+   * This operates as a raw metric of grid entropy/uncertainty.
+   */
+  public countTotalBits(): number {
+    let count = 0;
+    for (let i = 0; i < this._matrix.length; i++) {
+      let mask = this._matrix[i];
+      while (mask > 0) {
+        count += mask & 1;
+        mask >>= 1;
+      }
+    }
+    return count;
+  }
+
+  /**
    * Returns an array of indices where bits are still set to 1.
    */
   public getRemainingOptions(row: CategoryIndex, col: ColumnIndex): ItemIndex[] {

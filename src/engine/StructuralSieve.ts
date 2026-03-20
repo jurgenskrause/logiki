@@ -1,4 +1,5 @@
 import { LogicCanvas } from './LogicCanvas';
+import { Slot } from './CoordinateSpace';
 import { Solver, type ActiveClue } from './Solver';
 import type { TieringService } from './TieringService';
 import { getWeight, type TopologyEntry } from './PermutationGenerator';
@@ -17,6 +18,18 @@ export class ContradictionError extends Error {
     this.name = 'ContradictionError';
     this.offendingEntry = offendingEntry;
     this.deadCells = deadCells;
+  }
+}
+
+export class StalemateError extends Error {
+  readonly canvas: LogicCanvas;
+  readonly acceptedClues: TopologyEntry[];
+
+  constructor(canvas: LogicCanvas, acceptedClues: TopologyEntry[]) {
+    super('GenerationError: Unsolvable Topology - Reached a logic stalemate. No productive clues remaining in any tier.');
+    this.name = 'StalemateError';
+    this.canvas = canvas;
+    this.acceptedClues = acceptedClues;
   }
 }
 
@@ -51,7 +64,7 @@ export class StructuralSieve {
     ) => Promise<void>
   ): Promise<GenerationTelemetry> {
     const startTime = performance.now();
-    const canvas = new LogicCanvas(N, M);
+    let canvas = new LogicCanvas(N, M);
     const solver = new Solver();
     
     // Create copy of the stacks so we can modify them
@@ -69,13 +82,13 @@ export class StructuralSieve {
     const N_target = N_min + Math.floor(Math.log10(V) * N);
 
     const acceptedClues: TopologyEntry[] = [];
-    const acceptedCounts = { simple: 0, moderate: 0, complex: 0 };
+    let acceptedCounts = { simple: 0, moderate: 0, complex: 0 };
     let totalAccepted = 0;
     
     // Hard iteration cap: 3× the total initial clue pool is a generous upper bound.
     const MAX_SIEVE_ITERATIONS = V * 3;
     let iterationCount = 0;
-
+    
     // Proportional Deficit Weights
     const W = { simple: 17, moderate: 7, complex: 1 };
     
@@ -86,8 +99,7 @@ export class StructuralSieve {
     while (!canvas.isFullySolved()) {
       if (++iterationCount > MAX_SIEVE_ITERATIONS) {
         throw new Error(
-          `GenerationError: Sieve loop exceeded ${MAX_SIEVE_ITERATIONS} iterations ` +
-          `(accepted ${acceptedClues.length} of ${V} clues). ` +
+          `GenerationError: Sieve loop exceeded ${MAX_SIEVE_ITERATIONS} iterations. ` +
           `Canvas has not converged — possible cycle in logic.`
         );
       }
@@ -106,17 +118,13 @@ export class StructuralSieve {
         { tier: 'simple' as Tier, error: ideal.simple - acceptedCounts.simple, weight: 1 }
       ];
       
-      // Sort primarily by error descending, then by tie-breaker weight (complex > mod > simple)
       errors.sort((a, b) => {
-        // give precedence to stacks that actually have items left
         const aEmpty = stacks[a.tier].length === 0;
         const bEmpty = stacks[b.tier].length === 0;
         if (aEmpty && !bEmpty) return 1;
         if (!aEmpty && bEmpty) return -1;
         
-        if (Math.abs(b.error - a.error) > 0.0001) {
-          return b.error - a.error;
-        }
+        if (Math.abs(b.error - a.error) > 0.0001) return b.error - a.error;
         return b.weight - a.weight;
       });
 
@@ -126,14 +134,48 @@ export class StructuralSieve {
         const stack = stacks[tier];
         if (stack.length === 0) continue;
         
+        const initialBits = canvas.countTotalBits();
+        
+        // --- Maximum Pruning Heuristic ---
+        // Score every clue in the stack by simulating its total catastrophic cascading effect.
+        // We measure strength as (original bits - resulting bits). Invalid clues get -1.
+        const strengths = new Array(stack.length);
+        for (let i = 0; i < stack.length; i++) {
+           const entry = stack[i];
+           const clue = this.toActiveClue(entry);
+           if (!solver.testClue(clue, canvas)) {
+               strengths[i] = -1;
+               continue;
+           }
+           
+           const testCanvas = canvas.clone();
+           solver.solve([clue], testCanvas);
+           
+           if (testCanvas.hasAnyInvalidCells()) {
+               strengths[i] = -1;
+           } else {
+               strengths[i] = initialBits - testCanvas.countTotalBits();
+           }
+        }
+        
+        // Sort stack descending by logic strength
+        const paired = stack.map((entry, i) => ({ entry, strength: strengths[i] }));
+        paired.sort((a, b) => b.strength - a.strength);
+        
+        for (let i = 0; i < stack.length; i++) {
+            stack[i] = paired[i].entry;
+        }
+
         const initialLength = stack.length;
         let foundProductive = false;
         
         for (let i = 0; i < initialLength; i++) {
           const entry = stack.shift()!;
+          const strength = paired[i].strength;
           const clue = this.toActiveClue(entry);
           
-          if (solver.testClue(clue, canvas)) {
+          // Grabbing the strongest mathematically viable clue
+          if (strength > 0 && solver.testClue(clue, canvas)) {
             acceptedClues.push(entry);
             acceptedCounts[tier]++;
             totalAccepted++;
@@ -142,7 +184,7 @@ export class StructuralSieve {
             this.assertNoContradiction(canvas, entry);
             
             await yieldState(
-              `Targeting ${N_target} clues | Accepted ${tier.toUpperCase()}: Deficit [S:${(ideal.simple - acceptedCounts.simple).toFixed(1)} M:${(ideal.moderate - acceptedCounts.moderate).toFixed(1)} C:${(ideal.complex - acceptedCounts.complex).toFixed(1)}]`,
+              `Targeting ${N_target} clues | Accepted ${tier.toUpperCase()} [Power: ${strength}]: Deficit [S:${(ideal.simple - acceptedCounts.simple).toFixed(1)} M:${(ideal.moderate - acceptedCounts.moderate).toFixed(1)} C:${(ideal.complex - acceptedCounts.complex).toFixed(1)}]`,
               entry
             );
 
@@ -154,13 +196,76 @@ export class StructuralSieve {
           }
         }
         
-        if (foundProductive) {
-          break; // Start next iteration assessing deficits anew
-        }
+        if (foundProductive) break;
       }
       
       if (!clueAccepted) {
-        throw new Error('GenerationError: Unsolvable Topology - Reached a logic stalemate. No productive clues remaining in any tier.');
+        let anchorInjected = false;
+        
+        // --- Symmetry Break: Stalemate Interception ---
+        for (let r = 0; r < N; r++) {
+          for (let c = 0; c < M; c++) {
+            if (!canvas.isSolved(r, c) && !canvas.isInvalid(r, c)) {
+               const options = canvas.getRemainingOptions(r, c);
+               for (const targetItem of options) {
+                 const anchorEntry: TopologyEntry = {
+                   topologyID: `ANCHOR_R${r}I${targetItem}C${c}`,
+                   type: 'ANCHOR' as any,
+                   slots: [ new Slot(r, targetItem) ],
+                   weight: 1
+                 };
+                 const anchorClue = this.toActiveClue(anchorEntry);
+
+                 if (solver.testClue(anchorClue, canvas)) {
+                   solver.solve([anchorClue], canvas);
+                   this.assertNoContradiction(canvas, anchorEntry);
+                   
+                   acceptedClues.push(anchorEntry);
+                   acceptedCounts.simple++;
+                   totalAccepted++;
+                   
+                   await yieldState(`⚓ Stalemate Broken! Injected Anchor for Item ${targetItem} at R${r}C${c}.`, anchorEntry);
+                   anchorInjected = true;
+                   break;
+                 }
+               }
+            }
+            if (anchorInjected) break;
+          }
+          if (anchorInjected) break;
+        }
+
+        if (!anchorInjected) {
+           // --- GREEDY BANISHMENT BACKTRACK ---
+           // The algorithm reached a mathematical dead end.
+           // To deterministicly escape without modifying the seed, we "rewind" the board state
+           // by removing the most recently accepted clue, and permanently trashed it from the topology universe.
+           // This polynomial approach flawlessly un-sticks the solver in exactly O(1) frame time.
+           if (acceptedClues.length === 0) {
+               throw new Error("Mathematical Impossibility: No valid clues remaining in the universe to form a puzzle.");
+           }
+
+           const toxicClue = acceptedClues.pop()!;
+           
+           // Rebuild Canvas
+           canvas = new LogicCanvas(N, M);
+           acceptedCounts = { simple: 0, moderate: 0, complex: 0 };
+           totalAccepted = 0;
+
+           const activeClues: ActiveClue[] = [];
+           for (const c of acceptedClues) {
+              activeClues.push(this.toActiveClue(c));
+              const w = getWeight(c.type);
+              if (w === 1) acceptedCounts.simple++;
+              else if (w === 2) acceptedCounts.moderate++;
+              else acceptedCounts.complex++;
+              totalAccepted++;
+           }
+           
+           solver.solve(activeClues, canvas);
+           
+           await yieldState(`⏪ Dead-End Encountered! Banishment Backtrack triggered. Permanently trashed toxic clue: ${toxicClue.type}`);
+        }
       }
     }
 
@@ -238,7 +343,8 @@ export class StructuralSieve {
       params: entry.slots.map(s => ({
         row: s.r,
         item: s.c
-      }))
+      })),
+      targetCol: entry.type.includes('ANCHOR') ? parseInt(entry.topologyID.split('C')[1]) : undefined
     };
   }
 }

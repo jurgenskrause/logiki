@@ -1,4 +1,6 @@
 import { LogicCanvas } from './LogicCanvas';
+import { handleAnchor } from './handlers/AnchorHandler';
+import { handleNegativeAnchor } from './handlers/NegativeAnchorHandler';
 import { handleVerticalPair } from './handlers/VerticalPairHandler';
 import { handleVerticalNot } from './handlers/VerticalNotHandler';
 import { handleVerticalTrio } from './handlers/VerticalTrioHandler';
@@ -30,6 +32,7 @@ export interface ActiveClue {
     row: CategoryIndex;
     item: ItemIndex;
   }>;
+  targetCol?: number; // Used exclusively for ANCHOR/NEGATIVE_ANCHOR clues.
 }
 
 /**
@@ -114,6 +117,11 @@ export class Solver {
    */
   private executeClueHandler(clue: ActiveClue, canvas: LogicCanvas): boolean {
     switch (clue.type) {
+      case 'ANCHOR':
+        return handleAnchor(clue, canvas);
+      case 'NEGATIVE_ANCHOR':
+        return handleNegativeAnchor(clue, canvas);
+      case 'VERTICAL':
       case 'VERTICAL_PAIR':
         return handleVerticalPair(clue, canvas);
       case 'VERTICAL_NOT':
