@@ -54,11 +54,17 @@ export interface GenerationTelemetry {
   finalCanvas: LogicCanvas;
   unprunedClues: TopologyEntry[];
   solution: SolutionGrid;
+  backtrackNodes: number;
+  totalSolves: number;
 }
 
 export class StructuralSieve {
   private logicSolver = new Solver();
   private backtracker = new BacktrackingSolver();
+  private timeoutAt: number | null = null;
+  private backtrackNodes = 0;
+  private totalSolves = 0;
+  private totalTestedClues = 0;
 
   public async generateAsync(
     tieringService: TieringService,
@@ -73,7 +79,11 @@ export class StructuralSieve {
     rng: () => number = Math.random
   ): Promise<GenerationTelemetry> {
     const startTime = performance.now();
-    const timeoutMs = N * M * 5000; // N * M * 0.5s
+    const timeoutMs = N * M * 100; // N * M * 0.5s
+    this.timeoutAt = Date.now() + timeoutMs;
+    this.totalSolves = 0;
+    this.backtrackNodes = 0;
+    this.totalTestedClues = 0;
 
     const canvas = new LogicCanvas(N, M);
     const space = new CoordinateSpace(N, M);
@@ -92,17 +102,24 @@ export class StructuralSieve {
     const activeList: ActiveClue[] = [];
 
     const yieldState = async (c: LogicCanvas, msg: string, entry?: TopologyEntry) => {
-      await onYield(c, { simple: 0, moderate: 0, complex: 0 }, msg, entry);
+      await onYield(c, { simple: 0, moderate: 0, complex: 0 },
+        `[Node:${this.backtrackNodes} Solve:${this.totalSolves} Clue:${this.totalTestedClues}] ${msg}`, entry);
     };
 
     const checkTimeout = () => {
-      if (performance.now() - startTime > timeoutMs) {
-        throw new TimeoutError(`Generation timed out after ${(performance.now() - startTime).toFixed(0)}ms`);
+      if (Date.now() > (this.timeoutAt ?? Infinity)) {
+        throw new TimeoutError(`Generation timed out`);
       }
     };
 
     // --- Generation Loop ---
-    let solCount = this.backtracker.count(canvas, activeList, 2);
+    let solCount = this.backtracker.count(canvas, activeList, 2, (nodes) => {
+      yieldState(canvas, `🧠 Deep Exploring... (${nodes} nodes explored)`);
+    });
+    this.backtrackNodes += this.backtracker.nodesVisited;
+    this.totalSolves++;
+
+    let iterationsWithoutCommit = 0;
 
     while (solCount !== 1) {
       checkTimeout();
@@ -122,21 +139,33 @@ export class StructuralSieve {
           this.logicSolver.solve(activeList, canvas);
           canvas.rowSweep();
           await yieldState(canvas, `⚓ Stalemate broken via Anchor.`, anchor);
-          solCount = this.backtracker.count(canvas, activeList, 2);
+          solCount = this.backtracker.count(canvas, activeList, 2, (nodes) => {
+             yieldState(canvas, `🧠 Deep Exploring... (${nodes} nodes explored)`);
+          });
           continue;
         }
         throw new StalemateError(canvas, activeClues);
       }
 
       // 2. Sample
-      const K = 15;
+      const K = 20;
       const sample = this.pickRandomSample(masterPool, K, rng);
 
       // 3. Dry Run & Score
       const scored: { entry: TopologyEntry; score: number }[] = [];
       const initialBits = canvas.countTotalBits();
 
+      let sampleIdx = 0;
       for (const entry of sample) {
+        sampleIdx++;
+        this.totalTestedClues++;
+        checkTimeout();
+        this.totalSolves++;
+
+        if (this.totalTestedClues % 5 === 0) {
+          await yieldState(canvas, `⚡ Scanning... (${sampleIdx}/${K} in batch, pool: ${masterPool.length})`);
+        }
+
         const testCanvas = canvas.clone();
         const clue = this.toActiveClue(entry, solution);
         const result = this.logicSolver.solve([clue], testCanvas);
@@ -161,9 +190,33 @@ export class StructuralSieve {
         canvas.rowSweep();
         masterPool = masterPool.filter(e => e.topologyID !== best.entry.topologyID);
         await yieldState(canvas, `🔍 Committed ${best.entry.type} [Power: ${best.score}]`, best.entry);
+        iterationsWithoutCommit = 0;
+      } else {
+        iterationsWithoutCommit++;
+        if (iterationsWithoutCommit > 20) {
+          // If we've sampled 20 times without finding a single pruning clue, 
+          // we might be in a very sparse region or masterPool is empty?
+          if (masterPool.length === 0) {
+            const emergency = this.findSymmetryBreaker(canvas, solution);
+            if (!emergency) break; // Should not happen
+            activeClues.push(emergency);
+            activeList.push(this.toActiveClue(emergency, solution));
+            this.logicSolver.solve(activeList, canvas);
+            canvas.rowSweep();
+            await yieldState(canvas, `⚓ EMERGENCY ANCHOR (Pool Empty)`, emergency);
+            iterationsWithoutCommit = 0;
+          } else {
+            await yieldState(canvas, `⚠️ STALL DETECTED: Progress stagnant for 20 samples. Sampling larger bulk...`);
+            // Increase K temporarily or just keep hitting?
+          }
+        }
       }
 
-      solCount = this.backtracker.count(canvas, activeList, 2);
+      solCount = this.backtracker.count(canvas, activeList, 2, (nodes) => {
+         yieldState(canvas, `🧠 Deep Exploring... (${nodes} nodes explored)`);
+      });
+      this.backtrackNodes += this.backtracker.nodesVisited;
+      this.totalSolves++;
     }
 
     // --- Minimization ---
@@ -176,6 +229,7 @@ export class StructuralSieve {
       finalClues.splice(i, 1);
       const testList = finalClues.map(c => this.toActiveClue(c, solution));
       const testCanvas = new LogicCanvas(N, M);
+      this.totalSolves++;
       const result = this.logicSolver.solve(testList, testCanvas);
 
       if (result === 'SOLVED') {
@@ -197,7 +251,9 @@ export class StructuralSieve {
       prunedCount: activeClues.length - finalClues.length,
       finalCanvas: canvas,
       unprunedClues: [...activeClues],
-      solution: solution
+      solution: solution,
+      backtrackNodes: this.backtrackNodes,
+      totalSolves: this.totalSolves
     };
   }
 

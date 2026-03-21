@@ -42,6 +42,8 @@ async function runBatch() {
         const tieringService = new TieringService(libraryReport.library);
         tieringService.shuffle(rng);
 
+        process.stdout.write(`  [#${i.toString().padStart(3, '0')}] Seed: ${seed.toString().padEnd(10)} `);
+
         const sieve = new StructuralSieve();
 
         try {
@@ -70,7 +72,7 @@ async function runBatch() {
                 minSeed = seed;
             }
             
-            process.stdout.write('✅');
+            process.stdout.write('✅\n');
         } catch (error: any) {
             failed++;
             process.stdout.write('❌');
@@ -101,7 +103,8 @@ async function runBatch() {
             }
         }
 
-        if (i % 50 === 0) console.log(` (${i}/${count})`);
+        // newline handled per run above
+
     }
 
     console.log(`\n\n================================`);

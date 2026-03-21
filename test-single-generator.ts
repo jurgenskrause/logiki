@@ -36,10 +36,25 @@ async function runTestSingle() {
         N,
         M,
         async (canvas, stats, msg, entry) => {
-            console.log(`  [Sieve] -> ${msg}`);
+            const isProgress = msg.includes('⚡') || msg.includes('⚠️') || msg.includes('🧠');
+            if (isProgress) {
+              process.stdout.write(`\r  [Sieve] -> ${msg.padEnd(100)} `);
+            } else {
+              process.stdout.write(`\n  [Sieve] -> ${msg}\n`);
+            }
         },
         rng
     );
+
+    console.log(`\n================================`);
+    console.log(`GENERATION TELEMETRY`);
+    console.log(`================================`);
+    console.log(`Time:            ${telemetry.timeMs.toFixed(2)}ms`);
+    console.log(`Total Solves:    ${telemetry.totalSolves}`);
+    console.log(`Backtrack Nodes: ${telemetry.backtrackNodes}`);
+    console.log(`Initial Pool:    ${telemetry.initialClues}`);
+    console.log(`Accepted Clues:  ${telemetry.unprunedClues.length}`);
+    console.log(`Final Recipe:    ${telemetry.finalClues} clues`);
 
     // Prepare fresh solver for proof phase
     const space = new CoordinateSpace(N, M);
