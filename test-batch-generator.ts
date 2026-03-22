@@ -33,6 +33,10 @@ async function runBatch() {
     let minClues = Infinity;
     let maxSeed = 0;
     let minSeed = 0;
+    let maxTime = 0;
+    let minTime = Infinity;
+    let maxTimeSeed = 0;
+    let minTimeSeed = 0;
 
     for (let i = 1; i <= count; i++) {
         // Generate a 32-bit seed for this run
@@ -71,8 +75,16 @@ async function runBatch() {
                 minClues = telemetry.finalClues;
                 minSeed = seed;
             }
+            if (telemetry.timeMs > maxTime) {
+                maxTime = telemetry.timeMs;
+                maxTimeSeed = seed;
+            }
+            if (telemetry.timeMs < minTime) {
+                minTime = telemetry.timeMs;
+                minTimeSeed = seed;
+            }
             
-            process.stdout.write('✅\n');
+            process.stdout.write(`✅ (${telemetry.timeMs.toFixed(2)}ms)\n`);
         } catch (error: any) {
             failed++;
             process.stdout.write('❌');
@@ -116,6 +128,8 @@ async function runBatch() {
     console.log(`Total Failed:  ${failed}`);
     if (passed > 0) {
         console.log(`Avg Gen Time:  ${(totalTime / passed).toFixed(2)}ms (successful puzzles)`);
+        console.log(`Max Gen Time:  ${maxTime.toFixed(2)}ms (Seed: ${maxTimeSeed})`);
+        console.log(`Min Gen Time:  ${minTime.toFixed(2)}ms (Seed: ${minTimeSeed})`);
         console.log(`Max Clues:     ${maxClues} (Seed: ${maxSeed})`);
         console.log(`Min Clues:     ${minClues} (Seed: ${minSeed})`);
         console.log(`Avg Clues:     ${(totalClues / passed).toFixed(2)}`);

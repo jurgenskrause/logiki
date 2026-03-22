@@ -9,6 +9,7 @@ export class TieringService {
   public simpleStack: TopologyEntry[] = [];
   public moderateStack: TopologyEntry[] = [];
   public complexStack: TopologyEntry[] = [];
+  public anchorStack: TopologyEntry[] = [];
 
   constructor(library: TopologyLibrary) {
     this.categorizeLibrary(library);
@@ -23,6 +24,10 @@ export class TieringService {
     }
     for (const typeKey in library.HORIZONTAL) {
       allEntries.push(...library.HORIZONTAL[typeKey as keyof typeof library.HORIZONTAL]);
+    }
+
+    for (const typeKey in library.ANCHOR) {
+      this.anchorStack.push(...library.ANCHOR[typeKey as keyof typeof library.ANCHOR]);
     }
 
     // Sort into stacks based on the predefined topological weight
@@ -46,6 +51,7 @@ export class TieringService {
     this.shuffleArray(this.simpleStack, randomFn);
     this.shuffleArray(this.moderateStack, randomFn);
     this.shuffleArray(this.complexStack, randomFn);
+    this.shuffleArray(this.anchorStack, randomFn);
   }
 
   /** Fisher-Yates shuffle acting in-place */

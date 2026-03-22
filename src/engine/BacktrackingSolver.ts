@@ -15,7 +15,7 @@ export class BacktrackingSolver {
      * Counts the total number of valid solutions for the given canvas and clues.
      * Terminate early if the count exceeds a threshold.
      */
-    public count(canvas: LogicCanvas, clues: ActiveClue[], limit: number = 100, onNode?: (nodes: number) => void): number {
+    public count(canvas: LogicCanvas, clues: ActiveClue[], limit: number = 100, onNode?: (nodes: number) => void, maxNodes: number = Infinity): number {
         const initialCanvas = canvas.clone();
         
         // Initial propagation
@@ -24,11 +24,13 @@ export class BacktrackingSolver {
         if (result === 'SOLVED') return 1;
 
         this.nodesVisited = 0; // Reset for each new count call
-        return this.recursiveCount(initialCanvas, clues, limit, onNode);
+        return this.recursiveCount(initialCanvas, clues, limit, onNode, maxNodes);
     }
 
-    private recursiveCount(canvas: LogicCanvas, clues: ActiveClue[], limit: number, onNode?: (nodes: number) => void): number {
+    private recursiveCount(canvas: LogicCanvas, clues: ActiveClue[], limit: number, onNode?: (nodes: number) => void, maxNodes: number = Infinity): number {
         this.nodesVisited++;
+        if (this.nodesVisited >= maxNodes) return -1;
+        
         if (this.nodesVisited % 500 === 0 && onNode) {
             onNode(this.nodesVisited);
         }
@@ -71,7 +73,9 @@ export class BacktrackingSolver {
             if (result === 'SOLVED') {
                 totalCount += 1;
             } else {
-                totalCount += this.recursiveCount(branchCanvas, clues, limit - totalCount, onNode);
+                const subCount = this.recursiveCount(branchCanvas, clues, limit - totalCount, onNode, maxNodes);
+                if (subCount === -1) return -1;
+                totalCount += subCount;
             }
         }
 

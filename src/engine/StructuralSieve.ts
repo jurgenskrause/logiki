@@ -3,7 +3,6 @@ import { Slot, CoordinateSpace } from './CoordinateSpace';
 import { Solver, type ActiveClue } from './Solver';
 import type { TieringService } from './TieringService';
 import { type TopologyEntry } from './PermutationGenerator';
-import { BacktrackingSolver } from './BacktrackingSolver';
 import { SolutionGrid } from './SolutionGrid';
 
 /**
@@ -60,9 +59,6 @@ export interface GenerationTelemetry {
 
 export class StructuralSieve {
   private logicSolver = new Solver();
-  private backtracker = new BacktrackingSolver();
-  private timeoutAt: number | null = null;
-  private backtrackNodes = 0;
   private totalSolves = 0;
   private totalTestedClues = 0;
 
@@ -79,10 +75,7 @@ export class StructuralSieve {
     rng: () => number = Math.random
   ): Promise<GenerationTelemetry> {
     const startTime = performance.now();
-    const timeoutMs = N * M * 100; // N * M * 0.5s
-    this.timeoutAt = Date.now() + timeoutMs;
     this.totalSolves = 0;
-    this.backtrackNodes = 0;
     this.totalTestedClues = 0;
 
     const canvas = new LogicCanvas(N, M);
@@ -103,66 +96,64 @@ export class StructuralSieve {
 
     const yieldState = async (c: LogicCanvas, msg: string, entry?: TopologyEntry) => {
       await onYield(c, { simple: 0, moderate: 0, complex: 0 },
-        `[Node:${this.backtrackNodes} Solve:${this.totalSolves} Clue:${this.totalTestedClues}] ${msg}`, entry);
+        `[Solve:${this.totalSolves} Clue:${this.totalTestedClues}] ${msg}`, entry);
     };
 
-    const checkTimeout = () => {
-      if (Date.now() > (this.timeoutAt ?? Infinity)) {
-        throw new TimeoutError(`Generation timed out`);
-      }
-    };
+    const maxEntropy = canvas.countTotalBits();
 
-    // --- Generation Loop ---
-    let solCount = this.backtracker.count(canvas, activeList, 2, (nodes) => {
-      yieldState(canvas, `🧠 Deep Exploring... (${nodes} nodes explored)`);
-    });
-    this.backtrackNodes += this.backtracker.nodesVisited;
-    this.totalSolves++;
-
+    // ----------------------------------------------------------------------
+    // Phase 1: Progressive Clue Commitment
+    // ----------------------------------------------------------------------
     let iterationsWithoutCommit = 0;
 
-    while (solCount !== 1) {
-      checkTimeout();
-
-      if (solCount === 0) {
-        throw new Error("Internal Error: Logic contradiction with ground truth.");
-      }
-
-      // 1. Pool Maintenance
+    while (!canvas.isFullySolved()) {
+      // 1. Pool Maintenance: Filter out clues that are already logically satisfied
       masterPool = masterPool.filter(entry => !this.isEntrySolved(entry, canvas, solution));
 
       if (masterPool.length === 0) {
+        // No more ordinary clues left, try a symmetry breaker (Anchor)
         const anchor = this.findSymmetryBreaker(canvas, solution);
         if (anchor) {
           activeClues.push(anchor);
-          activeList.push(this.toActiveClue(anchor, solution));
-          this.logicSolver.solve(activeList, canvas);
+          const activeAnchor = this.toActiveClue(anchor, solution);
+          activeList.push(activeAnchor);
+          
+          this.totalSolves++;
+          const result = this.logicSolver.solve(activeList, canvas);
+          if (result === 'CONTRADICTION') {
+             throw new ContradictionError(anchor, canvas.getInvalidCells());
+          }
           canvas.rowSweep();
           await yieldState(canvas, `⚓ Stalemate broken via Anchor.`, anchor);
-          solCount = this.backtracker.count(canvas, activeList, 2, (nodes) => {
-             yieldState(canvas, `🧠 Deep Exploring... (${nodes} nodes explored)`);
-          });
           continue;
         }
+
+        // Truly stuck: Logic grid is ambiguous but no more clues exist to separate identities.
         throw new StalemateError(canvas, activeClues);
       }
 
-      // 2. Sample
-      const K = 20;
+      // 2. Adaptive Sample
+      const currentEntropy = canvas.countTotalBits();
+      const entropyRatio = currentEntropy / maxEntropy;
+      
+      let K = 20;
+      if (entropyRatio < 0.20) K = 150;
+      else if (entropyRatio < 0.60) K = 50;
+      
       const sample = this.pickRandomSample(masterPool, K, rng);
 
       // 3. Dry Run & Score
+      const initialBits = currentEntropy;
       const scored: { entry: TopologyEntry; score: number }[] = [];
-      const initialBits = canvas.countTotalBits();
 
       let sampleIdx = 0;
+
       for (const entry of sample) {
         sampleIdx++;
         this.totalTestedClues++;
-        checkTimeout();
         this.totalSolves++;
 
-        if (this.totalTestedClues % 5 === 0) {
+        if (this.totalTestedClues % 20 === 0) {
           await yieldState(canvas, `⚡ Scanning... (${sampleIdx}/${K} in batch, pool: ${masterPool.length})`);
         }
 
@@ -170,71 +161,75 @@ export class StructuralSieve {
         const clue = this.toActiveClue(entry, solution);
         const result = this.logicSolver.solve([clue], testCanvas);
 
-        if (result === 'CONTRADICTION') {
-          scored.push({ entry, score: -1 });
-          continue;
+        if (result !== 'CONTRADICTION') {
+          const score = initialBits - testCanvas.countTotalBits();
+          scored.push({ entry, score });
         }
-
-        const deltaBits = initialBits - testCanvas.countTotalBits();
-        scored.push({ entry, score: deltaBits });
       }
 
-      // 4. Commit
+      // 4. Commit or Fallback
       scored.sort((a, b) => b.score - a.score);
       const best = scored[0];
 
       if (best && best.score > 0) {
         activeClues.push(best.entry);
-        activeList.push(this.toActiveClue(best.entry, solution));
-        this.logicSolver.solve(activeList, canvas);
+        const activeClue = this.toActiveClue(best.entry, solution);
+        activeList.push(activeClue);
+        
+        this.totalSolves++;
+        const result = this.logicSolver.solve(activeList, canvas);
+        if (result === 'CONTRADICTION') {
+           throw new ContradictionError(best.entry, canvas.getInvalidCells());
+        }
+
         canvas.rowSweep();
         masterPool = masterPool.filter(e => e.topologyID !== best.entry.topologyID);
         await yieldState(canvas, `🔍 Committed ${best.entry.type} [Power: ${best.score}]`, best.entry);
         iterationsWithoutCommit = 0;
       } else {
         iterationsWithoutCommit++;
-        if (iterationsWithoutCommit > 20) {
-          // If we've sampled 20 times without finding a single pruning clue, 
-          // we might be in a very sparse region or masterPool is empty?
-          if (masterPool.length === 0) {
-            const emergency = this.findSymmetryBreaker(canvas, solution);
-            if (!emergency) break; // Should not happen
-            activeClues.push(emergency);
-            activeList.push(this.toActiveClue(emergency, solution));
-            this.logicSolver.solve(activeList, canvas);
-            canvas.rowSweep();
-            await yieldState(canvas, `⚓ EMERGENCY ANCHOR (Pool Empty)`, emergency);
-            iterationsWithoutCommit = 0;
-          } else {
-            await yieldState(canvas, `⚠️ STALL DETECTED: Progress stagnant for 20 samples. Sampling larger bulk...`);
-            // Increase K temporarily or just keep hitting?
+        // If we can't find ANY productive clues after multiple attempts, inject an Anchor
+        if (iterationsWithoutCommit > 20 || (K === 150 && (!best || best.score <= 0))) {
+          const emergency = this.findSymmetryBreaker(canvas, solution);
+          if (!emergency) {
+              throw new StalemateError(canvas, activeClues);
           }
+          activeClues.push(emergency);
+          activeList.push(this.toActiveClue(emergency, solution));
+          
+          this.totalSolves++;
+          const result = this.logicSolver.solve(activeList, canvas);
+          if (result === 'CONTRADICTION') {
+              throw new ContradictionError(emergency, canvas.getInvalidCells());
+          }
+          
+          canvas.rowSweep();
+          await yieldState(canvas, `⚓ Stalemate broken via Emergency Anchor.`, emergency);
+          iterationsWithoutCommit = 0;
         }
       }
-
-      solCount = this.backtracker.count(canvas, activeList, 2, (nodes) => {
-         yieldState(canvas, `🧠 Deep Exploring... (${nodes} nodes explored)`);
-      });
-      this.backtrackNodes += this.backtracker.nodesVisited;
-      this.totalSolves++;
     }
 
-    // --- Minimization ---
-    await yieldState(canvas, `🏁 UNPRUNED RECIPE SECURED: Unique solution found at ${activeClues.length} clues. Starting Minimization...`);
+    // ----------------------------------------------------------------------
+    // Phase 2: Minimization (Pruning redundant clues)
+    // ----------------------------------------------------------------------
+    await yieldState(canvas, `🏁 UNPRUNED RECIPE SECURED: Puzzle solved via logic with ${activeClues.length} clues. Starting Minimization...`);
+    
     const finalClues = [...activeClues];
     for (let i = finalClues.length - 1; i >= 0; i--) {
-      checkTimeout();
-
       const candidateClue = finalClues[i];
       finalClues.splice(i, 1);
+      
       const testList = finalClues.map(c => this.toActiveClue(c, solution));
       const testCanvas = new LogicCanvas(N, M);
+      
       this.totalSolves++;
       const result = this.logicSolver.solve(testList, testCanvas);
 
       if (result === 'SOLVED') {
         await yieldState(canvas, `✂️ Pruned redundant ${candidateClue.type}.`, candidateClue);
       } else {
+        // Essential clue, put it back
         finalClues.splice(i, 0, candidateClue);
       }
     }
@@ -252,7 +247,7 @@ export class StructuralSieve {
       finalCanvas: canvas,
       unprunedClues: [...activeClues],
       solution: solution,
-      backtrackNodes: this.backtrackNodes,
+      backtrackNodes: 0, // Deep exploration removed
       totalSolves: this.totalSolves
     };
   }

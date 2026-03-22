@@ -21,11 +21,15 @@ import { VerticalDisjunctiveExclusionScanner } from './scanners/VerticalDisjunct
 import { SequenceThreeScanner } from './scanners/SequenceThreeScanner';
 import { GappedExclusionScanner } from './scanners/GappedExclusionScanner';
 import { VerticalNotTrioScanner } from './scanners/VerticalNotTrioScanner';
+import { AnchorScanner } from './scanners/AnchorScanner';
 import type { TopologyScanner } from './scanners/TopologyScanner';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
+
+export const ANCHOR_TYPES = ['ANCHOR'] as const;
+export type AnchorType = typeof ANCHOR_TYPES[number];
 
 export const VERTICAL_TYPES = [
   'VERTICAL',
@@ -44,7 +48,7 @@ export const HORIZONTAL_TYPES = [
 
 export type VerticalType = typeof VERTICAL_TYPES[number];
 export type HorizontalType = typeof HORIZONTAL_TYPES[number];
-export type TopologyType = VerticalType | HorizontalType;
+export type TopologyType = VerticalType | HorizontalType | AnchorType;
 
 export interface TopologyEntry {
   /** Deterministic, unique identifier for this geometric relationship. */
@@ -61,6 +65,7 @@ export interface TopologyEntry {
 export type TopologyLibrary = Readonly<{
   VERTICAL: Readonly<{ [K in VerticalType]: readonly TopologyEntry[] }>;
   HORIZONTAL: Readonly<{ [K in HorizontalType]: readonly TopologyEntry[] }>;
+  ANCHOR: Readonly<{ [K in AnchorType]: readonly TopologyEntry[] }>;
 }>;
 
 export interface TopologyAuditReport {
@@ -103,6 +108,7 @@ export function getPrefix(type: TopologyType): string {
     case 'VERTICAL_DISJUNCTIVE_EXCLUSION': return 'VDEX';
     case 'VERTICAL_NOT_TRIO': return 'VNOT3';
     case 'VERTICAL_NOT': return 'VNOT';
+    case 'ANCHOR': return 'ANC';
   }
 }
 
@@ -124,6 +130,8 @@ export function getWeight(type: TopologyType): number {
     case 'GAPPED_EXCLUSION':
     case 'VERTICAL_DISJUNCTIVE_EXCLUSION':
       return 3;
+    case 'ANCHOR':
+      return 10; // Extra heavy weight to ensure it sits above all relations
     default:
       return 0;
   }
@@ -159,13 +167,18 @@ export class TopologyManifest {
       GAPPED_EXCLUSION: all.filter(e => e.type === 'GAPPED_EXCLUSION').sort((a, b) => a.topologyID.localeCompare(b.topologyID)),
     };
 
+    const anchor = {
+      ANCHOR: all.filter(e => e.type === 'ANCHOR').sort((a, b) => a.topologyID.localeCompare(b.topologyID)),
+    };
+
     const library = {
       VERTICAL: vertical,
       HORIZONTAL: horizontal,
+      ANCHOR: anchor,
     };
 
     // Deep freeze the entire structure
-    [vertical, horizontal].forEach(group => {
+    [vertical, horizontal, anchor].forEach(group => {
       Object.values(group).forEach(arr => {
         arr.forEach(entry => Object.freeze(entry.slots));
         arr.forEach(entry => Object.freeze(entry));
@@ -230,7 +243,8 @@ export function buildTopologyLibrary(rows: number, cols: number, forceAudit: boo
     new VerticalDisjunctiveExclusionScanner(),
     new SequenceThreeScanner(),
     new GappedExclusionScanner(),
-    new VerticalNotTrioScanner()
+    new VerticalNotTrioScanner(),
+    new AnchorScanner()
   ];
 
   for (const scanner of scanners) {
