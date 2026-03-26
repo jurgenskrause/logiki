@@ -82,7 +82,7 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         <div className="flex-1 flex flex-col overflow-hidden">
           
           {/* Top Row (3.2.1.1.1): The Game Board Area */}
-          <div className="flex-1 flex items-center justify-center p-0 min-h-0 relative">
+          <div className="flex-1 flex items-center justify-center p-0 min-h-0 relative shrink-0 overflow-hidden" style={{ containerType: 'size' }}>
             <GameBoard rows={rows} cols={cols} subColumns={subColumns} />
           </div>
 

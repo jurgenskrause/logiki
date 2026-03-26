@@ -50,13 +50,16 @@ export const BoardCell: React.FC<BoardCellProps> = ({
     observer.observe(containerRef.current);
     return () => observer.disconnect();
   }, [cellSizeRef, cellId]);
+  // Compute aspect ratio CSS dynamically based on subColumns (e.g. 3 cols / 2 rows = 3/2)
+  const aspectStyle = { aspectRatio: `${subColumns} / 2` };
 
   return (
     <div 
       ref={containerRef}
-      className={`relative w-full h-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 
+      className={`relative w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 
                   flex items-center justify-center overflow-hidden transition-colors cursor-pointer
                   hover:bg-slate-50 dark:hover:bg-slate-750`}
+      style={aspectStyle}
       // If we want to capture clicks on the whole cell for the Zoom overlay constraint
       onClick={() => onInteract(cellId, -1, 'zoom_trigger' as any)}
     >

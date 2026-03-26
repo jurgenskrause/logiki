@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BoardCell } from './BoardCell';
 import { ZoomOverlay } from './ZoomOverlay';
 
@@ -16,7 +16,6 @@ const generateMockCells = (rows: number, cols: number, subCols: number) => {
   
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
-      // Each row pulls icons from the same category for consistency as requested.
       const options = Array.from({ length: numOptions }).map((_, i) => ({
         id: i,
         isActive: Math.random() > 0.3, 
@@ -40,14 +39,27 @@ const generateMockCells = (rows: number, cols: number, subCols: number) => {
 
 export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns }) => {
   const [cells, setCells] = useState(() => generateMockCells(rows, cols, subColumns));
-  
   const [zoomTarget, setZoomTarget] = useState<string | null>(null);
-  
-  // Track if interaction via Zoom is required based on size.
   const [needsZoom, setNeedsZoom] = useState(false);
+  
+  // Aspect Ratio Tracking
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
-  // We capture the smallest optionHeight measured in the grid.
-  // Using 44px as standard touch min-target, we are triggering zoom safely if height < 32px
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerSize({
+          width: entry.contentRect.width,
+          height: entry.contentRect.height
+        });
+      }
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
   const handleCellSize = ({ height }: { height: number; cellId: string }) => {
     const optionHeight = height / 2;
     if (optionHeight < 32 && !needsZoom) {
@@ -81,28 +93,46 @@ export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns }) 
 
   const currentZoomCell = cells.find(c => c.id === zoomTarget);
 
+  // Perfect Aspect Ratio Calculation
+  const boardAspectRatio = (cols * subColumns) / (rows * 2);
+  
+  let boardWidth = 0;
+  let boardHeight = 0;
+
+  if (containerSize.width > 0 && containerSize.height > 0) {
+    const containerAspect = containerSize.width / containerSize.height;
+    if (containerAspect > boardAspectRatio) {
+      // Container is wider than board: fit height, calc width
+      boardHeight = containerSize.height;
+      boardWidth = boardHeight * boardAspectRatio;
+    } else {
+      // Container is taller than board: fit width, calc height
+      boardWidth = containerSize.width;
+      boardHeight = boardWidth / boardAspectRatio;
+    }
+  }
+
   return (
-    <div className="w-full h-full flex items-center justify-center p-0 relative animate-in fade-in duration-500 overflow-hidden">
-      {/* 
-          The Main Game Board component:
-          - Fills the container 100% as requested.
-          - Uses a sophisticated background for premium feel.
-          - Scaling is handled by the grid itself filling the parent.
-      */}
+    <div 
+      ref={containerRef}
+      className="w-full h-full flex items-center justify-center p-4 relative animate-in fade-in duration-500 overflow-hidden"
+    >
       <div 
-        className="w-full h-full bg-slate-100 dark:bg-slate-900 shadow-2xl overflow-hidden transition-all duration-300 relative border-4 border-slate-300 dark:border-slate-800"
+        className="bg-slate-100 dark:bg-slate-900 shadow-2xl overflow-hidden transition-all duration-300 relative border-4 border-slate-300 dark:border-slate-800 rounded-lg flex-shrink-0"
         style={{
+          width: boardWidth || '100%',
+          height: boardHeight || 'auto',
+          aspectRatio: `${boardAspectRatio}`,
           display: 'grid',
           gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
           gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
           gap: '2px',
           background: 'var(--board-bg, #e2e8f0)',
-          boxShadow: 'inset 0 4px 6px -1px rgba(0, 0, 0, 0.1), inset 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+          boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1), inset 0 2px 4px 0 rgb(255 255 255 / 0.05)'
         }}
       >
-        {/* Modern grid-line effect using a subtle pseudo-pattern */}
         <div className="absolute inset-0 pointer-events-none opacity-5 mix-blend-overlay dark:opacity-10" 
-             style={{ backgroundImage: 'radial-gradient(circle, #000 1px, transparent 1px)', backgroundSize: '20px 20px' }} 
+             style={{ backgroundImage: 'radial-gradient(circle, #000 1px, transparent 1px)', backgroundSize: '10px 10px' }} 
         />
         
         {cells.map(cell => (
