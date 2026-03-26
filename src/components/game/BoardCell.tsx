@@ -65,8 +65,11 @@ export const BoardCell: React.FC<BoardCellProps> = ({
     >
       {isResolved ? (
         // Resolved State: Single large icon, centered, 1:1 aspect ratio inside the cell
-        <div className="h-full aspect-square flex items-center justify-center text-blue-500 dark:text-blue-400 font-bold p-1">
-          <span style={{ fontSize: 'max(2vw, 24px)' }}>
+        <div 
+          className="h-full aspect-square flex items-center justify-center text-blue-500 dark:text-blue-400 font-bold p-1"
+          style={{ containerType: 'size' }}
+        >
+          <span style={{ fontSize: '75cqmin' }}>
             {resolvedValue}
           </span>
         </div>
@@ -93,8 +96,12 @@ export const BoardCell: React.FC<BoardCellProps> = ({
               }}
               className={`w-full h-full aspect-square flex items-center justify-center bg-white dark:bg-slate-800 transition-all
                           ${opt.isActive ? 'opacity-100 grayscale-0' : 'opacity-20 grayscale'}`}
+              style={{ containerType: 'size' }}
             >
-              <span className="text-xs sm:text-lg flex items-center justify-center">
+              <span 
+                className="flex items-center justify-center leading-none"
+                style={{ fontSize: '75cqmin' }}
+              >
                 {opt.value}
               </span>
             </div>
