@@ -4,11 +4,19 @@ import { getAsset } from './utils/themeRegistry';
 import { GameState } from './engine/GameState';
 import { TopologyAuditUI } from './components/TopologyAuditUI';
 import { StructuralSandboxUI } from './components/StructuralSandboxUI';
+import { GamePage } from './components/game/GamePage';
 
 function App() {
+  // Simple view routing for testing
+  const [currentView, setCurrentView] = useState<'audit' | 'game'>('audit');
+
   // Use state to trigger re-renders for the audit tests if needed, 
   // though currently they run on every render statically.
   const [auditTick] = useState(0);
+
+  if (currentView === 'game') {
+    return <GamePage onBack={() => setCurrentView('audit')} />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center p-8 gap-12 font-sans">
@@ -16,7 +24,15 @@ function App() {
         <h1 className="text-5xl font-black bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent mb-4 tracking-tighter">
           ENGINE FINAL AUDIT
         </h1>
-        <p className="text-slate-500 font-medium tracking-widest uppercase text-xs">Phase 1 & Phase 2 Comprehensive Proof</p>
+        <p className="text-slate-500 font-medium tracking-widest uppercase text-xs mb-6">Phase 1 & Phase 2 Comprehensive Proof</p>
+        
+        <button 
+          onClick={() => setCurrentView('game')}
+          className="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold shadow-lg shadow-blue-900/20 transition-all border border-blue-400/20 flex items-center gap-3 mx-auto"
+        >
+          <span className="material-icons">sports_esports</span>
+          Test Game UI Scaffolding
+        </button>
       </header>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 w-full max-w-7xl">
