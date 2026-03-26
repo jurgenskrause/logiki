@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DifficultyMenu } from './DifficultyMenu';
+import { GameBoard } from './GameBoard';
 
 export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -15,6 +16,11 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       document.documentElement.classList.remove('dark');
     }
   }, [isDarkMode]);
+
+  // For the demonstration, we'll use a 5x5 grid with 3 sub-columns (6 options)
+  const rows = 5;
+  const cols = 5;
+  const subColumns = 3;
 
   return (
     // 1. The Global Container
@@ -42,8 +48,8 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </button>
 
           <button 
-             onClick={() => setIsMenuOpen(true)}
-             className="px-3 py-1.5 rounded-lg bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-800 transition-colors text-sm font-bold shadow-sm flex items-center gap-1"
+            onClick={() => setIsMenuOpen(true)}
+            className="px-3 py-1.5 rounded-lg bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-800 transition-colors text-sm font-bold shadow-sm flex items-center gap-1"
           >
             <span className="material-icons text-sm">tune</span>
             {selectedDifficulty > 0 ? `Level ${selectedDifficulty}` : 'Daily Puzzle'}
@@ -76,14 +82,8 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         <div className="flex-1 flex flex-col overflow-hidden">
           
           {/* Top Row (3.2.1.1.1): The Game Board Area */}
-          <div className="flex-1 flex items-center justify-center p-2 sm:p-4 min-h-0 relative">
-            {/* The actual board container that letterboxes and claims available space */}
-            <div className="max-h-full max-w-full aspect-square w-full sm:w-auto bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 flex items-center justify-center overflow-hidden">
-              <div className="text-center">
-                <span className="material-icons text-4xl text-slate-300 dark:text-slate-700 mb-2 block">grid_on</span>
-                <span className="text-slate-400 font-bold uppercase tracking-widest text-sm">Game Board Space</span>
-              </div>
-            </div>
+          <div className="flex-1 flex items-center justify-center p-0 min-h-0 relative">
+            <GameBoard rows={rows} cols={cols} subColumns={subColumns} />
           </div>
 
           {/* Bottom Row (3.2.1.1.2): Vertical Clues */}
