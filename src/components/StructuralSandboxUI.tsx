@@ -4,6 +4,8 @@ import { StructuralSieve, ContradictionError, type GenerationTelemetry } from '.
 import { buildTopologyLibrary, getWeight, type TopologyEntry } from '../engine/PermutationGenerator';
 import { LogicCanvas } from '../engine/LogicCanvas';
 import { getFallbackEmoji } from '../utils/themeRegistry';
+import { SolutionGrid } from '../engine/SolutionGrid';
+import { Slot } from '../engine/CoordinateSpace';
 
 /** A structured log event: the text message plus the optional accepted clue. */
 type LogEvent = { msg: string; entry?: TopologyEntry; isContradiction?: boolean; deadCells?: { row: number; col: number }[] };
@@ -34,6 +36,16 @@ const getClueText = (entry: TopologyEntry): string => {
   return `${entry.type} ${coords.join(' ')}`;
 };
 
+/** Resolve the emoji for a clue slot using the active solution mapping. */
+const resolveSlotEmoji = (slot: Slot, solution: SolutionGrid | null): string => {
+  if (!solution) return getFallbackEmoji(slot.r, slot.c);
+  try {
+    return getFallbackEmoji(slot.r, solution.getItemIndexAtSlot(slot));
+  } catch {
+    return getFallbackEmoji(slot.r, slot.c);
+  }
+};
+
 export function StructuralSandboxUI() {
   const [N, setN] = useState(4);
   const [M, setM] = useState(4);
@@ -51,6 +63,8 @@ export function StructuralSandboxUI() {
   
   const stepResolverRef = useRef<(() => void) | null>(null);
   const isSteppingRef = useRef(false);
+  /** Holds the active SolutionGrid so clue slots can be resolved during streaming. */
+  const solutionRef = useRef<SolutionGrid | null>(null);
 
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -62,6 +76,7 @@ export function StructuralSandboxUI() {
     setIsGenerating(true);
     setEvents([]);
     setTelemetry(null);
+    solutionRef.current = null;
     
     const initialMask = (1 << M) - 1;
     setMasks(new Array(N * M).fill(initialMask));
@@ -87,7 +102,11 @@ export function StructuralSandboxUI() {
       const sieve = new StructuralSieve();
       let currentMasks = new Array(N * M).fill(initialMask);
 
-      const result = await sieve.generateAsync(tiering, N, M, async (canvas: LogicCanvas, currentStats, msg, entry) => {
+      const result = await sieve.generateAsync(
+        tiering,
+        N,
+        M,
+        async (canvas: LogicCanvas, currentStats, msg, entry) => {
         const newMasks = [];
         for (let r = 0; r < N; r++) {
           for (let c = 0; c < M; c++) {
@@ -109,7 +128,10 @@ export function StructuralSandboxUI() {
         } else {
           await new Promise(resolve => setTimeout(resolve, delay));
         }
-      });
+      },
+      Math.random,
+      (sol) => { solutionRef.current = sol; }
+      );
 
       setTelemetry(result);
       setEvents(prev => [...prev, { msg: `✓ Generation Pipeline finished in ${result.timeMs.toFixed(1)}ms` }]);
@@ -313,7 +335,7 @@ export function StructuralSandboxUI() {
                             )}
                             <div className="relative flex items-center justify-center">
                               <span title={`Row ${s.r}, Col ${s.c}`} className={`text-xl leading-none ${isExcluded(ev.entry!.type, si) ? 'opacity-40 grayscale' : ''}`}>
-                                {getFallbackEmoji(s.r, s.c)}
+                                {resolveSlotEmoji(s, solutionRef.current)}
                               </span>
                               {isExcluded(ev.entry!.type, si) && (
                                 <div className="absolute inset-0 flex items-center justify-center text-red-500/80 font-black text-xs pointer-events-none">
@@ -355,7 +377,7 @@ export function StructuralSandboxUI() {
                             )}
                             <div className="relative flex items-center justify-center">
                               <span title={`Row ${s.r}, Col ${s.c}`} className={`text-xl leading-none ${isExcluded(ev.entry!.type, si) ? 'opacity-40 grayscale' : ''}`}>
-                                {getFallbackEmoji(s.r, s.c)}
+                                {resolveSlotEmoji(s, solutionRef.current)}
                               </span>
                               {isExcluded(ev.entry!.type, si) && (
                                 <div className="absolute inset-0 flex items-center justify-center text-red-500/80 font-black text-xs pointer-events-none">
@@ -440,7 +462,7 @@ export function StructuralSandboxUI() {
                             </span>}
                             <div className="relative flex items-center justify-center">
                               <span className={isExcluded(c.type, si) ? 'opacity-30 grayscale' : ''}>
-                                {getFallbackEmoji(s.r, s.c)}
+                                {resolveSlotEmoji(s, telemetry?.solution ?? null)}
                               </span>
                               {isExcluded(c.type, si) && (
                                 <div className="absolute inset-0 flex items-center justify-center text-red-500/80 font-black text-[10px] pointer-events-none">

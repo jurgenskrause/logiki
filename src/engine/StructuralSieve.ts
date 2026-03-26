@@ -72,7 +72,8 @@ export class StructuralSieve {
       eventMsg: string,
       entry?: TopologyEntry
     ) => Promise<void>,
-    rng: () => number = Math.random
+    rng: () => number = Math.random,
+    onSolutionReady?: (solution: SolutionGrid) => void
   ): Promise<GenerationTelemetry> {
     const startTime = performance.now();
     this.totalSolves = 0;
@@ -81,6 +82,7 @@ export class StructuralSieve {
     const canvas = new LogicCanvas(N, M);
     const space = new CoordinateSpace(N, M);
     const solution = new SolutionGrid(space, rng);
+    onSolutionReady?.(solution);
 
     let masterPool = [
       ...tieringService.simpleStack,
