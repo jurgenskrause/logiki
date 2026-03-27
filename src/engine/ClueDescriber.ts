@@ -50,7 +50,7 @@ export function describeDeduction(clue: ActiveClue, action: HintAction): string 
     }
     case 'SEQUENCE_THREE': {
       const [a, b, c] = p.map(x => icon(x.row, x.item));
-      return `${a}, ${b}, and ${c} are in this left-to-right order. ${conclude}`;
+      return `${b} is between ${a} and ${c}. ${conclude}`;
     }
     case 'GAPPED_NOT_MIDDLE':
     case 'GAPPED_EXCLUSION': {

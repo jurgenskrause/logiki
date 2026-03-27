@@ -16,42 +16,46 @@ export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue }) => {
     switch (type) {
       case 'LEFT_OF':
         return (
-          <div className="flex items-center justify-between w-full h-full px-2">
-            <span className="text-2xl drop-shadow-sm">{icons[0]}</span>
-            <span className="material-icons text-slate-300 transform scale-75">chevron_right</span>
-            <span className="text-2xl drop-shadow-sm">{icons[1]}</span>
+          <div className="flex items-center justify-center w-full h-full gap-5">
+            <span className="text-xl drop-shadow-sm">{icons[0]}</span>
+            <span className="material-icons text-slate-400 text-base">east</span>
+            <span className="text-xl drop-shadow-sm">{icons[1]}</span>
           </div>
         );
       case 'ADJACENT':
         return (
           <div className="flex items-center justify-between w-full h-full px-2">
-            <span className="text-2xl drop-shadow-sm">{icons[0]}</span>
-            <span className="material-icons text-slate-300 transform scale-75">swap_horiz</span>
-            <span className="text-2xl drop-shadow-sm">{icons[1]}</span>
+            <span className="text-lg drop-shadow-sm opacity-50 grayscale scale-90">{icons[1]}</span>
+            <div className="flex flex-col items-center">
+               <span className="text-xl drop-shadow-sm z-10">{icons[0]}</span>
+               <span className="material-icons text-slate-300 text-xs transform -my-1">swap_horiz</span>
+            </div>
+            <span className="text-lg drop-shadow-sm opacity-50 grayscale scale-90">{icons[1]}</span>
           </div>
         );
       case 'SEQUENCE_THREE':
         return (
-          <div className="flex items-center justify-between w-full h-full px-1">
+          <div className="flex items-center justify-between w-full h-full px-2">
             <span className="text-xl drop-shadow-sm">{icons[0]}</span>
+            <span className="material-icons text-slate-300 transform scale-50 -mx-1">swap_horiz</span>
             <span className="text-xl drop-shadow-sm">{icons[1]}</span>
+            <span className="material-icons text-slate-300 transform scale-50 -mx-1">swap_horiz</span>
             <span className="text-xl drop-shadow-sm">{icons[2]}</span>
           </div>
         );
       case 'GAPPED_NOT_MIDDLE':
       case 'GAPPED_EXCLUSION':
         return (
-          <div className="flex items-center justify-between w-full h-full px-1">
+          <div className="flex items-center justify-between w-full h-full px-2">
             <span className="text-xl drop-shadow-sm">{icons[0]}</span>
-            <div className="relative">
-               <span className="text-xl blur-[1px] opacity-30">{icons[1]}</span>
-               <span className="material-icons absolute inset-0 text-red-500/50 flex items-center justify-center text-sm">block</span>
+            <div className="relative mx-1">
+               <span className="text-xl blur-[1px] opacity-30 grayscale">{icons[1]}</span>
+               <span className="material-icons absolute inset-0 text-red-500/80 flex items-center justify-center text-xl font-bold">close</span>
             </div>
             <span className="text-xl drop-shadow-sm">{icons[2]}</span>
           </div>
         );
       default:
-        // Fallback for types we haven't stylized yet
         return (
           <div className="flex items-center gap-1 justify-center w-full h-full opacity-50">
             {icons.map((ic, i) => <span key={i} className="text-lg">{ic}</span>)}
@@ -62,10 +66,14 @@ export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue }) => {
 
   return (
     <div 
-      className="w-24 h-12 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 hover:border-blue-400 group transition-all duration-200 flex items-center justify-center"
+      className="w-32 h-14 bg-slate-800 dark:bg-slate-950 rounded-lg shadow-md border border-slate-700 dark:border-slate-800 hover:border-blue-400 group transition-all duration-200 flex items-center justify-center shrink-0"
       title={type}
     >
-      {renderContent()}
+      <div className="text-white w-full h-full">
+         {renderContent()}
+      </div>
     </div>
   );
 };
+
+

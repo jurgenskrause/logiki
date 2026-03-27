@@ -82,11 +82,12 @@ export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue }) => {
 
   return (
     <div 
-      className="w-16 h-28 bg-white dark:bg-slate-800 rounded-lg shadow-sm border-2 border-slate-200 dark:border-slate-700 hover:border-indigo-400 group transition-all duration-200 flex items-center justify-center shrink-0"
+      className="w-16 h-28 bg-slate-800 dark:bg-slate-950 rounded-lg shadow-md border-2 border-slate-700 dark:border-slate-800 hover:border-indigo-500 group transition-all duration-200 flex items-center justify-center shrink-0"
       title={type}
     >
-      {renderContent()}
+      <div className="text-white w-full h-full">
+         {renderContent()}
+      </div>
     </div>
   );
 };
-

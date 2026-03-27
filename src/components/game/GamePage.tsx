@@ -329,21 +329,13 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </div>
 
           <div className="h-auto min-h-[120px] max-h-[45%] bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0 flex flex-col shadow-inner">
-            <div className="text-center py-2 border-b border-slate-200 dark:border-slate-800 bg-white/30 dark:bg-slate-900/30">
-              <span className="text-slate-500 font-bold uppercase tracking-widest text-[9px] block">Vertical Constraints</span>
-            </div>
             <div className="flex-1 overflow-hidden">
               {puzzle && <VerticalClueList clues={puzzle.clues.filter(c => c.type !== 'ANCHOR')} />}
             </div>
           </div>
         </div>
 
-        {/* Right: Horizontal Clues */}
         <div className="w-auto h-full bg-slate-100 dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shrink-0 flex flex-col shadow-inner">
-          <div className="text-center p-4 border-b border-slate-200 dark:border-slate-800 bg-white/30 dark:bg-slate-900/30">
-            <span className="material-icons text-xl text-slate-400 dark:text-slate-600 mb-1 block">swap_horiz</span>
-            <span className="text-slate-500 font-bold uppercase tracking-widest text-[9px] block">Horizontal Data</span>
-          </div>
           <div className="flex-1 overflow-hidden">
             {puzzle && <HorizontalClueList clues={puzzle.clues.filter(c => c.type !== 'ANCHOR')} />}
           </div>
@@ -353,3 +345,4 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     </div>
   );
 };
+
