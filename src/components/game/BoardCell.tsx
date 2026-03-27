@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect } from 'react';
 
 export interface Possibility {
   id: number;
@@ -14,9 +14,9 @@ interface BoardCellProps {
   resolvedValue?: string;
   cellSizeRef?: (size: { width: number, height: number, cellId: string }) => void;
   onInteract: (cellId: string, possibilityId: number, action: 'eliminate' | 'solve') => void;
-  // Based on the number of options (e.g. 4, 6, 8), the columns in the 2-row subgrid
   subColumns: number;
-  isFlashing?: boolean;
+  /** Items to highlight in this cell: id = option.id, color drives ring/bg */
+  highlightItems?: { id: number; color: 'red' | 'green' }[];
 }
 
 export const BoardCell: React.FC<BoardCellProps> = ({ 
@@ -28,19 +28,17 @@ export const BoardCell: React.FC<BoardCellProps> = ({
   cellSizeRef,
   onInteract,
   subColumns,
-  isFlashing = false,
+  highlightItems = [],
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const cellId = `${row}-${col}`;
-  const [flashActive, setFlashActive] = useState(false);
 
-  useEffect(() => {
-    if (isFlashing) {
-      setFlashActive(true);
-      const timer = setTimeout(() => setFlashActive(false), 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [isFlashing]);
+  // Build a quick lookup: id -> color
+  const highlightMap = React.useMemo(() => {
+    const map = new Map<number, 'red' | 'green'>();
+    highlightItems.forEach(h => map.set(h.id, h.color));
+    return map;
+  }, [highlightItems]);
 
   // Notify parent of our size so it can determine if Zoom Overlay is needed
   useEffect(() => {
@@ -70,8 +68,8 @@ export const BoardCell: React.FC<BoardCellProps> = ({
       className={`relative w-full border bg-white dark:bg-slate-800 
                   flex items-center justify-center overflow-hidden transition-colors cursor-pointer
                   hover:bg-slate-50 dark:hover:bg-slate-750
-                  ${flashActive 
-                    ? 'border-amber-400 ring-2 ring-amber-400 ring-inset animate-pulse' 
+                  ${highlightItems.length > 0 
+                    ? 'border-amber-300 dark:border-amber-600' 
                     : 'border-slate-300 dark:border-slate-700'}`}
       style={aspectStyle}
       onClick={() => onInteract(cellId, -1, 'zoom_trigger' as any)}
@@ -95,30 +93,39 @@ export const BoardCell: React.FC<BoardCellProps> = ({
             gridTemplateColumns: `repeat(${subColumns}, minmax(0, 1fr))` 
           }}
         >
-          {options.map((opt) => (
-            <div 
-              key={opt.id}
-              onClick={(e) => {
-                e.stopPropagation();
-                onInteract(cellId, opt.id, 'eliminate');
-              }}
-              onContextMenu={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onInteract(cellId, opt.id, 'solve');
-              }}
-              className={`w-full h-full aspect-square flex items-center justify-center bg-white dark:bg-slate-800 transition-all
-                          ${opt.isActive ? 'opacity-100 grayscale-0' : 'opacity-20 grayscale'}`}
-              style={{ containerType: 'size' }}
-            >
-              <span 
-                className="flex items-center justify-center leading-none"
-                style={{ fontSize: '75cqmin' }}
+          {options.map((opt) => {
+            const hlColor = highlightMap.get(opt.id);
+            const ringClass = hlColor === 'red'
+              ? 'ring-2 ring-red-500 ring-inset animate-pulse'
+              : hlColor === 'green'
+                ? 'ring-2 ring-emerald-500 ring-inset animate-pulse'
+                : '';
+            return (
+              <div 
+                key={opt.id}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onInteract(cellId, opt.id, 'eliminate');
+                }}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onInteract(cellId, opt.id, 'solve');
+                }}
+                className={`w-full h-full aspect-square flex items-center justify-center bg-white dark:bg-slate-800 transition-all
+                            ${opt.isActive ? 'opacity-100 grayscale-0' : 'opacity-20 grayscale'}
+                            ${ringClass}`}
+                style={{ containerType: 'size' }}
               >
-                {opt.value}
-              </span>
-            </div>
-          ))}
+                <span 
+                  className="flex items-center justify-center leading-none"
+                  style={{ fontSize: '75cqmin' }}
+                >
+                  {opt.value}
+                </span>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

@@ -28,12 +28,12 @@ interface GameBoardProps {
   clues?: ActiveClue[];
   gameState: GameState;
   onStateChange: () => void;
-  flashCells?: string[];
+  hintHighlights?: { cellId: string; items: { id: number; color: 'red' | 'green' }[] }[];
 }
 
 import { getFallbackEmoji } from '../../utils/themeRegistry';
 
-export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns, clues = [], gameState, onStateChange, flashCells = [] }) => {
+export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns, clues = [], gameState, onStateChange, hintHighlights = [] }) => {
   const cells: Cell[] = [];
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
@@ -172,16 +172,19 @@ export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns, cl
              style={{ backgroundImage: 'radial-gradient(circle, #000 1px, transparent 1px)', backgroundSize: '10px 10px' }} 
         />
         
-        {cells.map(cell => (
-          <BoardCell
-            key={cell.id}
-            {...cell}
-            subColumns={subColumns}
-            onInteract={handleInteract}
-            cellSizeRef={handleCellSize}
-            isFlashing={flashCells.includes(cell.id)}
-          />
-        ))}
+        {cells.map(cell => {
+          const hl = hintHighlights.find(h => h.cellId === cell.id);
+          return (
+            <BoardCell
+              key={cell.id}
+              {...cell}
+              subColumns={subColumns}
+              onInteract={handleInteract}
+              cellSizeRef={handleCellSize}
+              highlightItems={hl?.items ?? []}
+            />
+          );
+        })}
       </div>
 
       {zoomTarget && currentZoomCell && (
