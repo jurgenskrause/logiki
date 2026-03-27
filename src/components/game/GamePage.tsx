@@ -163,6 +163,7 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 rows={puzzle.rows} 
                 cols={puzzle.cols} 
                 subColumns={subColumns} 
+                clues={puzzle.clues}
               />
             )}
           </div>
@@ -174,7 +175,7 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
              </div>
              <div className="flex-1 overflow-hidden">
                 {puzzle && (
-                  <VerticalClueList clues={puzzle.clues} />
+                  <VerticalClueList clues={puzzle.clues.filter(c => c.type !== 'ANCHOR')} />
                 )}
              </div>
           </div>
@@ -189,7 +190,7 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           
           <div className="flex-1 overflow-hidden">
             {puzzle && (
-              <HorizontalClueList clues={puzzle.clues} />
+              <HorizontalClueList clues={puzzle.clues.filter(c => c.type !== 'ANCHOR')} />
             )}
           </div>
         </div>

@@ -1,47 +1,89 @@
 import React, { useState, useEffect, useRef } from 'react';
+import type { ActiveClue } from '../../engine/Solver';
 import { BoardCell } from './BoardCell';
 import { ZoomOverlay } from './ZoomOverlay';
+
+interface Option {
+  id: number;
+  isActive: boolean;
+  value: string;
+}
+
+interface Cell {
+  id: string;
+  row: number;
+  col: number;
+  options: Option[];
+  isResolved: boolean;
+  resolvedValue?: string;
+  isImmutable: boolean;
+}
 
 interface GameBoardProps {
   rows: number;
   cols: number;
-  subColumns: number; // e.g., 2, 3, or 4
+  subColumns: number;
+  clues?: ActiveClue[];
 }
 
 import { getFallbackEmoji } from '../../utils/themeRegistry';
 
-const generateMockCells = (rows: number, cols: number, subCols: number) => {
-  const cells = [];
-  // In Logiki, each cell contains SxS sub-cells? No, SxS cells in the grid, 
-  // and each cell has S options.
-  const numOptions = rows; // S items in a category for an SxS board
+const initializeCells = (rows: number, cols: number, clues: ActiveClue[] = []): Cell[] => {
+  const cells: Cell[] = [];
+  const numOptions = rows; 
   
+  // 1. Create clean grid
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const options = Array.from({ length: numOptions }).map((_, i) => ({
         id: i,
-        isActive: Math.random() > 0.3, 
-        // We use category r and item i for deterministic but varied icons
+        isActive: true, 
         value: getFallbackEmoji(r, i) 
       }));
 
-      const isResolved = Math.random() > 0.8; 
-      
       cells.push({
         id: `${r}-${c}`,
         row: r,
         col: c,
         options,
-        isResolved,
-        resolvedValue: isResolved ? options[Math.floor(Math.random() * numOptions)].value : undefined
+        isResolved: false,
+        resolvedValue: undefined,
+        isImmutable: false
       });
     }
   }
+
+  // 2. Apply ANCHOR clues
+  clues.forEach(clue => {
+    if (clue.type === 'ANCHOR' && clue.targetCol !== undefined) {
+      const { row, item } = clue.params[0];
+      const targetCol = clue.targetCol;
+      const cellId = `${row}-${targetCol}`;
+      
+      const cell = cells.find(c => c.id === cellId);
+      if (cell) {
+        cell.isResolved = true;
+        cell.resolvedValue = getFallbackEmoji(row, item);
+        cell.isImmutable = true;
+        // Optionally deactivate other options in this cell
+        cell.options.forEach((o: Option) => o.isActive = (o.id === item));
+      }
+
+      // 3. (Optional but good) Prune this item from other columns in this row
+      cells.forEach((c: Cell) => {
+        if (c.row === row && c.col !== targetCol) {
+          const opt = c.options.find((o: Option) => o.id === item);
+          if (opt) opt.isActive = false;
+        }
+      });
+    }
+  });
+
   return cells;
 };
 
-export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns }) => {
-  const [cells, setCells] = useState(() => generateMockCells(rows, cols, subColumns));
+export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns, clues = [] }) => {
+  const [cells, setCells] = useState<Cell[]>(() => initializeCells(rows, cols, clues));
   const [zoomTarget, setZoomTarget] = useState<string | null>(null);
   const [needsZoom, setNeedsZoom] = useState(false);
   
@@ -78,15 +120,17 @@ export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns }) 
       return;
     }
 
-    setCells(prev => prev.map(c => {
+    setCells((prev: Cell[]) => prev.map((c: Cell) => {
       if (c.id === cellId) {
+        if (c.isImmutable) return c; // Protect anchored cells
+
         if (action === 'eliminate') {
           return {
             ...c, 
-            options: c.options.map(o => o.id === possibilityId ? { ...o, isActive: false } : o)
+            options: c.options.map((o: Option) => o.id === possibilityId ? { ...o, isActive: false } : o)
           };
         } else if (action === 'solve') {
-           const val = c.options.find(o => o.id === possibilityId)?.value;
+           const val = c.options.find((o: Option) => o.id === possibilityId)?.value;
            return { ...c, isResolved: true, resolvedValue: val };
         }
       }
