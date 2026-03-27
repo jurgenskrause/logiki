@@ -19,71 +19,62 @@ interface Cell {
   isImmutable: boolean;
 }
 
+import { GameState } from '../../engine/GameState';
+
 interface GameBoardProps {
   rows: number;
   cols: number;
   subColumns: number;
   clues?: ActiveClue[];
+  gameState: GameState;
+  onStateChange: () => void;
+  flashCells?: string[];
 }
 
 import { getFallbackEmoji } from '../../utils/themeRegistry';
 
-const initializeCells = (rows: number, cols: number, clues: ActiveClue[] = []): Cell[] => {
+export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns, clues = [], gameState, onStateChange, flashCells = [] }) => {
   const cells: Cell[] = [];
-  const numOptions = rows; 
-  
-  // 1. Create clean grid
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
-      const options = Array.from({ length: numOptions }).map((_, i) => ({
-        id: i,
-        isActive: true, 
-        value: getFallbackEmoji(r, i) 
-      }));
+      const index = r * cols + c;
+      const mask = gameState.grid[index];
+      const confirmed = gameState.isConfirmed(r, c);
+      const cellId = `${r}-${c}`;
+      
+      const isImmutable = clues.some(clue => 
+        clue.type === 'ANCHOR' && clue.targetCol === c && clue.params[0]?.row === r
+      );
+
+      let resolvedValue = undefined;
+      if (confirmed) {
+         const itemIndex = Math.log2(mask);
+         if (Number.isInteger(itemIndex)) {
+           resolvedValue = getFallbackEmoji(r, itemIndex);
+         }
+      }
+
+      const options: Option[] = [];
+      for (let i = 0; i < rows; i++) {
+        options.push({
+          id: i,
+          isActive: (mask & (1 << i)) !== 0,
+          value: getFallbackEmoji(r, i)
+        });
+      }
 
       cells.push({
-        id: `${r}-${c}`,
+        id: cellId,
         row: r,
         col: c,
         options,
-        isResolved: false,
-        resolvedValue: undefined,
-        isImmutable: false
+        isResolved: confirmed,
+        resolvedValue,
+        isImmutable
       });
     }
   }
 
-  // 2. Apply ANCHOR clues
-  clues.forEach(clue => {
-    if (clue.type === 'ANCHOR' && clue.targetCol !== undefined) {
-      const { row, item } = clue.params[0];
-      const targetCol = clue.targetCol;
-      const cellId = `${row}-${targetCol}`;
-      
-      const cell = cells.find(c => c.id === cellId);
-      if (cell) {
-        cell.isResolved = true;
-        cell.resolvedValue = getFallbackEmoji(row, item);
-        cell.isImmutable = true;
-        // Optionally deactivate other options in this cell
-        cell.options.forEach((o: Option) => o.isActive = (o.id === item));
-      }
-
-      // 3. (Optional but good) Prune this item from other columns in this row
-      cells.forEach((c: Cell) => {
-        if (c.row === row && c.col !== targetCol) {
-          const opt = c.options.find((o: Option) => o.id === item);
-          if (opt) opt.isActive = false;
-        }
-      });
-    }
-  });
-
-  return cells;
-};
-
-export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns, clues = [] }) => {
-  const [cells, setCells] = useState<Cell[]>(() => initializeCells(rows, cols, clues));
   const [zoomTarget, setZoomTarget] = useState<string | null>(null);
   const [needsZoom, setNeedsZoom] = useState(false);
   
@@ -120,22 +111,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns, cl
       return;
     }
 
-    setCells((prev: Cell[]) => prev.map((c: Cell) => {
-      if (c.id === cellId) {
-        if (c.isImmutable) return c; // Protect anchored cells
+    const [rStr, cStr] = cellId.split('-');
+    const r = parseInt(rStr, 10);
+    const c = parseInt(cStr, 10);
 
-        if (action === 'eliminate') {
-          return {
-            ...c, 
-            options: c.options.map((o: Option) => o.id === possibilityId ? { ...o, isActive: false } : o)
-          };
-        } else if (action === 'solve') {
-           const val = c.options.find((o: Option) => o.id === possibilityId)?.value;
-           return { ...c, isResolved: true, resolvedValue: val };
-        }
-      }
-      return c;
-    }));
+    const isImmutable = clues.some(clue => 
+      clue.type === 'ANCHOR' && clue.targetCol === c && clue.params[0]?.row === r
+    );
+    if (isImmutable) return;
+
+    if (action === 'eliminate') {
+      gameState.toggleBit(r, c, possibilityId);
+    } else if (action === 'solve') {
+      gameState.confirmCell(r, c, possibilityId);
+    }
+    onStateChange();
   };
 
   const currentZoomCell = cells.find(c => c.id === zoomTarget);
@@ -189,6 +179,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns, cl
             subColumns={subColumns}
             onInteract={handleInteract}
             cellSizeRef={handleCellSize}
+            isFlashing={flashCells.includes(cell.id)}
           />
         ))}
       </div>

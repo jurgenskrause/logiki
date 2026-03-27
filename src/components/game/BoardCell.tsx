@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 
 export interface Possibility {
   id: number;
@@ -15,7 +15,8 @@ interface BoardCellProps {
   cellSizeRef?: (size: { width: number, height: number, cellId: string }) => void;
   onInteract: (cellId: string, possibilityId: number, action: 'eliminate' | 'solve') => void;
   // Based on the number of options (e.g. 4, 6, 8), the columns in the 2-row subgrid
-  subColumns: number; 
+  subColumns: number;
+  isFlashing?: boolean;
 }
 
 export const BoardCell: React.FC<BoardCellProps> = ({ 
@@ -26,10 +27,20 @@ export const BoardCell: React.FC<BoardCellProps> = ({
   resolvedValue,
   cellSizeRef,
   onInteract,
-  subColumns
+  subColumns,
+  isFlashing = false,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const cellId = `${row}-${col}`;
+  const [flashActive, setFlashActive] = useState(false);
+
+  useEffect(() => {
+    if (isFlashing) {
+      setFlashActive(true);
+      const timer = setTimeout(() => setFlashActive(false), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [isFlashing]);
 
   // Notify parent of our size so it can determine if Zoom Overlay is needed
   useEffect(() => {
@@ -56,11 +67,13 @@ export const BoardCell: React.FC<BoardCellProps> = ({
   return (
     <div 
       ref={containerRef}
-      className={`relative w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 
+      className={`relative w-full border bg-white dark:bg-slate-800 
                   flex items-center justify-center overflow-hidden transition-colors cursor-pointer
-                  hover:bg-slate-50 dark:hover:bg-slate-750`}
+                  hover:bg-slate-50 dark:hover:bg-slate-750
+                  ${flashActive 
+                    ? 'border-amber-400 ring-2 ring-amber-400 ring-inset animate-pulse' 
+                    : 'border-slate-300 dark:border-slate-700'}`}
       style={aspectStyle}
-      // If we want to capture clicks on the whole cell for the Zoom overlay constraint
       onClick={() => onInteract(cellId, -1, 'zoom_trigger' as any)}
     >
       {isResolved ? (

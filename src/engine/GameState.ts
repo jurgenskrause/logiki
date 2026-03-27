@@ -27,6 +27,10 @@ export class GameState {
   private _redoStack: GameSnapshot[] = [];
   private readonly _HISTORY_LIMIT = 50;
 
+  // Error State
+  private _isError: boolean = false;
+  private _restoreSnapshot: GameSnapshot | null = null;
+
   /**
    * Initializes a new GameState instance.
    * @param rows Number of categories (rows)
@@ -252,6 +256,42 @@ export class GameState {
    */
   public get undoStackLength(): number { return this._undoStack.length; }
   public get redoStackLength(): number { return this._redoStack.length; }
+
+  /**
+   * Whether the current board state is logically contradictory.
+   */
+  public get isError(): boolean { return this._isError; }
+
+  /**
+   * Silently marks the current state as erroneous and saves a restore point.
+   * Called by HintService after detecting a contradiction.
+   */
+  public markError(): void {
+    if (!this._isError) {
+      // Store the last-known good state (top of undoStack, before the bad move)
+      const last = this._undoStack[this._undoStack.length - 1];
+      if (last) {
+        this._restoreSnapshot = { grid: new Uint16Array(last.grid), confirmed: new Uint8Array(last.confirmed) };
+      }
+      this._isError = true;
+    }
+  }
+
+  /**
+   * Returns the pre-error restore snapshot if one exists.
+   * Can be used to jump back to the last known-good state.
+   */
+  public get restoreSnapshot(): { grid: Uint16Array; confirmed: Uint8Array } | null {
+    return this._restoreSnapshot;
+  }
+
+  /**
+   * Clears the error state (called when player undoes the bad move).
+   */
+  public clearError(): void {
+    this._isError = false;
+    this._restoreSnapshot = null;
+  }
 
   /**
    * Automatically removes an item from all other columns in a row (Category).
