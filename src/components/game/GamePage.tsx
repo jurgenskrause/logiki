@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { DifficultyMenu } from './DifficultyMenu';
 import { GameBoard } from './GameBoard';
 import { ManifestLoader, type PuzzleManifest } from '../../engine/ManifestLoader';
@@ -20,9 +20,11 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [, setTick] = useState(0);
 
-  // Hint system
+  // Hint & Cascade system
   const [activeHint, setActiveHint] = useState<HintResult | null>(null);
   const [hintShowing, setHintShowing] = useState(false);
+  const [isCascading, setIsCascading] = useState(false);
+  const cascadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 
   // ─── GameState ──────────────────────────────────────────────────────────────
@@ -112,17 +114,40 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     document.documentElement.classList.toggle('dark', isDarkMode);
   }, [isDarkMode]);
 
-  // ─── State-Change Handler ────────────────────────────────────────────────────
+  // ─── Cascade Handler ────────────────────────────────────────────────────────
+  
+  const runCascade = useCallback(() => {
+    if (!gameState) return;
+    
+    // Find the next obvious step
+    const nextTraces = gameState.findAndApplyNextDeduction();
+    
+    if (nextTraces) {
+      setTick(t => t + 1); // Force board re-render
+      // Schedule next step with a delay for visual satisfaction
+      cascadeTimerRef.current = setTimeout(runCascade, 250);
+    } else {
+      setIsCascading(false);
+      // Once cascade finishes, run a deep analysis for the next hint
+      setTimeout(runAnalysis, 50);
+    }
+  }, [gameState, runAnalysis]);
 
   const handleStateChange = useCallback(() => {
+    // Stop any existing cascade and restart
+    if (cascadeTimerRef.current) clearTimeout(cascadeTimerRef.current);
+    
     setTick(t => t + 1);
-    setTimeout(runAnalysis, 50);
-  }, [runAnalysis]);
+    setIsCascading(true);
+    // Start the chain reaction
+    cascadeTimerRef.current = setTimeout(runCascade, 250);
+  }, [runCascade]);
 
   // ─── Hint Button Logic ───────────────────────────────────────────────────────
 
   const handleHintClick = () => {
     if (!activeHint) return;
+    if (isCascading) return; // Prevent hint clicks during animation
 
     if (!hintShowing) {
       // First click: show banner + highlight
@@ -131,11 +156,13 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       // Second click: apply the hint
       if (gameState) {
         applyHint(gameState, activeHint.action);
+        // Important: this trigger handles state change AND analysis AFTER the cascade
+        handleStateChange();
       }
       setHintShowing(false);
-      handleStateChange();
     }
   };
+
 
   // ─── Derived hint highlight data ─────────────────────────────────────────────
 
@@ -203,7 +230,7 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
 
       {/* Header — single row: Left | Hint text (center) | Right */}
-      <header className="flex items-center gap-3 px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm z-10">
+      <header className="flex items-center gap-3 px-4 h-16 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm z-10 shrink-0">
 
         {/* Left buttons */}
         <div className="flex items-center gap-2 shrink-0">
@@ -225,9 +252,9 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         {/* Center: hint text when showing, game title otherwise */}
         <div className="flex-1 min-w-0 flex items-center justify-center">
           {hintShowing && activeHint ? (
-            <div className="flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-amber-50 dark:bg-amber-950/80 border border-amber-200 dark:border-amber-800 max-w-full overflow-hidden shadow-sm">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/80 border border-amber-200 dark:border-amber-800 max-w-full overflow-hidden shadow-sm">
               {activeHint.action.type === 'confirm' && (
-                <span className="material-icons text-lg shrink-0 text-emerald-500">
+                <span className="material-icons text-base shrink-0 text-emerald-500">
                   check_circle
                 </span>
               )}
@@ -295,7 +322,9 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 gameState={gameState}
                 onStateChange={handleStateChange}
                 hintHighlights={hintHighlights}
+                isLocked={isCascading}
               />
+
             )}
           </div>
 
