@@ -209,8 +209,13 @@ export class GameState {
     return true;
   }
 
-  /**
+   /**
    * Toggles the possibility bit for a specific item in a cell.
+   * Triggers recursive auto-solve if a deduction becomes obvious.
+   */
+   /**
+   * Toggles the possibility bit for a specific item in a cell.
+   * Returns only the initial trace. Player/UI must call runRecursiveAutoSolve or step deduction manually for animation.
    */
   public toggleBit(row: CategoryIndex, col: ColumnIndex, itemIndex: ItemIndex): MutationTrace[] {
     if (!this._isValid(row, col, itemIndex)) return [];
@@ -230,14 +235,102 @@ export class GameState {
     if (!this._isValid(row, col, itemIndex)) return [];
 
     this._pushState();
+    const traces: MutationTrace[] = [];
+    this._applyConfirmation(row, col, itemIndex, traces);
+    return traces;
+  }
+
+  private _applyConfirmation(row: CategoryIndex, col: ColumnIndex, itemIndex: ItemIndex, traces: MutationTrace[]): void {
     const index = this._getIndex(row, col);
+    if (this._confirmed[index] && this._grid[index] === (1 << itemIndex)) return;
+
     this._grid[index] = (1 << itemIndex);
     this._confirmed[index] = 1;
+    traces.push({ row, col, itemIndex, type: 'CONFIRM' });
 
-    const traces: MutationTrace[] = [{ row, col, itemIndex, type: 'CONFIRM' }];
-    const pruneTraces = this._applyAutoPrune(row, col, itemIndex);
-    
-    return traces.concat(pruneTraces);
+    // Prune this item from all other columns in this row
+    const maskToExclude = (1 << itemIndex);
+    const inverseMask = ~maskToExclude;
+    for (let c = 0; c < this._cols; c++) {
+      if (c === col) continue;
+      const targetIndex = this._getIndex(row, c);
+      if ((this._grid[targetIndex] & maskToExclude) !== 0) {
+        this._grid[targetIndex] &= inverseMask;
+        traces.push({ row, col: c as ColumnIndex, itemIndex, type: 'PRUNE' });
+      }
+    }
+  }
+
+  /**
+   * Finds and applies ONE tier of deductions (finds the first naked or hidden single).
+   * Returns the traces if a change was made, null otherwise.
+   * UI can call this in a timer loop for the "visual cascade".
+   */
+  public findAndApplyNextDeduction(): MutationTrace[] | null {
+    const traces: MutationTrace[] = [];
+
+    // 1. Naked Singles
+    for (let r = 0; r < this._rows; r++) {
+      for (let c = 0; c < this._cols; c++) {
+        const idx = this._getIndex(r as any, c as any);
+        if (this._confirmed[idx]) continue;
+
+        const mask = this._grid[idx];
+        if (this._getPossibleCountFromMask(mask) === 1) {
+          const item = Math.log2(mask) as ItemIndex;
+          this._applyConfirmation(r as any, c as any, item, traces);
+          return traces; // Found and applied one, return to UI for animation frame
+        }
+      }
+    }
+
+    // 2. Hidden Singles
+    for (let r = 0; r < this._rows; r++) {
+      for (let item = 0; item < this._cols; item++) {
+        const bit = 1 << item;
+        let possibleCols: number[] = [];
+        let confirmedCol: number = -1;
+
+        for (let c = 0; c < this._cols; c++) {
+          const idx = this._getIndex(r as any, c as any);
+          if (this._grid[idx] & bit) {
+            possibleCols.push(c);
+            if (this._confirmed[idx]) confirmedCol = c;
+          }
+        }
+
+        if (possibleCols.length === 1 && confirmedCol === -1) {
+          this._applyConfirmation(r as any, possibleCols[0] as any, item as any, traces);
+          return traces; // Found and applied one, return to UI
+        }
+      }
+    }
+
+    return null; // Nothing left to auto-solve
+  }
+
+
+  /**
+   * Full atomic resolution (old behavior).
+   */
+  public resolveAllDeductions(): MutationTrace[] {
+    const allTraces: MutationTrace[] = [];
+    let step;
+    while ((step = this.findAndApplyNextDeduction())) {
+      allTraces.push(...step);
+    }
+    return allTraces;
+  }
+
+
+  private _getPossibleCountFromMask(mask: number): number {
+    let count = 0;
+    let m = mask;
+    while (m > 0) {
+      m &= (m - 1);
+      count++;
+    }
+    return count;
   }
 
   /**
@@ -251,24 +344,12 @@ export class GameState {
     return this._grid[index];
   }
 
-  /**
-   * Internal exposure for verification/testing only.
-   */
   public get undoStackLength(): number { return this._undoStack.length; }
   public get redoStackLength(): number { return this._redoStack.length; }
-
-  /**
-   * Whether the current board state is logically contradictory.
-   */
   public get isError(): boolean { return this._isError; }
 
-  /**
-   * Silently marks the current state as erroneous and saves a restore point.
-   * Called by HintService after detecting a contradiction.
-   */
   public markError(): void {
     if (!this._isError) {
-      // Store the last-known good state (top of undoStack, before the bad move)
       const last = this._undoStack[this._undoStack.length - 1];
       if (last) {
         this._restoreSnapshot = { grid: new Uint16Array(last.grid), confirmed: new Uint8Array(last.confirmed) };
@@ -277,38 +358,13 @@ export class GameState {
     }
   }
 
-  /**
-   * Returns the pre-error restore snapshot if one exists.
-   * Can be used to jump back to the last known-good state.
-   */
   public get restoreSnapshot(): { grid: Uint16Array; confirmed: Uint8Array } | null {
     return this._restoreSnapshot;
   }
 
-  /**
-   * Clears the error state (called when player undoes the bad move).
-   */
   public clearError(): void {
     this._isError = false;
     this._restoreSnapshot = null;
   }
-
-  /**
-   * Automatically removes an item from all other columns in a row (Category).
-   */
-  private _applyAutoPrune(row: CategoryIndex, col: ColumnIndex, itemIndex: ItemIndex): MutationTrace[] {
-    const maskToExclude = (1 << itemIndex);
-    const inverseMask = ~maskToExclude;
-    const traces: MutationTrace[] = [];
-
-    for (let c = 0; c < this._cols; c++) {
-      if (c === col) continue;
-      const targetIndex = this._getIndex(row, c);
-      if ((this._grid[targetIndex] & maskToExclude) !== 0) {
-        this._grid[targetIndex] &= inverseMask;
-        traces.push({ row, col: c as ColumnIndex, itemIndex, type: 'PRUNE' });
-      }
-    }
-    return traces;
-  }
 }
+

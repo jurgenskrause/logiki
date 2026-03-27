@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import type { ActiveClue } from '../../engine/Solver';
 import { BoardCell } from './BoardCell';
 import { ZoomOverlay } from './ZoomOverlay';
@@ -105,7 +105,30 @@ export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns, cl
     }
   };
 
+  const [isCascading, setIsCascading] = useState(false);
+
+  /**
+   * Recursive step for the visual cascade.
+   * Calls the engine's step-solver and forces a re-render.
+   */
+  const runCascade = useCallback(() => {
+    if (!gameState) return;
+    
+    // Attempt one tier of deductions
+    const nextTraces = gameState.findAndApplyNextDeduction();
+    
+    if (nextTraces) {
+      onStateChange();
+      // Wait a fraction of a second for the next step (satisfying visual)
+      setTimeout(runCascade, 250);
+    } else {
+      setIsCascading(false);
+    }
+  }, [gameState, onStateChange]);
+
   const handleInteract = (cellId: string, possibilityId: number, action: 'eliminate' | 'solve' | 'zoom_trigger') => {
+    if (isCascading) return; // Ignore input during the "thinking" animation
+
     if (action === 'zoom_trigger') {
       if (needsZoom) setZoomTarget(cellId);
       return;
@@ -125,8 +148,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns, cl
     } else if (action === 'solve') {
       gameState.confirmCell(r, c, possibilityId);
     }
+    
     onStateChange();
+    
+    // Start the visual cascade (if any deductions are immediate)
+    setIsCascading(true);
+    setTimeout(runCascade, 250);
   };
+
 
   const currentZoomCell = cells.find(c => c.id === zoomTarget);
 
