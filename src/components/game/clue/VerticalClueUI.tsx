@@ -17,26 +17,24 @@ export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue }) => {
       case 'VERTICAL':
       case 'VERTICAL_PAIR':
         return (
-          <div className="flex flex-col items-center justify-center w-full h-full gap-2 transition-transform duration-300">
+          <div className="flex flex-col items-center justify-center w-full h-full gap-1">
             <span className="text-xl drop-shadow-sm">{icons[0]}</span>
-            <span className="material-icons text-slate-300 transform scale-75">link</span>
+            <span className="material-icons text-slate-300 transform scale-75 leading-none">link</span>
             <span className="text-xl drop-shadow-sm">{icons[1]}</span>
           </div>
         );
       case 'VERTICAL_NOT':
       case 'VERTICAL_NOT_PAIR':
         return (
-          <div className="flex flex-col items-center justify-center w-full h-full gap-2">
+          <div className="flex flex-col items-center justify-center w-full h-full gap-1">
             <span className="text-xl drop-shadow-sm">{icons[0]}</span>
-            <div className="relative">
-               <span className="material-icons text-red-500/60 transform scale-75">link_off</span>
-            </div>
+            <span className="material-icons text-red-500 transform scale-75 leading-none">link_off</span>
             <span className="text-xl drop-shadow-sm">{icons[1]}</span>
           </div>
         );
       case 'VERTICAL_TRIO':
         return (
-          <div className="flex flex-col items-center justify-between w-full h-full py-2">
+          <div className="flex flex-col items-center justify-around w-full h-full py-2">
             <span className="text-lg drop-shadow-sm">{icons[0]}</span>
             <span className="text-lg drop-shadow-sm">{icons[1]}</span>
             <span className="text-lg drop-shadow-sm">{icons[2]}</span>
@@ -44,11 +42,11 @@ export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue }) => {
         );
       case 'VERTICAL_NOT_TRIO':
         return (
-          <div className="flex flex-col items-center justify-between w-full h-full py-1">
+          <div className="flex flex-col items-center justify-around w-full h-full py-1">
             <span className="text-xl drop-shadow-sm">{icons[0]}</span>
-            <div className="relative">
-               <span className="text-lg blur-[1px] opacity-40 grayscale">{icons[2]}</span>
-               <span className="material-icons absolute inset-0 text-red-500 flex items-center justify-center text-sm font-black">close</span>
+            <div className="relative flex items-center justify-center">
+               <span className="text-lg drop-shadow-sm">{icons[2]}</span>
+               <span className="material-icons absolute text-red-500 text-xl font-bold opacity-80">close</span>
             </div>
             <span className="text-xl drop-shadow-sm">{icons[1]}</span>
           </div>
@@ -56,13 +54,20 @@ export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue }) => {
       case 'DISJUNCTIVE_XOR':
       case 'VERTICAL_DISJUNCTIVE_EXCLUSION':
         return (
-          <div className="flex flex-col items-center justify-between w-full h-full py-1">
-            <span className="text-xl drop-shadow-sm">{icons[0]}</span>
-            <span className="material-icons text-slate-300 transform rotate-90 scale-75 -my-2">compare_arrows</span>
-            <div className="flex flex-col items-center gap-1">
-               <span className="text-lg drop-shadow-sm">{icons[1]}</span>
-               <span className="text-[7px] font-black text-blue-500 uppercase tracking-widest leading-none">OR</span>
-               <span className="text-lg drop-shadow-sm">{icons[2]}</span>
+          <div className="flex flex-col items-center justify-center w-full h-full py-1">
+            {/* Top item above XOR group */}
+            <span className="text-xl drop-shadow-sm mb-2">{icons[0]}</span>
+            
+            {/* Bottom XOR group */}
+            <div className="relative flex flex-col items-center h-12 justify-center">
+              <span className="text-lg drop-shadow-sm z-10">{icons[1]}</span>
+              
+              {/* Overlapping circular arrows */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+                 <span className="material-icons text-indigo-500 text-xl animate-spin-slow bg-white/50 dark:bg-slate-800/50 rounded-full">sync</span>
+              </div>
+              
+              <span className="text-lg drop-shadow-sm z-10">{icons[2]}</span>
             </div>
           </div>
         );
@@ -77,10 +82,11 @@ export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue }) => {
 
   return (
     <div 
-      className="w-16 h-24 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 hover:border-indigo-400 group transition-all duration-200 flex items-center justify-center"
+      className="w-16 h-28 bg-white dark:bg-slate-800 rounded-lg shadow-sm border-2 border-slate-200 dark:border-slate-700 hover:border-indigo-400 group transition-all duration-200 flex items-center justify-center shrink-0"
       title={type}
     >
       {renderContent()}
     </div>
   );
 };
+
