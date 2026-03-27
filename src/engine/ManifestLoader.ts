@@ -204,7 +204,7 @@ export class ManifestLoader {
     }
 
     // Param 3
-    if (type === 'SEQUENCE_THREE' || type.includes('TRIO')) {
+    if (type === 'SEQUENCE_THREE' || type.includes('TRIO') || type === 'DISJUNCTIVE_XOR' || type.includes('GAPPED')) {
         params.push({
             row: (packed >> 16) & 0x07,
             item: (packed >> 19) & 0x07,
