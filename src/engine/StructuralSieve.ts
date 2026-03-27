@@ -288,7 +288,7 @@ export class StructuralSieve {
     return null;
   }
 
-  private toActiveClue(entry: TopologyEntry, solution: SolutionGrid): ActiveClue {
+  public toActiveClue(entry: TopologyEntry, solution: SolutionGrid): ActiveClue {
     return {
       type: entry.type,
       params: entry.slots.map(s => ({

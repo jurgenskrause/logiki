@@ -81,10 +81,21 @@ export class SolutionGrid {
    */
   public getItemIndexAtSlot(slot: Slot): number {
     const itemID = this.getItemAtSlot(slot);
-    // ItemID = r * N + c. Row r = slot.r. N = this._width (space.cols).
-    // So c = itemID - (r * N).
-    // We need to know N.
-    // Let's store N in the class.
     return itemID % this.numCols;
+  }
+  /**
+   * Generates a 1D Uint8Array representing the solution grid for the Logic Engine.
+   * Mapping: grid[row * M + slot] = itemIndex.
+   */
+  public getRawSolution(N: number, M: number): Uint8Array {
+    const grid = new Uint8Array(N * M);
+    for (let r = 0; r < N; r++) {
+      for (let c = 0; c < M; c++) {
+        const itemID = this.slotToItem.get(`${r},${c}`);
+        if (itemID === undefined) continue;
+        grid[r * M + c] = itemID % M;
+      }
+    }
+    return grid;
   }
 }

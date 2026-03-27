@@ -1,14 +1,62 @@
 import React, { useState, useEffect } from 'react';
 import { DifficultyMenu } from './DifficultyMenu';
 import { GameBoard } from './GameBoard';
+import { ManifestLoader, type PuzzleManifest } from '../../engine/ManifestLoader';
+
+const loader = new ManifestLoader();
 
 export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
-  // Default to 0 for daily puzzle implicitly, or just default to 5. Let's start with 0 for Daily.
   const [selectedDifficulty, setSelectedDifficulty] = useState<number>(0); 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  
+  const [puzzle, setPuzzle] = useState<PuzzleManifest | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Sync dark mode state with root element for Tailwind dark mode
+  // 1. Initial Load of Manifest
+  useEffect(() => {
+    const initLoader = async () => {
+      try {
+        await loader.loadFromUrl('/daily.bin');
+        setIsLoading(false);
+      } catch (err) {
+        setError('Failed to load game manifest.');
+        setIsLoading(false);
+      }
+    };
+    initLoader();
+  }, []);
+
+  // 2. Fetch Specific Puzzle when difficulty changes
+  useEffect(() => {
+    const fetchPuzzle = async () => {
+      if (isLoading) return;
+      
+      setIsLoading(true);
+      try {
+        // For demonstration, we use a fixed date that matches our packer script's first entry
+        // In production, this would be new Date().toISOString().split('T')[0]
+        const dateStr = '2026-03-30'; 
+        const difficulty = selectedDifficulty === 0 ? 3 : selectedDifficulty; // Daily = Level 3 (6x6)
+        
+        const data = await loader.getPuzzle(dateStr, difficulty);
+        if (data) {
+          setPuzzle(data);
+        } else {
+          setError('Puzzle not found for this date/difficulty.');
+        }
+      } catch (err) {
+        setError('Error fetching puzzle data.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPuzzle();
+  }, [selectedDifficulty, isLoading === false]); // Trigger when loader ready or difficulty changes
+
+  // Sync dark mode state
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
@@ -17,19 +65,22 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     }
   }, [isDarkMode]);
 
-  // 3.3 Dynamic Difficulty Logic
-  // Mapping level to grid size (Level 1 = 4x4, Level 2 = 5x5, etc.)
-  // gridSize = level + 3
-  const gridSize = selectedDifficulty > 0 ? selectedDifficulty + 3 : 5; // Default 5 for daily
-  const rows = gridSize;
-  const cols = gridSize;
-  
-  // Calculate sub-columns for the 2-row option matrix
-  // e.g. gridSize 4 -> 2 cols (4 slots), gridSize 5/6 -> 3 cols (6 slots), gridSize 7/8 -> 4 cols (8 slots)
-  const subColumns = Math.ceil(gridSize / 2);
+  // If loading or error, show a placeholder
+  if (isLoading && !puzzle) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-slate-950 text-white">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+          <p className="text-slate-400 font-bold uppercase tracking-widest text-sm">Loading Daily Pulse...</p>
+        </div>
+      </div>
+    );
+  }
 
-  // We use a unique key to force GameBoard to reset its internal state when difficulty changes
-  const gameKey = `${gridSize}-${subColumns}`;
+  const rows = puzzle?.rows ?? 5;
+  const cols = puzzle?.cols ?? 5;
+  const subColumns = Math.ceil(cols / 2);
+  const gameKey = `${rows}-${cols}-${selectedDifficulty}`;
 
   return (
     // 1. The Global Container
@@ -70,19 +121,19 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           >
             <span className="material-icons text-sm">{isDarkMode ? 'light_mode' : 'dark_mode'}</span>
           </button>
-          <div className="flex items-center gap-2 ml-4">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Warnings</span>
-            <button className="w-8 h-4 bg-slate-300 dark:bg-slate-700 rounded-full relative shadow-inner">
-              <div className="w-3 h-3 bg-white rounded-full absolute left-0.5 top-0.5 shadow"></div>
-            </button>
-          </div>
+        <div className="flex items-center gap-2 ml-4">
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Warnings</span>
+          <button className="w-8 h-4 bg-slate-300 dark:bg-slate-700 rounded-full relative shadow-inner transition-colors">
+            <div className="w-3 h-3 bg-white rounded-full absolute left-0.5 top-0.5 shadow transition-all duration-200"></div>
+          </button>
         </div>
-        
-        <button className="px-4 py-2 rounded-lg bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800 flex items-center gap-2 font-bold text-sm transition-colors shadow-sm">
-          <span className="material-icons text-base">undo</span>
-          Undo
-        </button>
-      </header>
+      </div>
+      
+      <button className="px-4 py-2 rounded-lg bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800 flex items-center gap-2 font-bold text-sm transition-colors shadow-sm">
+        <span className="material-icons text-base">undo</span>
+        Undo
+      </button>
+    </header>
 
       {/* 3. Section 3.2: The Main Game Area */}
       <main className="flex-1 flex overflow-hidden">
@@ -92,7 +143,14 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           
           {/* Top Row (3.2.1.1.1): The Game Board Area */}
           <div className="flex-1 flex items-center justify-center p-0 min-h-0 relative shrink-0 overflow-hidden" style={{ containerType: 'size' }}>
-            <GameBoard key={gameKey} rows={rows} cols={cols} subColumns={subColumns} />
+            {puzzle && (
+              <GameBoard 
+                key={gameKey} 
+                rows={puzzle.rows} 
+                cols={puzzle.cols} 
+                subColumns={subColumns} 
+              />
+            )}
           </div>
 
           {/* Bottom Row (3.2.1.1.2): Vertical Clues */}
