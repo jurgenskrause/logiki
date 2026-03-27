@@ -3,6 +3,7 @@ import { DifficultyMenu } from './DifficultyMenu';
 import { GameBoard } from './GameBoard';
 import { ManifestLoader, type PuzzleManifest } from '../../engine/ManifestLoader';
 import { HorizontalClueList } from './clue/HorizontalClueList';
+import { VerticalClueList } from './clue/VerticalClueList';
 
 const loader = new ManifestLoader();
 
@@ -166,13 +167,16 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             )}
           </div>
 
-          {/* Bottom Row (3.2.1.1.2): Vertical Clues */}
-          {/* h-auto + min-height ensures it grows if needed but doesn't crush the board entirely */}
-          <div className="h-1/4 min-h-[140px] max-h-[40%] bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 p-4 shrink-0 flex items-center justify-center shadow-inner overflow-hidden">
-            <div className="text-center">
-              <span className="material-icons text-2xl text-slate-300 dark:text-slate-700 mb-1 block">view_column</span>
-              <span className="text-slate-400 font-bold uppercase tracking-widest text-xs">Vertical Clues</span>
-            </div>
+          {/* Bottom Row (3.2.1.1.2): Vertical Clues Area */}
+          <div className="h-auto min-h-[120px] max-h-[45%] bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0 flex flex-col shadow-inner transition-all duration-300">
+             <div className="text-center py-2 border-b border-slate-200 dark:border-slate-800 bg-white/30 dark:bg-slate-900/30 backdrop-blur-sm">
+                <span className="text-slate-500 font-bold uppercase tracking-widest text-[9px] block">Vertical Constraints</span>
+             </div>
+             <div className="flex-1 overflow-hidden">
+                {puzzle && (
+                  <VerticalClueList clues={puzzle.clues} />
+                )}
+             </div>
           </div>
         </div>
 
