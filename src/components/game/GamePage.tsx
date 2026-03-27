@@ -225,11 +225,13 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         {/* Center: hint text when showing, game title otherwise */}
         <div className="flex-1 min-w-0 flex items-center justify-center">
           {hintShowing && activeHint ? (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/70 border border-amber-200 dark:border-amber-800 max-w-full overflow-hidden">
-              <span className={`material-icons text-sm shrink-0 ${activeHint.action.type === 'confirm' ? 'text-emerald-500' : 'text-red-400'}`}>
-                {activeHint.action.type === 'confirm' ? 'check_circle' : 'cancel'}
-              </span>
-              <p className="text-xs font-medium text-slate-700 dark:text-slate-300 leading-snug truncate">
+            <div className="flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-amber-50 dark:bg-amber-950/80 border border-amber-200 dark:border-amber-800 max-w-full overflow-hidden shadow-sm">
+              {activeHint.action.type === 'confirm' && (
+                <span className="material-icons text-lg shrink-0 text-emerald-500">
+                  check_circle
+                </span>
+              )}
+              <p className="text-sm font-bold text-slate-800 dark:text-slate-100 leading-snug truncate">
                 {activeHint.text}
               </p>
             </div>

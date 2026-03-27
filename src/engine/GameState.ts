@@ -25,7 +25,6 @@ export class GameState {
   // History Stacks
   private _undoStack: GameSnapshot[] = [];
   private _redoStack: GameSnapshot[] = [];
-  private readonly _HISTORY_LIMIT = 50;
 
   // Error State
   private _isError: boolean = false;
@@ -91,9 +90,6 @@ export class GameState {
       confirmed: new Uint8Array(this._confirmed)
     });
 
-    if (this._undoStack.length > this._HISTORY_LIMIT) {
-      this._undoStack.shift();
-    }
     this._redoStack = [];
   }
 
