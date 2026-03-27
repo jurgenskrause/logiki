@@ -42,6 +42,17 @@ export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue }) => {
             <span className="text-lg drop-shadow-sm">{icons[2]}</span>
           </div>
         );
+      case 'VERTICAL_NOT_TRIO':
+        return (
+          <div className="flex flex-col items-center justify-between w-full h-full py-1">
+            <span className="text-xl drop-shadow-sm">{icons[0]}</span>
+            <div className="relative">
+               <span className="text-lg blur-[1px] opacity-40 grayscale">{icons[2]}</span>
+               <span className="material-icons absolute inset-0 text-red-500 flex items-center justify-center text-sm font-black">close</span>
+            </div>
+            <span className="text-xl drop-shadow-sm">{icons[1]}</span>
+          </div>
+        );
       case 'DISJUNCTIVE_XOR':
       case 'VERTICAL_DISJUNCTIVE_EXCLUSION':
         return (
