@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { DifficultyMenu } from './DifficultyMenu';
 import { GameBoard } from './GameBoard';
 import { ManifestLoader, type PuzzleManifest } from '../../engine/ManifestLoader';
@@ -11,18 +11,19 @@ const loader = new ManifestLoader();
 
 export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [selectedDifficulty, setSelectedDifficulty] = useState<number>(0);
+  const [selectedDifficulty, setSelectedDifficulty] = useState<number>(1);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const [puzzle, setPuzzle] = useState<PuzzleManifest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isManifestLoaded, setIsManifestLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [, setTick] = useState(0);
 
   // Hint system
   const [activeHint, setActiveHint] = useState<HintResult | null>(null);
   const [hintShowing, setHintShowing] = useState(false);
-  const bannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
 
   // ─── GameState ──────────────────────────────────────────────────────────────
 
@@ -61,23 +62,43 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   useEffect(() => {
     loader.loadFromUrl('/daily.bin')
-      .then(() => setIsLoading(false))
-      .catch(() => { setLoadError('Failed to load game manifest.'); setIsLoading(false); });
+      .then(() => {
+        setIsManifestLoaded(true);
+        setIsLoading(false);
+      })
+      .catch(() => {
+        setLoadError('Failed to load game manifest.');
+        setIsLoading(false);
+      });
   }, []);
 
   useEffect(() => {
-    if (isLoading) return;
-    setIsLoading(true);
-    const dateStr = '2026-03-30';
-    const difficulty = selectedDifficulty === 0 ? 3 : selectedDifficulty;
-    loader.getPuzzle(dateStr, difficulty)
-      .then(data => {
-        if (data) setPuzzle(data);
-        else setLoadError('Puzzle not found.');
-      })
-      .catch(() => setLoadError('Error fetching puzzle.'))
-      .finally(() => setIsLoading(false));
-  }, [selectedDifficulty, isLoading === false]);
+    if (!isManifestLoaded) return;
+
+    // We keep track of individual puzzle loads
+    const t = setTimeout(async () => {
+      setIsLoading(true);
+      const dateStr = '2026-03-30';
+      const difficulty = selectedDifficulty === 0 ? 1 : selectedDifficulty;
+
+      try {
+        const data = await loader.getPuzzle(dateStr, difficulty);
+        if (data) {
+          setActiveHint(null);
+          setHintShowing(false);
+          setPuzzle(data);
+        } else {
+          setLoadError('Puzzle not found.');
+        }
+      } catch (err) {
+        setLoadError('Error fetching puzzle.');
+      } finally {
+        setIsLoading(false);
+      }
+    }, 50);
+
+    return () => clearTimeout(t);
+  }, [selectedDifficulty, isManifestLoaded]);
 
   // Run initial analysis when puzzle loads
   useEffect(() => {
@@ -106,12 +127,8 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     if (!hintShowing) {
       // First click: show banner + highlight
       setHintShowing(true);
-      // Auto-dismiss after 6s if user doesn't apply
-      if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
-      bannerTimerRef.current = setTimeout(() => setHintShowing(false), 6000);
     } else {
       // Second click: apply the hint
-      if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
       if (gameState) {
         applyHint(gameState, activeHint.action);
       }
@@ -183,38 +200,13 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         />
       )}
 
-      {/* Hint Banner */}
-      {hintShowing && activeHint && (
-        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-50 pointer-events-none"
-             style={{ animation: 'slideDown 0.25s ease' }}>
-          <div className="px-5 py-3 rounded-2xl bg-amber-50 dark:bg-amber-950 border border-amber-300 dark:border-amber-700 shadow-xl max-w-xs text-center">
-            <div className="flex items-center justify-center gap-1.5 mb-1">
-              <span className="material-icons text-amber-500 text-sm">lightbulb</span>
-              <span className="text-[9px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400">
-                Hint · click again to apply
-              </span>
-            </div>
-            <p className="text-sm font-medium text-slate-800 dark:text-slate-200 leading-snug">
-              {activeHint.text}
-            </p>
-            <div className={`mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold
-              ${activeHint.action.type === 'confirm'
-                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300'
-                : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'}`}>
-              <span className="material-icons text-xs">
-                {activeHint.action.type === 'confirm' ? 'check_circle' : 'cancel'}
-              </span>
-              {activeHint.action.type === 'confirm' ? 'Confirms a cell' : 'Eliminates a possibility'}
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Header */}
-      <header className="flex justify-between items-center h-fit px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm z-10">
 
-        {/* Left */}
-        <div className="flex items-center gap-2">
+      {/* Header — single row: Left | Hint text (center) | Right */}
+      <header className="flex items-center gap-3 px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm z-10">
+
+        {/* Left buttons */}
+        <div className="flex items-center gap-2 shrink-0">
           <button onClick={onBack}
             className="px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors text-sm font-bold shadow-sm">
             ← Back
@@ -230,24 +222,38 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </button>
         </div>
 
-        {/* Center: Hint */}
-        <button
-          onClick={handleHintClick}
-          disabled={!activeHint}
-          className={`px-4 py-2 rounded-lg flex items-center gap-2 font-bold text-sm transition-all shadow-sm ${hintBtnClass}`}>
-          <span className="material-icons text-base">
-            {hintShowing ? 'check' : 'lightbulb'}
-          </span>
-          {hintShowing ? 'Apply Hint' : 'Hint'}
-        </button>
+        {/* Center: hint text when showing, game title otherwise */}
+        <div className="flex-1 min-w-0 flex items-center justify-center">
+          {hintShowing && activeHint ? (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/70 border border-amber-200 dark:border-amber-800 max-w-full overflow-hidden">
+              <span className={`material-icons text-sm shrink-0 ${activeHint.action.type === 'confirm' ? 'text-emerald-500' : 'text-red-400'}`}>
+                {activeHint.action.type === 'confirm' ? 'check_circle' : 'cancel'}
+              </span>
+              <p className="text-xs font-medium text-slate-700 dark:text-slate-300 leading-snug truncate">
+                {activeHint.text}
+              </p>
+            </div>
+          ) : (
+            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-600 select-none">Logiki</span>
+          )}
+        </div>
 
-        {/* Right: Error dot + Undo */}
-        <div className="flex items-center gap-2">
+        {/* Right: Error dot + Hint + Undo */}
+        <div className="flex items-center gap-2 shrink-0">
           {hasError && (
             <div title="Contradiction detected — undo to fix">
               <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse ring-2 ring-red-300 dark:ring-red-700" />
             </div>
           )}
+          <button
+            onClick={handleHintClick}
+            disabled={!activeHint}
+            className={`px-4 py-2 rounded-lg flex items-center gap-2 font-bold text-sm transition-all shadow-sm ${hintBtnClass}`}>
+            <span className="material-icons text-base">
+              {hintShowing ? 'check' : 'lightbulb'}
+            </span>
+            {hintShowing ? 'Apply' : 'Hint'}
+          </button>
           <button
             onClick={() => {
               if (gameState && gameState.undoStackLength > 0) {
@@ -268,6 +274,8 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </button>
         </div>
       </header>
+
+
 
       {/* Main */}
       <main className="flex-1 flex overflow-hidden">
