@@ -12,13 +12,16 @@ import { getFallbackEmoji } from '../../utils/themeRegistry';
 
 const generateMockCells = (rows: number, cols: number, subCols: number) => {
   const cells = [];
-  const numOptions = subCols * 2;
+  // In Logiki, each cell contains SxS sub-cells? No, SxS cells in the grid, 
+  // and each cell has S options.
+  const numOptions = rows; // S items in a category for an SxS board
   
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const options = Array.from({ length: numOptions }).map((_, i) => ({
         id: i,
         isActive: Math.random() > 0.3, 
+        // We use category r and item i for deterministic but varied icons
         value: getFallbackEmoji(r, i) 
       }));
 

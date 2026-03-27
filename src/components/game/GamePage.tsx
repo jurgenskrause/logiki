@@ -17,10 +17,19 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     }
   }, [isDarkMode]);
 
-  // For the demonstration, we'll use a 5x5 grid with 3 sub-columns (6 options)
-  const rows = 5;
-  const cols = 5;
-  const subColumns = 3;
+  // 3.3 Dynamic Difficulty Logic
+  // Mapping level to grid size (Level 1 = 4x4, Level 2 = 5x5, etc.)
+  // gridSize = level + 3
+  const gridSize = selectedDifficulty > 0 ? selectedDifficulty + 3 : 5; // Default 5 for daily
+  const rows = gridSize;
+  const cols = gridSize;
+  
+  // Calculate sub-columns for the 2-row option matrix
+  // e.g. gridSize 4 -> 2 cols (4 slots), gridSize 5/6 -> 3 cols (6 slots), gridSize 7/8 -> 4 cols (8 slots)
+  const subColumns = Math.ceil(gridSize / 2);
+
+  // We use a unique key to force GameBoard to reset its internal state when difficulty changes
+  const gameKey = `${gridSize}-${subColumns}`;
 
   return (
     // 1. The Global Container
@@ -83,7 +92,7 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           
           {/* Top Row (3.2.1.1.1): The Game Board Area */}
           <div className="flex-1 flex items-center justify-center p-0 min-h-0 relative shrink-0 overflow-hidden" style={{ containerType: 'size' }}>
-            <GameBoard rows={rows} cols={cols} subColumns={subColumns} />
+            <GameBoard key={gameKey} rows={rows} cols={cols} subColumns={subColumns} />
           </div>
 
           {/* Bottom Row (3.2.1.1.2): Vertical Clues */}
