@@ -1,7 +1,6 @@
 import type { ActiveClue } from './Solver';
 
 // --- Binary Specification Constants (Matched with Packer) ---
-const MAGIC_BYTES = 0x4C474B21; // "LGK!" (LE)
 const VERSION = 0x01;
 const SECRET_SALT = 'logiki-daily-secret-2026';
 
@@ -54,15 +53,31 @@ export class ManifestLoader {
    */
   public async loadFromUrl(url: string): Promise<void> {
     const response = await fetch(url);
-    this.buffer = await response.arrayBuffer();
+    const buffer = await response.arrayBuffer();
+    this.loadFromBuffer(buffer);
+  }
+
+  /**
+   * Loads the binary manifest from an existing ArrayBuffer.
+   */
+  public loadFromBuffer(buffer: ArrayBuffer): void {
+    this.buffer = buffer;
     this.dataView = new DataView(this.buffer);
 
-    // Verify Header
-    const magic = this.dataView.getUint32(0, true);
+    // Verify Header (Magic Bytes: "LGK!")
+    const magic = [
+      this.dataView.getUint8(0),
+      this.dataView.getUint8(1),
+      this.dataView.getUint8(2),
+      this.dataView.getUint8(3)
+    ];
+    
     const ver = this.dataView.getUint8(4);
     
-    if (magic !== MAGIC_BYTES || ver !== VERSION) {
-      throw new Error('Invalid manifest format or version');
+    const isMagicValid = magic[0] === 0x4C && magic[1] === 0x47 && magic[2] === 0x4B && magic[3] === 0x21;
+
+    if (!isMagicValid || ver !== VERSION) {
+      throw new Error(`Invalid manifest format or version. Magic: ${magic.map(b => b.toString(16)).join(',')} Ver: ${ver}`);
     }
   }
 

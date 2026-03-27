@@ -163,15 +163,32 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </div>
         </div>
 
-        {/* Right Column (3.2.1.2): Horizontal Clues */}
-        {/* Changed from w-1/4 to w-auto to scale around inner content. Using max-w-[40%] to prevent it from eating the board on weird clue sets. */}
-        <div className="w-auto min-w-[120px] max-w-[40%] h-full bg-slate-100 dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 p-4 shrink-0 flex flex-col items-center justify-center shadow-inner overflow-hidden">
-          <div className="text-center px-4">
+        {/* Right Column (3.2.1.2): Horizontal Clues Area */}
+        <div className="w-[300px] h-full bg-slate-100 dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 p-4 shrink-0 flex flex-col shadow-inner overflow-hidden">
+          <div className="text-center mb-4">
             <span className="material-icons text-2xl text-slate-300 dark:text-slate-700 mb-1 block">table_rows</span>
-            <span className="text-slate-400 font-bold uppercase tracking-widest text-xs">Horizontal Clues</span>
-            <div className="mt-4 p-4 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-lg">
-               <span className="text-[10px] text-slate-400">Dynamic Width</span>
-            </div>
+            <span className="text-slate-400 font-bold uppercase tracking-widest text-xs">Horizontal & Vertical Clues</span>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto pr-2 space-y-2 custom-scrollbar">
+            {puzzle?.clues.map((clue, idx) => (
+              <div key={idx} className="p-3 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 font-mono text-[10px] leading-relaxed">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-indigo-500 font-bold">{clue.type}</span>
+                  <span className="text-slate-400 font-normal">#{idx + 1}</span>
+                </div>
+                <div className="text-slate-600 dark:text-slate-400">
+                  {clue.params.map((p, i) => (
+                    <span key={i}>
+                      (R{p.row}, I{p.item}){i < clue.params.length - 1 ? ' ↔ ' : ''}
+                    </span>
+                  ))}
+                  {clue.targetCol !== undefined && (
+                    <span className="ml-1 text-emerald-500 font-bold">@Col {clue.targetCol}</span>
+                  ) }
+                </div>
+              </div>
+            ))}
           </div>
         </div>
         

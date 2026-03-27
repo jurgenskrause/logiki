@@ -19,13 +19,23 @@ function App() {
         </h1>
         <p className="text-slate-500 font-medium tracking-widest uppercase text-xs mb-6">Phase 1 & Phase 2 Comprehensive Proof</p>
         
-        <Link 
-          to="/game"
-          className="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold shadow-lg shadow-blue-900/20 transition-all border border-blue-400/20 flex w-fit items-center gap-3 mx-auto"
-        >
-          <span className="material-icons">sports_esports</span>
-          Test Game UI Scaffolding
-        </Link>
+        <div className="flex gap-4 mx-auto w-fit">
+          <Link 
+            to="/game"
+            className="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold shadow-lg shadow-blue-900/20 transition-all border border-blue-400/20 flex items-center gap-3"
+          >
+            <span className="material-icons">sports_esports</span>
+            Test Game UI
+          </Link>
+
+          <Link 
+            to="/binloader"
+            className="px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold shadow-lg transition-all border border-slate-800 flex items-center gap-3"
+          >
+            <span className="material-icons">history_edu</span>
+            Binary Inspector
+          </Link>
+        </div>
       </header>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 w-full max-w-7xl">
