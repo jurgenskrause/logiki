@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DifficultyMenu } from './DifficultyMenu';
 import { GameBoard } from './GameBoard';
 import { ManifestLoader, type PuzzleManifest } from '../../engine/ManifestLoader';
+import { HorizontalClueList } from './clue/HorizontalClueList';
 
 const loader = new ManifestLoader();
 
@@ -66,6 +67,18 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   }, [isDarkMode]);
 
   // If loading or error, show a placeholder
+  if (error) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-slate-950 text-white p-8">
+        <div className="text-center space-y-4">
+          <span className="material-icons text-red-500 text-6xl">error_outline</span>
+          <p className="text-xl font-bold">{error}</p>
+          <button onClick={() => window.location.reload()} className="px-6 py-2 bg-slate-800 rounded-xl font-bold hover:bg-slate-700 transition-colors">Retry</button>
+        </div>
+      </div>
+    );
+  }
+
   if (isLoading && !puzzle) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-slate-950 text-white">
@@ -164,31 +177,16 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         </div>
 
         {/* Right Column (3.2.1.2): Horizontal Clues Area */}
-        <div className="w-[300px] h-full bg-slate-100 dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 p-4 shrink-0 flex flex-col shadow-inner overflow-hidden">
-          <div className="text-center mb-4">
-            <span className="material-icons text-2xl text-slate-300 dark:text-slate-700 mb-1 block">table_rows</span>
-            <span className="text-slate-400 font-bold uppercase tracking-widest text-xs">Horizontal & Vertical Clues</span>
+        <div className="w-auto h-full bg-slate-100 dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shrink-0 flex flex-col shadow-inner transition-all duration-300">
+          <div className="text-center p-4 border-b border-slate-200 dark:border-slate-800 bg-white/30 dark:bg-slate-900/30 backdrop-blur-sm">
+            <span className="material-icons text-xl text-slate-400 dark:text-slate-600 mb-1 block">swap_horiz</span>
+            <span className="text-slate-500 font-bold uppercase tracking-widest text-[9px] block">Horizontal Data</span>
           </div>
           
-          <div className="flex-1 overflow-y-auto pr-2 space-y-2 custom-scrollbar">
-            {puzzle?.clues.map((clue, idx) => (
-              <div key={idx} className="p-3 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 font-mono text-[10px] leading-relaxed">
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-indigo-500 font-bold">{clue.type}</span>
-                  <span className="text-slate-400 font-normal">#{idx + 1}</span>
-                </div>
-                <div className="text-slate-600 dark:text-slate-400">
-                  {clue.params.map((p, i) => (
-                    <span key={i}>
-                      (R{p.row}, I{p.item}){i < clue.params.length - 1 ? ' ↔ ' : ''}
-                    </span>
-                  ))}
-                  {clue.targetCol !== undefined && (
-                    <span className="ml-1 text-emerald-500 font-bold">@Col {clue.targetCol}</span>
-                  ) }
-                </div>
-              </div>
-            ))}
+          <div className="flex-1 overflow-hidden">
+            {puzzle && (
+              <HorizontalClueList clues={puzzle.clues} />
+            )}
           </div>
         </div>
         
