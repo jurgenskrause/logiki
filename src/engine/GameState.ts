@@ -347,6 +347,17 @@ export class GameState {
     }
   }
 
-  public get restoreSnapshot(): { grid: Uint16Array; confirmed: Uint8Array } | null { return this._restoreSnapshot; }
+  public get restoreSnapshot(): { grid: Uint16Array; confirmed: Uint8Array; noAutoSolve: Uint8Array } | null { return this._restoreSnapshot as any; }
   public clearError(): void { this._isError = false; this._restoreSnapshot = null; }
+
+  public restoreToLastValid(): void {
+    if (this._isError && this._restoreSnapshot) {
+      this._grid = new Uint16Array(this._restoreSnapshot.grid);
+      this._confirmed = new Uint8Array(this._restoreSnapshot.confirmed);
+      this._noAutoSolve = new Uint8Array(this._restoreSnapshot.noAutoSolve);
+      this.clearError();
+      // Clear redo stack on manual restoration
+      this._redoStack = [];
+    }
+  }
 }

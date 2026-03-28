@@ -93,11 +93,25 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
     if (result.isContradiction) {
       gameState.markError();
-    } else if (gameState.isError) {
-      gameState.clearError();
+      setActiveHint({
+        clue: { id: 'error', type: 'error', params: [] },
+        action: { 
+          type: 'confirm', // Use a valid type but we handle 'RESTORE' text match or extra field
+          cellId: 'restore',
+          row: 0, 
+          col: 0, 
+          itemIndex: 0 
+        } as any, // Cast to any to bypass 'RESTORE' type restriction
+        text: "Restore to last correct state"
+      });
+      // Set the special restore type after the cast so our handler is clean
+      // @ts-ignore
+      setActiveHint(prev => prev ? { ...prev, action: { ...prev.action, type: 'RESTORE' } } : null);
+    } else {
+      if (gameState.isError) gameState.clearError();
+      setActiveHint(result.hint);
     }
 
-    setActiveHint(result.hint);
     // If the hint changed while showing, dismiss the banner
     setHintShowing(false);
   }, [gameState, puzzle]);
@@ -210,7 +224,11 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     } else {
       // Second click: apply the hint
       if (gameState) {
-        applyHint(gameState, activeHint.action);
+        if (activeHint.action.type === ('RESTORE' as any)) {
+          gameState.restoreToLastValid();
+        } else {
+          applyHint(gameState, activeHint.action);
+        }
         // Important: this trigger handles state change AND analysis AFTER the cascade
         handleStateChange();
       }
@@ -222,7 +240,7 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   // ─── Derived hint highlight data ─────────────────────────────────────────────
 
   const hintHighlights = useMemo(() => {
-    if (!activeHint || !hintShowing) return [];
+    if (!activeHint || !hintShowing || (activeHint.action.type as any) === 'RESTORE') return [];
     return [{
       cellId: activeHint.action.cellId,
       items: [{
@@ -261,7 +279,7 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const cols = puzzle?.cols ?? 5;
   const subColumns = Math.ceil(cols / 2);
   const gameKey = `${rows}-${cols}-${selectedDifficulty}`;
-  const hasError = gameState?.isError ?? false;
+
 
   // Hint button variants
   const hintBtnClass = !activeHint
@@ -320,6 +338,11 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   check_circle
                 </span>
               )}
+              {activeHint.action.type === ('RESTORE' as any) && (
+                <span className="material-icons text-base shrink-0 text-amber-500">
+                  history
+                </span>
+              )}
               <p className="text-sm font-bold text-slate-800 dark:text-slate-100 leading-snug truncate">
                 {activeHint.text}
               </p>
@@ -329,13 +352,8 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           )}
         </div>
 
-        {/* Right: Error dot + Hint + Undo */}
+        {/* Right: Hint + Undo */}
         <div className="flex items-center gap-2 shrink-0">
-          {hasError && (
-            <div title="Contradiction detected — undo to fix">
-              <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse ring-2 ring-red-300 dark:ring-red-700" />
-            </div>
-          )}
           
           <label className="flex items-center gap-1.5 cursor-pointer text-sm font-bold text-slate-500 dark:text-slate-400 select-none mr-2">
             <div className="relative">
