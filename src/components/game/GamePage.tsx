@@ -27,19 +27,22 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [hoveredClueText, setHoveredClueText] = useState<string | null>(null);
   const [isCascading, setIsCascading] = useState(false);
   const cascadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  
+  // Warning System & Hint Counter
+  const [warningsEnabled, setWarningsEnabled] = useState(false);
+  const [hintCount, setHintCount] = useState(0);
+  const [flashRed, setFlashRed] = useState(false);
+
+  const triggerRedFlash = useCallback(() => {
+    setFlashRed(true);
+    setTimeout(() => setFlashRed(false), 500);
+  }, []);
 
   // Clue Bin state
   const [binnedClueIds, setBinnedClueIds] = useState<Set<string>>(new Set());
   const [showBin, setShowBin] = useState(false);
 
-  const handleToggleBin = useCallback((clueId: string) => {
-    setBinnedClueIds(prev => {
-      const next = new Set(prev);
-      if (next.has(clueId)) next.delete(clueId);
-      else next.add(clueId);
-      return next;
-    });
-  }, []);
+
 
 
   // ─── GameState ──────────────────────────────────────────────────────────────
@@ -57,6 +60,30 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     gs._undoStack = [];
     return gs;
   }, [puzzle]);
+
+  const handleToggleBin = useCallback((clueId: string) => {
+    setBinnedClueIds(prev => {
+      const isBinning = !prev.has(clueId);
+
+      // Warning System: Prevent binning if it makes the puzzle unsolvable
+      if (warningsEnabled && isBinning && gameState && puzzle) {
+        const nextIds = new Set(prev);
+        nextIds.add(clueId);
+        const activeClues = puzzle.clues.filter(c => !nextIds.has(c.id));
+        const analysis = analyzeState(gameState, activeClues);
+        if (!analysis.isSolvable) {
+          triggerRedFlash();
+          setHintCount(c => c + 1);
+          return prev; // Prevent the binning action
+        }
+      }
+
+      const next = new Set(prev);
+      if (isBinning) next.add(clueId);
+      else next.delete(clueId);
+      return next;
+    });
+  }, [warningsEnabled, gameState, puzzle, triggerRedFlash]);
 
   // ─── Analysis ───────────────────────────────────────────────────────────────
 
@@ -149,14 +176,26 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   }, [gameState, runAnalysis]);
 
   const handleStateChange = useCallback(() => {
-    // Stop any existing cascade and restart
     if (cascadeTimerRef.current) clearTimeout(cascadeTimerRef.current);
+    
+    // Warning System: Prevent moves that make the puzzle unsolvable
+    if (warningsEnabled && gameState && puzzle) {
+      const activeClues = puzzle.clues.filter(c => !binnedClueIds.has(c.id));
+      const result = analyzeState(gameState, activeClues);
+      if (!result.isSolvable) {
+        gameState.undo();
+        triggerRedFlash();
+        setHintCount(c => c + 1);
+        setTick(t => t + 1); // Force board re-render to reflect undo
+        return; // Prevent cascade and further action
+      }
+    }
     
     setTick(t => t + 1);
     setIsCascading(true);
     // Start the chain reaction
     cascadeTimerRef.current = setTimeout(runCascade, 250);
-  }, [runCascade]);
+  }, [runCascade, warningsEnabled, gameState, puzzle, binnedClueIds, triggerRedFlash]);
 
   // ─── Hint Button Logic ───────────────────────────────────────────────────────
 
@@ -171,6 +210,7 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       // Second click: apply the hint
       if (gameState) {
         applyHint(gameState, activeHint.action);
+        setHintCount(c => c + 1);
         // Important: this trigger handles state change AND analysis AFTER the cascade
         handleStateChange();
       }
@@ -296,6 +336,20 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse ring-2 ring-red-300 dark:ring-red-700" />
             </div>
           )}
+          
+          <label className="flex items-center gap-1.5 cursor-pointer text-sm font-bold text-slate-500 dark:text-slate-400 select-none mr-2">
+            <div className="relative">
+              <input type="checkbox" className="sr-only" checked={warningsEnabled} onChange={e => setWarningsEnabled(e.target.checked)} />
+              <div className={`block w-8 h-5 rounded-full transition-colors ${warningsEnabled ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-700'}`}></div>
+              <div className={`dot absolute left-1 top-1 bg-white w-3 h-3 rounded-full transition-transform ${warningsEnabled ? 'transform translate-x-3' : ''}`}></div>
+            </div>
+            Warning
+          </label>
+          
+          <div className="flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-lg px-2 h-9 text-sm font-bold text-slate-500 shadow-sm mr-2" title="Hints & Warnings Used">
+            ★ {hintCount}
+          </div>
+
           <button
             onClick={handleHintClick}
             disabled={!activeHint}
@@ -350,7 +404,7 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
 
       {/* Main */}
-      <main className="flex-1 flex overflow-hidden">
+      <main className={`flex-1 flex overflow-hidden transition-colors duration-300 ${flashRed ? 'bg-red-500/20' : ''}`}>
 
         {/* Left: Board + Vertical Clues */}
         <div className="flex-1 flex flex-col overflow-hidden">

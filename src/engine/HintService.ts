@@ -20,6 +20,7 @@ export interface HintResult {
 
 export interface AnalysisResult {
   isContradiction: boolean;
+  isSolvable: boolean;
   hint: HintResult | null;
 }
 
@@ -103,8 +104,11 @@ export function analyzeState(gs: GameState, clues: ActiveClue[]): AnalysisResult
   // 1. Contradiction check
   const fullCanvas = canvas.clone();
   const fullResult = solver.solve(clues, fullCanvas);
+  
+  const isSolvable = fullResult === SolverResult.SOLVED;
+
   if (fullResult === SolverResult.CONTRADICTION) {
-    return { isContradiction: true, hint: null };
+    return { isContradiction: true, isSolvable, hint: null };
   }
 
   // 2. Find weakest productive clue (skip anchors — already applied)
@@ -118,6 +122,7 @@ export function analyzeState(gs: GameState, clues: ActiveClue[]): AnalysisResult
 
     return {
       isContradiction: false,
+      isSolvable,
       hint: {
         clue,
         action,
@@ -126,7 +131,7 @@ export function analyzeState(gs: GameState, clues: ActiveClue[]): AnalysisResult
     };
   }
 
-  return { isContradiction: false, hint: null };
+  return { isContradiction: false, isSolvable, hint: null };
 }
 
 /**
