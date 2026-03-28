@@ -31,9 +31,10 @@ interface GameBoardProps {
   hintHighlights?: { cellId: string; items: { id: number; color: 'red' | 'green' }[] }[];
   isLocked?: boolean;
   flashRed?: boolean;
+  zoomEnabled?: boolean;
 }
 
-export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns, clues = [], gameState, onStateChange, hintHighlights = [], isLocked = false, flashRed = false }) => {
+export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns, clues = [], gameState, onStateChange, hintHighlights = [], isLocked = false, flashRed = false, zoomEnabled = true }) => {
   const cells: Cell[] = [];
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
@@ -199,7 +200,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns, cl
               onInteract={handleInteract}
               cellSizeRef={handleCellSize}
               highlightItems={hl?.items ?? []}
-              needsZoom={needsZoom}
+              needsZoom={needsZoom && zoomEnabled}
             />
           );
         })}

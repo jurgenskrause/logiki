@@ -5,6 +5,8 @@ interface SideMenuProps {
   onOpenDifficulty: () => void;
   warningsEnabled: boolean;
   onToggleWarnings: (enabled: boolean) => void;
+  zoomEnabled: boolean;
+  onToggleZoom: (enabled: boolean) => void;
   isDarkMode: boolean;
   onToggleDarkMode: () => void;
 }
@@ -14,6 +16,8 @@ export const SideMenu: React.FC<SideMenuProps> = ({
   onOpenDifficulty, 
   warningsEnabled, 
   onToggleWarnings,
+  zoomEnabled,
+  onToggleZoom,
   isDarkMode,
   onToggleDarkMode
 }) => {
@@ -70,7 +74,31 @@ export const SideMenu: React.FC<SideMenuProps> = ({
             </div>
           </button>
 
-          <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-800">
+          <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-800 space-y-2">
+            <div className="w-full flex items-center justify-between p-4 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+              <div className="flex items-center gap-4">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${zoomEnabled ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-500' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
+                  <span className="material-icons">zoom_in</span>
+                </div>
+                <div>
+                  <div className="font-bold text-slate-800 dark:text-slate-200">Cell Zoom</div>
+                  <div className="text-[10px] sm:text-xs font-medium text-slate-500 leading-tight mt-0.5">Magnify tiles when tapping</div>
+                </div>
+              </div>
+              <label className="flex items-center cursor-pointer shrink-0 ml-2">
+                <div className="relative">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only" 
+                    checked={zoomEnabled} 
+                    onChange={e => onToggleZoom(e.target.checked)} 
+                  />
+                  <div className={`block w-10 h-5 rounded-full transition-colors duration-300 ${zoomEnabled ? 'bg-blue-500 shadow-md shadow-blue-500/20' : 'bg-slate-300 dark:bg-slate-700 shadow-inner'}`}></div>
+                  <div className={`dot absolute left-1 top-1 bg-white w-3 h-3 rounded-full transition-transform duration-300 shadow-sm ${zoomEnabled ? 'transform translate-x-5' : ''}`}></div>
+                </div>
+              </label>
+            </div>
+
             <div className="w-full flex items-center justify-between p-4 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
               <div className="flex items-center gap-4">
                 <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${warningsEnabled ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-500' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>

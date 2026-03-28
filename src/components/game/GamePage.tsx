@@ -46,6 +46,7 @@ export const GamePage: React.FC = () => {
   
   // Warning System & Hint Counter
   const [warningsEnabled, setWarningsEnabled] = useState(false);
+  const [zoomEnabled, setZoomEnabled] = useState(true);
   const [hintCount, setHintCount] = useState(0);
   const [flashRed, setFlashRed] = useState(false);
 
@@ -328,6 +329,8 @@ export const GamePage: React.FC = () => {
           onOpenDifficulty={() => setIsMenuOpen(true)}
           warningsEnabled={warningsEnabled}
           onToggleWarnings={setWarningsEnabled}
+          zoomEnabled={zoomEnabled}
+          onToggleZoom={setZoomEnabled}
           isDarkMode={isDarkMode}
           onToggleDarkMode={() => setIsDarkMode(prev => !prev)}
         />
@@ -554,6 +557,7 @@ export const GamePage: React.FC = () => {
               hintHighlights={hintHighlights}
               isLocked={isCascading}
               flashRed={flashRed}
+              zoomEnabled={zoomEnabled}
             />
           )}
         </div>
