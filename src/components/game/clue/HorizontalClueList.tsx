@@ -16,6 +16,18 @@ import {
 } from '@dnd-kit/sortable';
 import { SortableClueWrapper } from './SortableClueWrapper';
 
+function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(false);
+  useEffect(() => {
+    const matchQueryList = window.matchMedia(query);
+    setMatches(matchQueryList.matches);
+    const handler = (e: MediaQueryListEvent) => setMatches(e.matches);
+    matchQueryList.addEventListener('change', handler);
+    return () => matchQueryList.removeEventListener('change', handler);
+  }, [query]);
+  return matches;
+}
+
 interface HorizontalClueListProps {
   clues: ActiveClue[];
   onClueHover?: (clue: ActiveClue | null) => void;
@@ -100,14 +112,16 @@ export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, o
   const numColumns = Math.ceil(orderedClues.length / maxCluesPerColumn) || 1;
   const actualCols = Math.min(numColumns, 4);
 
+  const isDesktop = useMediaQuery('(min-width: 768px)');
+
   return (
     <div 
       ref={containerRef}
-      className="flex-1 h-full p-4 overflow-hidden relative"
-      style={{
+      className="flex-1 w-full h-full p-2 md:p-4 overflow-x-hidden md:overflow-visible relative"
+      style={isDesktop ? {
         width: `${actualCols * CLUE_WIDTH + 32}px`,
         transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-      }}
+      } : {}}
     >
       <DndContext 
         sensors={sensors}
@@ -119,23 +133,25 @@ export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, o
           strategy={rectSortingStrategy}
         >
           <div 
-            className="grid gap-3 h-full"
-            style={{
+            className={`w-full h-full ${isDesktop ? 'grid gap-3' : 'flex flex-wrap justify-center gap-2'}`}
+            style={isDesktop ? {
               gridTemplateRows: `repeat(${maxCluesPerColumn}, minmax(0, 1fr))`,
               gridAutoFlow: 'column',
               gridAutoColumns: `minmax(${CLUE_WIDTH - 12}px, 1fr)`
-            }}
+            } : {}}
           >
             {orderedClues.map((item) => (
-              <SortableClueWrapper key={item.id} id={item.id}>
-                <HorizontalClueUI 
-                   clue={item.clue} 
-                   onHover={onClueHover} 
-                   isHighlighted={highlightedClue === item.clue} 
-                   onDiscard={onClueToggleBin}
-                   isBinned={binnedIds?.has(item.clue.id)}
-                />
-              </SortableClueWrapper>
+              <div key={item.id} className={!isDesktop ? "transform scale-90 origin-center -m-1" : ""}>
+                <SortableClueWrapper id={item.id}>
+                  <HorizontalClueUI 
+                     clue={item.clue} 
+                     onHover={onClueHover} 
+                     isHighlighted={highlightedClue === item.clue} 
+                     onDiscard={onClueToggleBin}
+                     isBinned={binnedIds?.has(item.clue.id)}
+                  />
+                </SortableClueWrapper>
+              </div>
             ))}
           </div>
         </SortableContext>
