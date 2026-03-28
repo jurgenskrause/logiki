@@ -396,7 +396,7 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </button>
           <button
             onClick={() => setShowBin(!showBin)}
-            className={`relative p-2 rounded-lg flex items-center justify-center transition-colors shadow-sm ${
+            className={`relative hidden md:flex p-2 rounded-lg items-center justify-center transition-colors shadow-sm ${
               showBin 
                 ? 'bg-amber-500 text-white shadow-inner ring-2 ring-amber-300' 
                 : binnedClueIds.size > 0
@@ -466,7 +466,30 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         </div>
 
         {/* Row 2 (Mobile Only): Swappable Drawer Tabs */}
-        <div className="col-start-1 row-start-2 md:hidden flex items-center justify-between px-4 py-2 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 shadow-sm z-20 shrink-0">
+        <div className="col-start-1 row-start-2 md:hidden flex items-center justify-between px-4 py-2 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 shadow-sm z-20 shrink-0 gap-2">
+          
+          <button
+            onClick={() => setShowBin(!showBin)}
+            className={`relative p-2 h-full rounded-lg flex items-center justify-center transition-colors shadow-sm ${
+              showBin 
+                ? 'bg-amber-500 text-white shadow-inner ring-2 ring-amber-300' 
+                : binnedClueIds.size > 0
+                  ? 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-300'
+                  : 'bg-slate-200 text-slate-400 dark:bg-slate-800 dark:text-slate-600'
+            }`}
+            title={showBin ? "Show Active Clues" : "Show Binned Clues"}
+          >
+            <span className="material-icons text-base">{showBin ? 'visibility' : 'delete_outline'}</span>
+            {binnedClueIds.size > 0 && !showBin && (
+              <span className="absolute -top-1 -right-1 flex h-4 w-4 z-20">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-4 w-4 bg-amber-500 text-[10px] items-center justify-center text-white font-bold leading-none">
+                  {binnedClueIds.size}
+                </span>
+              </span>
+            )}
+          </button>
+
           <div className="flex bg-slate-200 dark:bg-slate-800 rounded-lg p-1 w-full gap-1 shadow-inner">
             <button 
               onClick={() => setActiveMobileTab('horizontal')}
