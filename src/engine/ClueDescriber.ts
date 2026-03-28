@@ -38,7 +38,7 @@ export function describeDeduction(clue: ActiveClue, action: HintAction): string 
     }
     case 'VERTICAL_NOT_TRIO': {
       const [a, b, c] = p.map(x => icon(x.row, x.item));
-      return `${a}, ${b}, and ${c} cannot all be in the same column. ${conclude}`;
+      return `${a} and ${b} are in the same column, but ${c} is not in that column. ${conclude}`;
     }
     case 'ADJACENT': {
       const [a, b] = [icon(p[0].row, p[0].item), icon(p[1].row, p[1].item)];
@@ -59,7 +59,7 @@ export function describeDeduction(clue: ActiveClue, action: HintAction): string 
     }
     case 'DISJUNCTIVE_XOR': {
       const [a, b, c] = p.map(x => icon(x.row, x.item));
-      return `${c} shares a column with only one of ${a} or ${b}. ${conclude}`;
+      return `${c} is in the same column as ${a} or ${b}, but not both. ${conclude}`;
     }
     case 'ANCHOR': {
       const a = icon(p[0].row, p[0].item);
@@ -78,58 +78,58 @@ export function describeDeduction(clue: ActiveClue, action: HintAction): string 
  * Describes the STATIC RULE defined by the clue, without a specific conclusion.
  */
 export function describeRule(clue: ActiveClue): string {
-    const icon = (row: number, item: number) => getFallbackEmoji(row, item);
-    const p = clue.params;
-  
-    switch (clue.type) {
-      case 'VERTICAL_PAIR':
-      case 'VERTICAL': {
-        const [a, b] = [icon(p[0].row, p[0].item), icon(p[1].row, p[1].item)];
-        return `${a} and ${b} are in the same column.`;
-      }
-      case 'VERTICAL_NOT': {
-        const [a, b] = [icon(p[0].row, p[0].item), icon(p[1].row, p[1].item)];
-        return `${a} and ${b} are never in the same column.`;
-      }
-      case 'VERTICAL_TRIO': {
-        const [a, b, c] = p.map(x => icon(x.row, x.item));
-        return `${a}, ${b}, and ${c} all share a single column.`;
-      }
-      case 'VERTICAL_NOT_TRIO': {
-        const [a, b, c] = p.map(x => icon(x.row, x.item));
-        return `${a}, ${b}, and ${c} cannot all be in the same column.`;
-      }
-      case 'ADJACENT': {
-        const [a, b] = [icon(p[0].row, p[0].item), icon(p[1].row, p[1].item)];
-        return `${a} and ${b} are adjacent.`;
-      }
-      case 'LEFT_OF': {
-        const [a, b] = [icon(p[0].row, p[0].item), icon(p[1].row, p[1].item)];
-        return `${a} is to the left of ${b}.`;
-      }
-      case 'SEQUENCE_THREE': {
-        const [a, b, c] = p.map(x => icon(x.row, x.item));
-        return `${b} is between ${a} and ${c}.`;
-      }
-      case 'GAPPED_NOT_MIDDLE':
-      case 'GAPPED_EXCLUSION': {
-        const [a, mid, b] = p.map(x => icon(x.row, x.item));
-        return `${mid} is not between ${a} and ${b}.`;
-      }
-      case 'DISJUNCTIVE_XOR': 
-      case 'VERTICAL_DISJUNCTIVE_EXCLUSION': {
-        const [a, b, c] = p.map(x => icon(x.row, x.item));
-        return `${c} shares a column with only one of ${a} or ${b}.`;
-      }
-      case 'ANCHOR': {
-        const a = icon(p[0].row, p[0].item);
-        return `${a} is at a specific fixed location.`;
-      }
-      case 'NEGATIVE_ANCHOR': {
-        const a = icon(p[0].row, p[0].item);
-        return `${a} is blocked from a specific area.`;
-      }
-      default:
-        return `A constraint rule applies.`;
+  const icon = (row: number, item: number) => getFallbackEmoji(row, item);
+  const p = clue.params;
+
+  switch (clue.type) {
+    case 'VERTICAL_PAIR':
+    case 'VERTICAL': {
+      const [a, b] = [icon(p[0].row, p[0].item), icon(p[1].row, p[1].item)];
+      return `${a} and ${b} are in the same column.`;
     }
+    case 'VERTICAL_NOT': {
+      const [a, b] = [icon(p[0].row, p[0].item), icon(p[1].row, p[1].item)];
+      return `${a} and ${b} are never in the same column.`;
+    }
+    case 'VERTICAL_TRIO': {
+      const [a, b, c] = p.map(x => icon(x.row, x.item));
+      return `${a}, ${b}, and ${c} all share a single column.`;
+    }
+    case 'VERTICAL_NOT_TRIO': {
+      const [a, b, c] = p.map(x => icon(x.row, x.item));
+      return `${a} and ${b} are in the same column, but ${c} is not in that column.`;
+    }
+    case 'ADJACENT': {
+      const [a, b] = [icon(p[0].row, p[0].item), icon(p[1].row, p[1].item)];
+      return `${a} and ${b} are adjacent.`;
+    }
+    case 'LEFT_OF': {
+      const [a, b] = [icon(p[0].row, p[0].item), icon(p[1].row, p[1].item)];
+      return `${a} is to the left of ${b}.`;
+    }
+    case 'SEQUENCE_THREE': {
+      const [a, b, c] = p.map(x => icon(x.row, x.item));
+      return `${b} is between ${a} and ${c}.`;
+    }
+    case 'GAPPED_NOT_MIDDLE':
+    case 'GAPPED_EXCLUSION': {
+      const [a, mid, b] = p.map(x => icon(x.row, x.item));
+      return `${mid} is not between ${a} and ${b}.`;
+    }
+    case 'DISJUNCTIVE_XOR':
+    case 'VERTICAL_DISJUNCTIVE_EXCLUSION': {
+      const [a, b, c] = p.map(x => icon(x.row, x.item));
+      return `${c} is in the same column as ${a} or ${b}, but not both.`;
+    }
+    case 'ANCHOR': {
+      const a = icon(p[0].row, p[0].item);
+      return `${a} is at a specific fixed location.`;
+    }
+    case 'NEGATIVE_ANCHOR': {
+      const a = icon(p[0].row, p[0].item);
+      return `${a} is blocked from a specific area.`;
+    }
+    default:
+      return `A constraint rule applies.`;
+  }
 }
