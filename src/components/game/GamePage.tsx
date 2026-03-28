@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { DifficultyMenu } from './DifficultyMenu';
+import { SideMenu } from './SideMenu';
 import { GameBoard } from './GameBoard';
 import { ManifestLoader, type PuzzleManifest } from '../../engine/ManifestLoader';
 import { GameState } from '../../engine/GameState';
@@ -27,6 +28,7 @@ export const GamePage: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [selectedDifficulty, setSelectedDifficulty] = useState<number>(1);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
   const [explainedClue, setExplainedClue] = useState<ActiveClue | null>(null);
 
   const [puzzle, setPuzzle] = useState<PuzzleManifest | null>(null);
@@ -319,6 +321,18 @@ export const GamePage: React.FC = () => {
         />
       )}
 
+      {/* Slide-out Side Menu */}
+      {isSideMenuOpen && (
+        <SideMenu
+          onClose={() => setIsSideMenuOpen(false)}
+          onOpenDifficulty={() => setIsMenuOpen(true)}
+          warningsEnabled={warningsEnabled}
+          onToggleWarnings={setWarningsEnabled}
+          isDarkMode={isDarkMode}
+          onToggleDarkMode={() => setIsDarkMode(prev => !prev)}
+        />
+      )}
+
       {/* Clue Explanation Modal */}
       {explainedClue && (
         <div 
@@ -353,7 +367,7 @@ export const GamePage: React.FC = () => {
 
       {/* ====== MOBILE HEADER ====== */}
       <header className="md:hidden flex items-center px-2 h-16 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm z-10 shrink-0">
-        <button onClick={() => setIsMenuOpen(true)} className="p-3 mr-2 rounded-full flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors text-slate-700 dark:text-slate-300 shrink-0">
+        <button onClick={() => setIsSideMenuOpen(true)} className="p-3 mr-2 rounded-full flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors text-slate-700 dark:text-slate-300 shrink-0">
           <span className="material-icons">menu</span>
         </button>
 
@@ -394,7 +408,7 @@ export const GamePage: React.FC = () => {
         
         {/* Left buttons */}
         <div className="flex items-center gap-2 shrink-0">
-          <button onClick={() => setIsMenuOpen(true)}
+          <button onClick={() => setIsSideMenuOpen(true)}
             className="p-2 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors shadow-sm flex items-center justify-center">
             <span className="material-icons text-sm">menu</span>
           </button>
@@ -441,15 +455,6 @@ export const GamePage: React.FC = () => {
 
         {/* Right: Hint + Undo */}
         <div className="flex items-center gap-2 shrink-0">
-          
-          <label className="flex items-center gap-1.5 cursor-pointer text-sm font-bold text-slate-500 dark:text-slate-400 select-none mr-2">
-            <div className="relative">
-              <input type="checkbox" className="sr-only" checked={warningsEnabled} onChange={e => setWarningsEnabled(e.target.checked)} />
-              <div className={`block w-8 h-5 rounded-full transition-colors ${warningsEnabled ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-700'}`}></div>
-              <div className={`dot absolute left-1 top-1 bg-white w-3 h-3 rounded-full transition-transform ${warningsEnabled ? 'transform translate-x-3' : ''}`}></div>
-            </div>
-            Warning
-          </label>
           
           <div className="flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-lg px-2 h-9 text-sm font-bold text-slate-500 shadow-sm mr-2" title="Hints & Warnings Used">
             ★ {hintCount}
