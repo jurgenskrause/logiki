@@ -19,6 +19,7 @@ import { SortableClueWrapper } from './SortableClueWrapper';
 interface HorizontalClueListProps {
   clues: ActiveClue[];
   onClueHover?: (clue: ActiveClue | null) => void;
+  highlightedClue?: ActiveClue | null;
 }
 
 const CLUE_MAX_HEIGHT = 56 + 12; // h-14 + gap-3
@@ -29,7 +30,7 @@ interface SortableClue {
   clue: ActiveClue;
 }
 
-export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, onClueHover }) => {
+export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, onClueHover, highlightedClue }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerHeight, setContainerHeight] = useState(0);
   
@@ -54,6 +55,8 @@ export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, o
     return () => obs.disconnect();
   }, []);
 
+  const cluesHash = JSON.stringify(clues);
+
   useEffect(() => {
     const horizontalClues = clues.filter(c => 
       ['LEFT_OF', 'ADJACENT', 'SEQUENCE_THREE', 'GAPPED_NOT_MIDDLE', 'GAPPED_EXCLUSION'].includes(c.type)
@@ -62,7 +65,7 @@ export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, o
       id: `h-clue-${index}`,
       clue
     })));
-  }, [clues]);
+  }, [cluesHash]);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -107,7 +110,11 @@ export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, o
           >
             {orderedClues.map((item) => (
               <SortableClueWrapper key={item.id} id={item.id}>
-                <HorizontalClueUI clue={item.clue} onHover={onClueHover} />
+                <HorizontalClueUI 
+                   clue={item.clue} 
+                   onHover={onClueHover} 
+                   isHighlighted={highlightedClue === item.clue} 
+                />
               </SortableClueWrapper>
             ))}
           </div>

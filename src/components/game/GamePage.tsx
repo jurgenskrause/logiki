@@ -343,6 +343,7 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 <VerticalClueList 
                   clues={puzzle.clues.filter(c => c.type !== 'ANCHOR')} 
                   onClueHover={(c) => setHoveredClueText(c ? describeRule(c) : null)}
+                  highlightedClue={hintShowing && activeHint ? activeHint.clue : null}
                 />
               )}
             </div>
@@ -355,6 +356,7 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               <HorizontalClueList 
                 clues={puzzle.clues.filter(c => c.type !== 'ANCHOR')} 
                 onClueHover={(c) => setHoveredClueText(c ? describeRule(c) : null)}
+                highlightedClue={hintShowing && activeHint ? activeHint.clue : null}
               />
             )}
           </div>

@@ -69,7 +69,7 @@ export const BoardCell: React.FC<BoardCellProps> = ({
                   flex items-center justify-center overflow-hidden transition-colors cursor-pointer
                   hover:bg-slate-50 dark:hover:bg-slate-750
                   ${highlightItems.length > 0 
-                    ? 'border-amber-300 dark:border-amber-600' 
+                    ? 'animate-hard-flash z-10' 
                     : 'border-slate-300 dark:border-slate-700'}`}
       style={aspectStyle}
       onClick={() => onInteract(cellId, -1, 'zoom_trigger' as any)}
