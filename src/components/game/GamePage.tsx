@@ -387,17 +387,35 @@ export const GamePage: React.FC = () => {
            </>
         ) : (
            <>
-             <div className="flex-1 flex justify-center">
+             <div className="flex-1 flex justify-center gap-2 px-2">
                <button
                  onClick={handleHintClick}
                  disabled={!activeHint}
-                 className={`px-8 py-2 rounded-full flex items-center gap-2 font-bold text-base transition-all shadow-sm ${hintBtnClass}`}
+                 className={`px-6 py-2 rounded-full flex items-center gap-2 font-bold text-base transition-all shadow-sm ${hintBtnClass}`}
                >
                  <span className="material-icons text-base">lightbulb</span>
                  Hint
                </button>
+               <button
+                 onClick={() => {
+                   if (gameState && gameState.undoStackLength > 0) {
+                     gameState.undo();
+                     if (gameState.isError) gameState.clearError();
+                     setHintShowing(false);
+                     handleStateChange();
+                   }
+                 }}
+                 disabled={!gameState || gameState.undoStackLength === 0}
+                 className={`px-4 py-2 rounded-full flex items-center gap-1 font-bold text-sm transition-colors shadow-sm ${
+                   gameState && gameState.undoStackLength > 0
+                     ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 hover:bg-blue-200'
+                     : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600 opacity-50 cursor-not-allowed'
+                 }`}
+               >
+                 <span className="material-icons text-base">undo</span>
+                 Undo
+               </button>
              </div>
-             {/* Invisible placeholder to offset the burger menu width and keep the Hint button dead-center */}
              <div className="w-12 shrink-0 pointer-events-none" />
            </>
         )}

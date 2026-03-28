@@ -73,6 +73,7 @@ export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover,
   const initialPosRef = useRef<{ x: number; y: number } | null>(null);
   const isTouchRef = useRef(false);
   const lastTapRef = useRef<number>(0);
+  const hasDraggedRef = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -105,27 +106,31 @@ export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover,
     // Ignore right mouse button to prevent starting timer when context menu handles it
     if (e.button === 2) return;
     
+    hasDraggedRef.current = false;
     initialPosRef.current = { x: e.clientX, y: e.clientY };
-    timerRef.current = setTimeout(() => {
-      onDiscard?.(clue.id);
-      timerRef.current = null;
-    }, 600); // 600ms for long press
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
-    if (timerRef.current && initialPosRef.current) {
+    if (initialPosRef.current) {
       const dx = e.clientX - initialPosRef.current.x;
       const dy = e.clientY - initialPosRef.current.y;
       if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
-        handlePointerUp(); // cancel long press if they start dragging
+        hasDraggedRef.current = true;
       }
     }
   };
 
   const handlePointerUp = () => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
+    if (hasDraggedRef.current) {
+      hasDraggedRef.current = false;
+      initialPosRef.current = null;
+      return;
+    }
+
+    if (initialPosRef.current) {
+      timerRef.current = setTimeout(() => {
+        onDiscard?.(clue.id);
+      }, 300);
     }
     initialPosRef.current = null;
   };
