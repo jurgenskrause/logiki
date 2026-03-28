@@ -310,7 +310,7 @@ export const GamePage: React.FC = () => {
       : 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-800';
 
   return (
-    <div className={`flex flex-col h-screen w-screen overflow-hidden transition-colors duration-300
+    <div className={`flex flex-col h-[100dvh] w-screen overflow-hidden transition-colors duration-300
       ${isDarkMode ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
 
       {/* Difficulty menu */}
@@ -608,7 +608,7 @@ export const GamePage: React.FC = () => {
         </div>
 
         {/* Row 3 (Mobile) / Col 2 Row 1-span-2 (Desktop): Horizontal Clues */}
-        <div className={`col-start-1 row-start-3 md:col-start-2 md:row-start-1 md:row-span-2 min-h-[min-content] md:h-full bg-slate-100 dark:bg-slate-900 border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800 shrink-0 shadow-inner z-10 w-full md:w-auto ${
+        <div className={`col-start-1 row-start-3 md:col-start-2 md:row-start-1 md:row-span-2 min-h-0 md:h-full bg-slate-100 dark:bg-slate-900 border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800 shrink-0 shadow-inner z-10 w-full md:w-auto ${
           activeMobileTab === 'horizontal' ? 'flex flex-col' : 'hidden md:flex md:flex-col'
         }`}>
           <div className="flex-1 overflow-y-auto overflow-x-hidden md:overflow-x-auto md:overflow-y-hidden relative custom-scrollbar">
@@ -634,7 +634,7 @@ export const GamePage: React.FC = () => {
         </div>
 
         {/* Row 3 (Mobile) / Col 1 Row 2 (Desktop): Vertical Clues */}
-        <div className={`col-start-1 row-start-3 md:col-start-1 md:row-start-2 h-auto min-h-[120px] md:max-h-[45vh] bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0 shadow-inner z-10 w-full ${
+        <div className={`col-start-1 row-start-3 md:col-start-1 md:row-start-2 min-h-0 md:max-h-[45vh] bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0 shadow-inner z-10 w-full ${
           activeMobileTab === 'vertical' ? 'flex flex-col' : 'hidden md:flex md:flex-col'
         }`}>
           <div className="flex-1 overflow-y-auto overflow-x-hidden relative custom-scrollbar">
