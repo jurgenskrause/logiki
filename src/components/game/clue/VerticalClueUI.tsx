@@ -4,9 +4,10 @@ import type { ActiveClue } from '../../../engine/Solver';
 
 interface VerticalClueProps {
   clue: ActiveClue;
+  onHover?: (clue: ActiveClue | null) => void;
 }
 
-export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue }) => {
+export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue, onHover }) => {
   const { type, params } = clue;
 
   // Render icons for each param
@@ -83,9 +84,10 @@ export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue }) => {
   return (
     <div 
       className="w-16 h-28 bg-slate-800 dark:bg-slate-950 rounded-lg shadow-md border-2 border-slate-700 dark:border-slate-800 hover:border-indigo-500 group transition-all duration-200 flex items-center justify-center shrink-0"
-      title={type}
+      onMouseEnter={() => onHover && onHover(clue)}
+      onMouseLeave={() => onHover && onHover(null)}
     >
-      <div className="text-white w-full h-full">
+      <div className="text-white w-full h-full pointer-events-none">
          {renderContent()}
       </div>
     </div>

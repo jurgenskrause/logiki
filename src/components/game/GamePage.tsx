@@ -6,6 +6,7 @@ import { GameState } from '../../engine/GameState';
 import { HorizontalClueList } from './clue/HorizontalClueList';
 import { VerticalClueList } from './clue/VerticalClueList';
 import { analyzeState, applyHint, type HintResult } from '../../engine/HintService';
+import { describeRule } from '../../engine/ClueDescriber';
 
 const loader = new ManifestLoader();
 
@@ -23,6 +24,7 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   // Hint & Cascade system
   const [activeHint, setActiveHint] = useState<HintResult | null>(null);
   const [hintShowing, setHintShowing] = useState(false);
+  const [hoveredClueText, setHoveredClueText] = useState<string | null>(null);
   const [isCascading, setIsCascading] = useState(false);
   const cascadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -249,9 +251,16 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </button>
         </div>
 
-        {/* Center: hint text when showing, game title otherwise */}
+        {/* Center: hover text, hint text, or title */}
         <div className="flex-1 min-w-0 flex items-center justify-center">
-          {hintShowing && activeHint ? (
+          {hoveredClueText ? (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/80 border border-blue-200 dark:border-blue-800 max-w-full overflow-hidden shadow-sm animate-in fade-in zoom-in duration-200">
+              <span className="material-icons text-base shrink-0 text-blue-500">info</span>
+              <p className="text-sm font-bold text-slate-800 dark:text-slate-100 leading-snug truncate">
+                {hoveredClueText}
+              </p>
+            </div>
+          ) : hintShowing && activeHint ? (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/80 border border-amber-200 dark:border-amber-800 max-w-full overflow-hidden shadow-sm">
               {activeHint.action.type === 'confirm' && (
                 <span className="material-icons text-base shrink-0 text-emerald-500">
@@ -330,14 +339,24 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
           <div className="h-auto min-h-[120px] max-h-[45%] bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0 flex flex-col shadow-inner">
             <div className="flex-1 overflow-hidden">
-              {puzzle && <VerticalClueList clues={puzzle.clues.filter(c => c.type !== 'ANCHOR')} />}
+              {puzzle && (
+                <VerticalClueList 
+                  clues={puzzle.clues.filter(c => c.type !== 'ANCHOR')} 
+                  onClueHover={(c) => setHoveredClueText(c ? describeRule(c) : null)}
+                />
+              )}
             </div>
           </div>
         </div>
 
         <div className="w-auto h-full bg-slate-100 dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shrink-0 flex flex-col shadow-inner">
           <div className="flex-1 overflow-hidden">
-            {puzzle && <HorizontalClueList clues={puzzle.clues.filter(c => c.type !== 'ANCHOR')} />}
+            {puzzle && (
+              <HorizontalClueList 
+                clues={puzzle.clues.filter(c => c.type !== 'ANCHOR')} 
+                onClueHover={(c) => setHoveredClueText(c ? describeRule(c) : null)}
+              />
+            )}
           </div>
         </div>
 

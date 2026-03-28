@@ -4,16 +4,16 @@ import type { ActiveClue } from '../../../engine/Solver';
 
 interface VerticalClueListProps {
   clues: ActiveClue[];
+  onClueHover?: (clue: ActiveClue | null) => void;
 }
 
 const CLUE_MAX_WIDTH = 64 + 8; // w-16 + gap-2 in pixels
-const CLUE_HEIGHT = 96 + 8; // h-24 + gap-2
+const CLUE_HEIGHT = 112 + 8; // h-28 + gap-2
 
-export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues }) => {
+export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClueHover }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
   
-  // Size Monitor
   useEffect(() => {
     if (!containerRef.current) return;
     const obs = new ResizeObserver((entries) => {
@@ -25,24 +25,20 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues }) => 
     return () => obs.disconnect();
   }, []);
 
-  // Filter for Vertical types
   const verticalClues = clues.filter(c => 
-    ['VERTICAL', 'VERTICAL_NOT', 'VERTICAL_TRIO', 'VERTICAL_NOT_TRIO', 'DISJUNCTIVE_XOR', 'NEGATIVE_ANCHOR', 'ANCHOR'].includes(c.type)
+    ['VERTICAL', 'VERTICAL_NOT', 'VERTICAL_TRIO', 'VERTICAL_NOT_TRIO', 'DISJUNCTIVE_XOR', 'VERTICAL_DISJUNCTIVE_EXCLUSION'].includes(c.type)
   );
 
-  // Row Calculation
   const maxCluesPerRow = Math.floor(containerWidth / CLUE_MAX_WIDTH) || 1;
   const numRows = Math.ceil(verticalClues.length / maxCluesPerRow) || 1;
-  
-  const actualRows = Math.min(numRows, 3); // Max 3 rows for vertical Area
+  const actualRows = Math.min(numRows, 3);
 
   return (
     <div 
       ref={containerRef}
       className="flex-1 w-full h-full p-4 overflow-hidden relative flex items-center justify-center"
       style={{
-        // Dynamically adjust root height if we have multiple rows
-        height: `${actualRows * CLUE_HEIGHT + 32}px`, // +32 for padding
+        height: `${actualRows * CLUE_HEIGHT + 32}px`,
         transition: 'height 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
       }}
     >
@@ -56,7 +52,7 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues }) => 
         }}
       >
         {verticalClues.map((clue, i) => (
-           <VerticalClueUI key={i} clue={clue} />
+           <VerticalClueUI key={i} clue={clue} onHover={onClueHover} />
         ))}
       </div>
     </div>

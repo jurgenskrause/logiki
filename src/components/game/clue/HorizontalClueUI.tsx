@@ -4,9 +4,10 @@ import type { ActiveClue } from '../../../engine/Solver';
 
 interface HorizontalClueProps {
   clue: ActiveClue;
+  onHover?: (clue: ActiveClue | null) => void;
 }
 
-export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue }) => {
+export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover }) => {
   const { type, params } = clue;
 
   // Render icons for each param
@@ -67,13 +68,12 @@ export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue }) => {
   return (
     <div 
       className="w-32 h-14 bg-slate-800 dark:bg-slate-950 rounded-lg shadow-md border border-slate-700 dark:border-slate-800 hover:border-blue-400 group transition-all duration-200 flex items-center justify-center shrink-0"
-      title={type}
+      onMouseEnter={() => onHover?.(clue)}
+      onMouseLeave={() => onHover?.(null)}
     >
-      <div className="text-white w-full h-full">
+      <div className="text-white w-full h-full pointer-events-none">
          {renderContent()}
       </div>
     </div>
   );
 };
-
-

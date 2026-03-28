@@ -4,12 +4,13 @@ import type { ActiveClue } from '../../../engine/Solver';
 
 interface HorizontalClueListProps {
   clues: ActiveClue[];
+  onClueHover?: (clue: ActiveClue | null) => void;
 }
 
 const CLUE_MAX_HEIGHT = 56 + 12; // h-14 + gap-3
 const CLUE_WIDTH = 128 + 12; // w-32 + gap-3
 
-export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues }) => {
+export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, onClueHover }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerHeight, setContainerHeight] = useState(0);
   
@@ -37,7 +38,7 @@ export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues })
       ref={containerRef}
       className="flex-1 h-full p-4 overflow-hidden relative"
       style={{
-        width: `${actualCols * CLUE_WIDTH + 32}px`, // +32 for symmetric padding
+        width: `${actualCols * CLUE_WIDTH + 32}px`,
         transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
       }}
     >
@@ -50,10 +51,9 @@ export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues })
         }}
       >
         {horizontalClues.map((clue, i) => (
-           <HorizontalClueUI key={i} clue={clue} />
+           <HorizontalClueUI key={i} clue={clue} onHover={onClueHover} />
         ))}
       </div>
     </div>
   );
 };
-
