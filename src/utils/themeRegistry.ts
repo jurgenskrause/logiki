@@ -15,14 +15,14 @@ export function getAsset(themeName: string, catIndex: number, itemIndex: number)
  * Fallback Emoji Matrix (8 Categories x 8 Items)
  */
 export const FALLBACK_THEME: string[][] = [
-  // 0: Faces
-  ['😀', '😎', '🧐', '🤓', '🤠', '🤡', '😏', '😇'],
+  // 0: Characters / Occupations
+  ['🧔🏾‍♂️', '👷🏼‍♀️', '🥷', '🧑🏽‍🎓', '👮🏾', '👵🏻', '🧑🏼‍🎨', '👩🏿‍⚕️'],
   // 1: Houses
-  ['🏠', '🏡', '🏰', '🏯', '🏢', '🏚', '⛺', '🛖'],
+  ['🏠', '🏛️', '🏰', '🏯', '🏢', '🏚', '⛺', '🛖'],
   // 2: Pets
   ['🐶', '🐱', '🐰', '🦊', '🐻', '🐼', '🐹', '🐭'],
-  // 3: Tech
-  ['💻', '📱', '⌨️', '🖥️', '🖱️', '🔋', '🔌', '🖨️'],
+  // 3: Vehicles
+  ['🚗', '🚲', '🚅', '🚁', '🚢', '🚀', '🚜', '🛵'],
   // 4: Accessories
   ['⌚️', '🕶', '🎒', '💍', '🧣', '🧤', '👜', '🌂'],
   // 5: Numbers

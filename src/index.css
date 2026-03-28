@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+:root {
+  /* Noto Color Emoji MUST be first for browsers to prefer it for emoji glyphs over system fonts. 
+     Standard text will fallback to Inter because Noto has no glyphs for Latin characters. */
+  font-family: "Noto Color Emoji", Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: inherit;
+}
+
 @layer utilities {
   .custom-scrollbar::-webkit-scrollbar {
     width: 4px;

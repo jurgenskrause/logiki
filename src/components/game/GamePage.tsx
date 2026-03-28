@@ -206,11 +206,11 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     if (!hintShowing) {
       // First click: show banner + highlight
       setHintShowing(true);
+      setHintCount(c => c + 1);
     } else {
       // Second click: apply the hint
       if (gameState) {
         applyHint(gameState, activeHint.action);
-        setHintCount(c => c + 1);
         // Important: this trigger handles state change AND analysis AFTER the cascade
         handleStateChange();
       }
