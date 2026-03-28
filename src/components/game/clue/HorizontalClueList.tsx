@@ -133,7 +133,7 @@ export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, o
           strategy={rectSortingStrategy}
         >
           <div 
-            className={`w-full h-full ${isDesktop ? 'grid gap-3' : 'flex flex-wrap justify-center gap-2'}`}
+            className={`w-full h-full ${isDesktop ? 'grid gap-3' : 'grid grid-cols-4 gap-1 content-start'}`}
             style={isDesktop ? {
               gridTemplateRows: `repeat(${maxCluesPerColumn}, minmax(0, 1fr))`,
               gridAutoFlow: 'column',
@@ -141,17 +141,15 @@ export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, o
             } : {}}
           >
             {orderedClues.map((item) => (
-              <div key={item.id} className={!isDesktop ? "transform scale-90 origin-center -m-1" : ""}>
-                <SortableClueWrapper id={item.id}>
-                  <HorizontalClueUI 
-                     clue={item.clue} 
-                     onHover={onClueHover} 
-                     isHighlighted={highlightedClue === item.clue} 
-                     onDiscard={onClueToggleBin}
-                     isBinned={binnedIds?.has(item.clue.id)}
-                  />
-                </SortableClueWrapper>
-              </div>
+              <SortableClueWrapper key={item.id} id={item.id}>
+                <HorizontalClueUI 
+                   clue={item.clue} 
+                   onHover={onClueHover} 
+                   isHighlighted={highlightedClue === item.clue} 
+                   onDiscard={onClueToggleBin}
+                   isBinned={binnedIds?.has(item.clue.id)}
+                />
+              </SortableClueWrapper>
             ))}
           </div>
         </SortableContext>

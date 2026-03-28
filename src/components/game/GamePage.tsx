@@ -8,6 +8,18 @@ import { VerticalClueList } from './clue/VerticalClueList';
 import { analyzeState, applyHint, type HintResult } from '../../engine/HintService';
 import { describeRule } from '../../engine/ClueDescriber';
 
+function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(false);
+  useEffect(() => {
+    const matchQueryList = window.matchMedia(query);
+    setMatches(matchQueryList.matches);
+    const handler = (e: MediaQueryListEvent) => setMatches(e.matches);
+    matchQueryList.addEventListener('change', handler);
+    return () => matchQueryList.removeEventListener('change', handler);
+  }, [query]);
+  return matches;
+}
+
 const loader = new ManifestLoader();
 
 export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
@@ -44,6 +56,7 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   // Mobile Drawer Tab Navigation
   const [activeMobileTab, setActiveMobileTab] = useState<'horizontal' | 'vertical'>('horizontal');
+  const isDesktop = useMediaQuery('(min-width: 768px)');
 
 
 
@@ -281,6 +294,7 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const rows = puzzle?.rows ?? 5;
   const cols = puzzle?.cols ?? 5;
   const subColumns = Math.ceil(cols / 2);
+  const boardAspectRatio = (cols * subColumns) / (rows * 2);
   const gameKey = `${rows}-${cols}-${selectedDifficulty}`;
 
 
@@ -425,10 +439,16 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
 
       {/* Main */}
-      <main className="flex-1 grid grid-cols-1 grid-rows-[minmax(0,1fr)_auto_auto] md:grid-cols-[minmax(0,1fr)_auto] md:grid-rows-[minmax(0,1fr)_auto] overflow-hidden">
+      <main className="flex-1 grid grid-cols-1 grid-rows-[auto_auto_minmax(0,1fr)] md:grid-cols-[minmax(0,1fr)_auto] md:grid-rows-[minmax(0,1fr)_auto] overflow-hidden">
 
         {/* Row 1 (Mobile) / Col 1 Row 1 (Desktop): Board */}
-        <div className="col-start-1 row-start-1 min-h-0 min-w-0 flex items-center justify-center p-0 relative overflow-hidden" style={{ containerType: 'size' }}>
+        <div 
+          className="col-start-1 row-start-1 min-h-0 min-w-0 flex items-center justify-center p-0 md:p-4 mb-2 md:mb-0 relative overflow-hidden w-full md:w-auto" 
+          style={{ 
+            containerType: 'size',
+            aspectRatio: isDesktop ? 'auto' : String(boardAspectRatio)
+          }}
+        >
           {puzzle && gameState && (
             <GameBoard
               key={gameKey}
@@ -497,7 +517,7 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         </div>
 
         {/* Row 3 (Mobile) / Col 1 Row 2 (Desktop): Vertical Clues */}
-        <div className={`col-start-1 row-start-3 md:col-start-1 md:row-start-2 h-auto min-h-[120px] max-h-[35vh] md:max-h-[45vh] bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0 shadow-inner z-10 w-full ${
+        <div className={`col-start-1 row-start-3 md:col-start-1 md:row-start-2 h-auto min-h-[120px] md:max-h-[45vh] bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0 shadow-inner z-10 w-full ${
           activeMobileTab === 'vertical' ? 'flex flex-col' : 'hidden md:flex md:flex-col'
         }`}>
           <div className="flex-1 overflow-y-auto overflow-x-hidden relative custom-scrollbar">

@@ -24,8 +24,17 @@ interface VerticalClueListProps {
   binnedIds?: Set<string>;
 }
 
-const CLUE_MAX_WIDTH = 64 + 8; // w-16 + gap-2 in pixels
-const CLUE_HEIGHT = 112 + 8; // h-28 + gap-2
+function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(false);
+  useEffect(() => {
+    const matchQueryList = window.matchMedia(query);
+    setMatches(matchQueryList.matches);
+    const handler = (e: MediaQueryListEvent) => setMatches(e.matches);
+    matchQueryList.addEventListener('change', handler);
+    return () => matchQueryList.removeEventListener('change', handler);
+  }, [query]);
+  return matches;
+}
 
 interface SortableClue {
   id: string;
@@ -35,6 +44,13 @@ interface SortableClue {
 export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClueHover, highlightedClue, onClueToggleBin, binnedIds }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
+
+  const isDesktop = useMediaQuery('(min-width: 768px)');
+  const itemWidth = isDesktop ? 64 : 48; // w-16 vs w-12
+  const itemHeight = isDesktop ? 112 : 80; // h-28 vs h-20
+  const gap = isDesktop ? 8 : 4; // gap-2 vs gap-1
+  const CLUE_MAX_WIDTH = itemWidth + gap;
+  const CLUE_HEIGHT = itemHeight + gap;
   
   const [orderedClues, setOrderedClues] = useState<SortableClue[]>([]);
 
