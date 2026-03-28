@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { getFallbackEmoji } from '../../../utils/themeRegistry';
 import type { ActiveClue } from '../../../engine/Solver';
 
@@ -6,9 +6,11 @@ interface HorizontalClueProps {
   clue: ActiveClue;
   onHover?: (clue: ActiveClue | null) => void;
   isHighlighted?: boolean;
+  onDiscard?: (clueId: string) => void;
+  isBinned?: boolean;
 }
 
-export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover, isHighlighted }) => {
+export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover, isHighlighted, onDiscard, isBinned }) => {
   const { type, params } = clue;
 
   // Render icons for each param
@@ -66,15 +68,52 @@ export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover,
     }
   };
 
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, []);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    // Ignore right mouse button to prevent starting timer when context menu handles it
+    if (e.button === 2) return;
+    
+    timerRef.current = setTimeout(() => {
+      onDiscard?.(clue.id);
+    }, 600); // 600ms for long press
+  };
+
+  const handlePointerUp = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+
   return (
     <div 
-      className={`w-32 h-14 bg-slate-800 dark:bg-slate-950 rounded-lg shadow-md hover:border-blue-400 group transition-all duration-200 flex items-center justify-center shrink-0 ${
+      className={`w-32 h-14 bg-slate-800 dark:bg-slate-950 rounded-lg shadow-md hover:border-blue-400 group transition-all duration-200 flex items-center justify-center shrink-0 select-none touch-none ${
         isHighlighted 
           ? 'animate-hard-flash z-10' 
           : 'border border-slate-700 dark:border-slate-800'
-      }`}
-      onMouseEnter={() => onHover?.(clue)}
-      onMouseLeave={() => onHover?.(null)}
+      } ${isBinned ? 'ring-2 ring-white/10 ring-inset scale-[0.98]' : ''}`}
+      onMouseEnter={() => !isBinned && onHover?.(clue)}
+      onMouseLeave={() => {
+        onHover?.(null);
+        handlePointerUp();
+      }}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        onDiscard?.(clue.id);
+      }}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
     >
       <div className="text-white w-full h-full pointer-events-none">
          {renderContent()}

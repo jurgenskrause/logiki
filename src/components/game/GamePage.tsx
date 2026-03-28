@@ -28,6 +28,19 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [isCascading, setIsCascading] = useState(false);
   const cascadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Clue Bin state
+  const [binnedClueIds, setBinnedClueIds] = useState<Set<string>>(new Set());
+  const [showBin, setShowBin] = useState(false);
+
+  const handleToggleBin = useCallback((clueId: string) => {
+    setBinnedClueIds(prev => {
+      const next = new Set(prev);
+      if (next.has(clueId)) next.delete(clueId);
+      else next.add(clueId);
+      return next;
+    });
+  }, []);
+
 
   // ─── GameState ──────────────────────────────────────────────────────────────
 
@@ -293,6 +306,27 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             {hintShowing ? 'Apply' : 'Hint'}
           </button>
           <button
+            onClick={() => setShowBin(!showBin)}
+            className={`relative p-2 rounded-lg flex items-center justify-center transition-colors shadow-sm ${
+              showBin 
+                ? 'bg-amber-500 text-white shadow-inner ring-2 ring-amber-300' 
+                : binnedClueIds.size > 0
+                  ? 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-300'
+                  : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600'
+            }`}
+            title={showBin ? "Show Active Clues" : "Show Binned Clues"}
+          >
+            <span className="material-icons text-base">{showBin ? 'visibility' : 'delete_outline'}</span>
+            {binnedClueIds.size > 0 && !showBin && (
+              <span className="absolute -top-1 -right-1 flex h-4 w-4 z-20">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-4 w-4 bg-amber-500 text-[10px] items-center justify-center text-white font-bold leading-none">
+                  {binnedClueIds.size}
+                </span>
+              </span>
+            )}
+          </button>
+          <button
             onClick={() => {
               if (gameState && gameState.undoStackLength > 0) {
                 gameState.undo();
@@ -338,12 +372,22 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </div>
 
           <div className="h-auto min-h-[120px] max-h-[45%] bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0 flex flex-col shadow-inner">
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 overflow-hidden relative">
+              {showBin && (
+                <div className="absolute top-2 left-2 z-20 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-[10px] font-black uppercase tracking-tighter text-amber-600 dark:text-amber-400 pointer-events-none">
+                  Binned Clues
+                </div>
+              )}
               {puzzle && (
                 <VerticalClueList 
-                  clues={puzzle.clues.filter(c => c.type !== 'ANCHOR')} 
+                  clues={puzzle.clues.filter(c => 
+                    c.type !== 'ANCHOR' && 
+                    (showBin ? binnedClueIds.has(c.id) : !binnedClueIds.has(c.id))
+                  )} 
                   onClueHover={(c) => setHoveredClueText(c ? describeRule(c) : null)}
                   highlightedClue={hintShowing && activeHint ? activeHint.clue : null}
+                  onClueToggleBin={handleToggleBin}
+                  binnedIds={binnedClueIds}
                 />
               )}
             </div>
@@ -351,12 +395,22 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         </div>
 
         <div className="w-auto h-full bg-slate-100 dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shrink-0 flex flex-col shadow-inner">
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden relative">
+            {showBin && (
+                <div className="absolute top-2 left-2 z-20 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-[10px] font-black uppercase tracking-tighter text-amber-600 dark:text-amber-400 pointer-events-none">
+                  Binned
+                </div>
+              )}
             {puzzle && (
               <HorizontalClueList 
-                clues={puzzle.clues.filter(c => c.type !== 'ANCHOR')} 
+                clues={puzzle.clues.filter(c => 
+                  c.type !== 'ANCHOR' && 
+                  (showBin ? binnedClueIds.has(c.id) : !binnedClueIds.has(c.id))
+                )} 
                 onClueHover={(c) => setHoveredClueText(c ? describeRule(c) : null)}
                 highlightedClue={hintShowing && activeHint ? activeHint.clue : null}
+                onClueToggleBin={handleToggleBin}
+                binnedIds={binnedClueIds}
               />
             )}
           </div>

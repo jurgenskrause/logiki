@@ -170,7 +170,7 @@ export class ManifestLoader {
     
     for (let i = 0; i < clueCount; i++) {
       const packed = this.dataView.getUint32(clueStreamOffset + (i * 4), true);
-      clues.push(this.unpackClue(packed));
+      clues.push(this.unpackClue(packed, `clue-${i}`));
     }
 
     // 4. Integrity Hash (32 bytes)
@@ -180,7 +180,7 @@ export class ManifestLoader {
     return { rows, cols, difficulty, clues, integrityHash };
   }
 
-  private unpackClue(packed: number): ActiveClue {
+  private unpackClue(packed: number, id: string): ActiveClue {
     const typeInt = packed & 0x0F;
     const type = TYPE_REVERSE_MAP[typeInt] ?? 'UNKNOWN';
 
@@ -214,6 +214,7 @@ export class ManifestLoader {
     const targetCol = (packed >> 22) & 0x07;
 
     return {
+      id,
       type,
       params,
       targetCol: (type === 'ANCHOR' || type === 'NEGATIVE_ANCHOR') ? targetCol : undefined

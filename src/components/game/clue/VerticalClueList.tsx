@@ -20,6 +20,8 @@ interface VerticalClueListProps {
   clues: ActiveClue[];
   onClueHover?: (clue: ActiveClue | null) => void;
   highlightedClue?: ActiveClue | null;
+  onClueToggleBin?: (clueId: string) => void;
+  binnedIds?: Set<string>;
 }
 
 const CLUE_MAX_WIDTH = 64 + 8; // w-16 + gap-2 in pixels
@@ -30,7 +32,7 @@ interface SortableClue {
   clue: ActiveClue;
 }
 
-export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClueHover, highlightedClue }) => {
+export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClueHover, highlightedClue, onClueToggleBin, binnedIds }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
   
@@ -61,10 +63,26 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
     const verticalClues = clues.filter(c => 
       ['VERTICAL', 'VERTICAL_NOT', 'VERTICAL_TRIO', 'VERTICAL_NOT_TRIO', 'DISJUNCTIVE_XOR', 'VERTICAL_DISJUNCTIVE_EXCLUSION'].includes(c.type)
     );
-    setOrderedClues(verticalClues.map((clue, index) => ({
-      id: `v-clue-${index}`,
-      clue
-    })));
+    
+    setOrderedClues(prev => {
+      const newCluesMap = new Map(verticalClues.map(c => [c.id, c]));
+      const nextOrdered: SortableClue[] = [];
+      
+      // 1. Keep existing items in their current order if they still exist
+      for (const item of prev) {
+        if (newCluesMap.has(item.id)) {
+          nextOrdered.push({ id: item.id, clue: newCluesMap.get(item.id)! });
+          newCluesMap.delete(item.id);
+        }
+      }
+      
+      // 2. Add any completely new items to the end
+      for (const [id, clue] of newCluesMap.entries()) {
+        nextOrdered.push({ id, clue });
+      }
+      
+      return nextOrdered;
+    });
   }, [cluesHash]);
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -115,6 +133,8 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
                    clue={item.clue} 
                    onHover={onClueHover} 
                    isHighlighted={highlightedClue === item.clue} 
+                   onDiscard={onClueToggleBin}
+                   isBinned={binnedIds?.has(item.clue.id)}
                 />
               </SortableClueWrapper>
             ))}

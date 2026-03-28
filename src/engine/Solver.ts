@@ -27,6 +27,7 @@ export type SolverResult = (typeof SolverResult)[keyof typeof SolverResult];
  * Represents a hydrated clue targeted at specific items.
  */
 export interface ActiveClue {
+  id: string; // Unique identifier for binning and tracking
   type: string;
   params: Array<{
     row: CategoryIndex;
