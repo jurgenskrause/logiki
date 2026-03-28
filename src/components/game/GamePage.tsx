@@ -37,6 +37,17 @@ export const GamePage: React.FC = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [, setTick] = useState(0);
 
+  // Timer
+  const [isGameStarted, setIsGameStarted] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    if (puzzle) {
+      setIsGameStarted(false);
+      setElapsedSeconds(0);
+    }
+  }, [puzzle]);
+
   // Hint & Cascade system
   const [activeHint, setActiveHint] = useState<HintResult | null>(null);
   const [hintShowing, setHintShowing] = useState(false);
@@ -209,6 +220,21 @@ export const GamePage: React.FC = () => {
       setTimeout(runAnalysis, 50);
     }
   }, [gameState, runAnalysis]);
+
+  // Timer Ticker
+  useEffect(() => {
+    if (!isGameStarted || (gameState && gameState.isPuzzleComplete())) return;
+    const interval = setInterval(() => {
+      setElapsedSeconds(s => s + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isGameStarted, gameState]);
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
 
   const handleStateChange = useCallback(() => {
     if (cascadeTimerRef.current) clearTimeout(cascadeTimerRef.current);
@@ -419,7 +445,9 @@ export const GamePage: React.FC = () => {
                  Undo
                </button>
              </div>
-             <div className="w-12 shrink-0 pointer-events-none" />
+             <div className="w-[50px] shrink-0 flex items-center justify-center font-mono text-sm font-bold text-slate-500 dark:text-slate-400">
+               {isGameStarted ? formatTime(elapsedSeconds) : '00:00'}
+             </div>
            </>
         )}
       </header>
@@ -479,6 +507,10 @@ export const GamePage: React.FC = () => {
           
           <div className="flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-lg px-2 h-9 text-sm font-bold text-slate-500 shadow-sm mr-2" title="Hints & Warnings Used">
             ★ {hintCount}
+          </div>
+          
+          <div className="flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-lg px-3 h-9 font-mono text-sm font-bold text-slate-600 dark:text-slate-300 shadow-sm mr-2">
+            {isGameStarted ? formatTime(elapsedSeconds) : '00:00'}
           </div>
 
           <button
@@ -546,19 +578,35 @@ export const GamePage: React.FC = () => {
           }}
         >
           {puzzle && gameState && (
-            <GameBoard
-              key={gameKey}
-              rows={puzzle.rows}
-              cols={puzzle.cols}
-              subColumns={subColumns}
-              clues={puzzle.clues}
-              gameState={gameState}
-              onStateChange={handleStateChange}
-              hintHighlights={hintHighlights}
-              isLocked={isCascading}
-              flashRed={flashRed}
-              zoomEnabled={zoomEnabled}
-            />
+            <div className="relative w-full h-full flex items-center justify-center">
+              <div className={`w-full h-full flex items-center justify-center transition-all duration-700 ${!isGameStarted ? 'blur-[8px] opacity-60 scale-[0.98] pointer-events-none' : ''}`}>
+                <GameBoard
+                  key={gameKey}
+                  rows={puzzle.rows}
+                  cols={puzzle.cols}
+                  subColumns={subColumns}
+                  clues={puzzle.clues}
+                  gameState={gameState}
+                  onStateChange={handleStateChange}
+                  hintHighlights={hintHighlights}
+                  isLocked={isCascading}
+                  flashRed={flashRed}
+                  zoomEnabled={zoomEnabled}
+                />
+              </div>
+
+              {!isGameStarted && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center animate-in zoom-in-95 duration-500">
+                  <button 
+                    onClick={() => setIsGameStarted(true)}
+                    className="px-8 py-4 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white rounded-2xl font-black text-2xl uppercase tracking-widest shadow-2xl hover:shadow-indigo-500/50 transition-all transform hover:scale-110 active:scale-95 border border-white/20 flex flex-col items-center"
+                  >
+                    <span>Start Puzzle</span>
+                    <span className="text-[10px] font-bold text-blue-200 mt-1 uppercase tracking-widest">Level {selectedDifficulty} // {puzzle.rows}x{puzzle.cols}</span>
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </div>
 
@@ -615,7 +663,7 @@ export const GamePage: React.FC = () => {
         <div className={`col-start-1 row-start-3 md:col-start-2 md:row-start-1 md:row-span-2 min-h-0 md:h-full bg-slate-100 dark:bg-slate-900 border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800 shrink-0 shadow-inner z-10 w-full md:w-auto ${
           activeMobileTab === 'horizontal' ? 'flex flex-col' : 'hidden md:flex md:flex-col'
         }`}>
-          <div className="flex-1 overflow-y-auto overflow-x-hidden md:overflow-x-auto md:overflow-y-hidden relative custom-scrollbar">
+          <div className={`flex-1 overflow-y-auto overflow-x-hidden md:overflow-x-auto md:overflow-y-hidden relative custom-scrollbar transition-all duration-700 ${!isGameStarted ? 'blur-[8px] opacity-60 pointer-events-none' : ''}`}>
             {showBin && (
                 <div className="absolute top-2 left-2 z-20 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-[10px] font-black uppercase tracking-tighter text-amber-600 dark:text-amber-400 pointer-events-none">
                   Binned
@@ -641,7 +689,7 @@ export const GamePage: React.FC = () => {
         <div className={`col-start-1 row-start-3 md:col-start-1 md:row-start-2 min-h-0 md:max-h-[45vh] bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0 shadow-inner z-10 w-full ${
           activeMobileTab === 'vertical' ? 'flex flex-col' : 'hidden md:flex md:flex-col'
         }`}>
-          <div className="flex-1 overflow-y-auto overflow-x-hidden relative custom-scrollbar">
+          <div className={`flex-1 overflow-y-auto overflow-x-hidden relative custom-scrollbar transition-all duration-700 ${!isGameStarted ? 'blur-[8px] opacity-60 pointer-events-none' : ''}`}>
             {showBin && (
               <div className="absolute top-2 left-2 z-20 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-[10px] font-black uppercase tracking-tighter text-amber-600 dark:text-amber-400 pointer-events-none">
                 Binned Clues
