@@ -14,6 +14,7 @@ interface MutationGroup {
 interface GameSnapshot {
   grid: Uint16Array;
   confirmed: Uint8Array;
+  noAutoSolve: Uint8Array;
 }
 
 /**
@@ -26,6 +27,7 @@ export class GameState {
   private _grid: Uint16Array;
   private _confirmed: Uint8Array;
   private _solution: Uint8Array;
+  private _noAutoSolve: Uint8Array;
 
   // History Stacks - Now tracking groups of mutations
   private _undoStack: MutationGroup[] = [];
@@ -41,9 +43,11 @@ export class GameState {
     this._grid = new Uint16Array(rows * cols);
     this._confirmed = new Uint8Array(rows * cols);
     this._solution = new Uint8Array(rows * cols);
+    this._noAutoSolve = new Uint8Array(rows * cols);
     const initialMask: Bitmask = (1 << cols) - 1;
     this._grid.fill(initialMask);
     this._confirmed.fill(0);
+    this._noAutoSolve.fill(0);
   }
 
   public setSolution(data: Uint8Array): void {
@@ -70,7 +74,8 @@ export class GameState {
   private _createSnapshot(): GameSnapshot {
     return {
       grid: new Uint16Array(this._grid),
-      confirmed: new Uint8Array(this._confirmed)
+      confirmed: new Uint8Array(this._confirmed),
+      noAutoSolve: new Uint8Array(this._noAutoSolve)
     };
   }
 
@@ -83,6 +88,7 @@ export class GameState {
     });
     this._grid = group.snapshot.grid;
     this._confirmed = group.snapshot.confirmed;
+    this._noAutoSolve = group.snapshot.noAutoSolve;
   }
 
   public redo(): void {
@@ -94,6 +100,7 @@ export class GameState {
     });
     this._grid = group.snapshot.grid;
     this._confirmed = group.snapshot.confirmed;
+    this._noAutoSolve = group.snapshot.noAutoSolve;
   }
 
   /**
@@ -120,12 +127,20 @@ export class GameState {
     // 3. Restore those specific cells to their state BEFORE this group happened
     const beforeGrid = groupToRevert.snapshot.grid;
     const beforeConfirmed = groupToRevert.snapshot.confirmed;
+    const beforeNoAutoSolve = groupToRevert.snapshot.noAutoSolve;
 
     affectedCells.forEach(cellId => {
       const [r, c] = cellId.split('-').map(Number);
-      const idx = this._getIndex(r, c);
+      const idx = this._getIndex(r as CategoryIndex, c as ColumnIndex);
       this._grid[idx] = beforeGrid[idx];
       this._confirmed[idx] = beforeConfirmed[idx];
+      this._noAutoSolve[idx] = beforeNoAutoSolve[idx];
+
+      // Anti-Autosolve: If reverting this cell puts it in a state with exactly 1 option left,
+      // flag it so the engine doesn't immediately auto-solve it again.
+      if (this._confirmed[idx] === 0 && this._getPossibleCountFromMask(this._grid[idx]) === 1) {
+        this._noAutoSolve[idx] = 1;
+      }
     });
 
     // 4. Remove this group from history and clear redo stack
@@ -150,6 +165,16 @@ export class GameState {
   public isConfirmed(row: CategoryIndex, col: ColumnIndex): boolean {
     if (!this._isValid(row, col)) return false;
     return this._confirmed[this._getIndex(row, col)] === 1;
+  }
+
+  public isItemConfirmed(row: CategoryIndex, itemIndex: ItemIndex): boolean {
+    if (row < 0 || row >= this._rows || itemIndex < 0 || itemIndex >= this._cols) return false;
+    const bit = 1 << itemIndex;
+    for (let c = 0; c < this._cols; c++) {
+      const idx = this._getIndex(row, c as ColumnIndex);
+      if (this._confirmed[idx] && this._grid[idx] === bit) return true;
+    }
+    return false;
   }
 
   public getPossibleCount(row: CategoryIndex, col: ColumnIndex): number {
@@ -183,6 +208,7 @@ export class GameState {
     const snapshot = this._createSnapshot();
     const index = this._getIndex(row, col);
     this._grid[index] ^= (1 << itemIndex);
+    this._noAutoSolve[index] = 0; // Clear flag on interaction
     
     const trace: MutationTrace = { row, col, itemIndex, type: 'TOGGLE' };
     this._undoStack.push({ traces: [trace], snapshot });
@@ -209,6 +235,7 @@ export class GameState {
 
     this._grid[index] = (1 << itemIndex);
     this._confirmed[index] = 1;
+    this._noAutoSolve[index] = 0; // Clear flag on interaction
     traces.push({ row, col, itemIndex, type: 'CONFIRM' });
 
     const maskToExclude = (1 << itemIndex);
@@ -233,6 +260,8 @@ export class GameState {
       for (let c = 0; c < this._cols; c++) {
         const idx = this._getIndex(r as any, c as any);
         if (this._confirmed[idx]) continue;
+        if (this._noAutoSolve[idx]) continue; // Skip anti-autosolve flagged cells
+        
         const mask = this._grid[idx];
         if (this._getPossibleCountFromMask(mask) === 1) {
           const item = Math.log2(mask) as ItemIndex;
@@ -258,7 +287,11 @@ export class GameState {
           }
         }
         if (possibleCols.length === 1 && confirmedCol === -1) {
-          this._applyConfirmation(r as any, possibleCols[0] as any, item as any, traces);
+          const targetCol = possibleCols[0];
+          const targetIdx = this._getIndex(r as any, targetCol as any);
+          if (this._noAutoSolve[targetIdx]) continue; // Skip anti-autosolve flagged cells
+          
+          this._applyConfirmation(r as any, targetCol as any, item as any, traces);
           this._undoStack.push({ traces, snapshot });
           this._redoStack = [];
           return traces;
@@ -290,6 +323,7 @@ export class GameState {
     const snapshot = this._createSnapshot();
     const index = this._getIndex(row, col);
     this._confirmed[index] = 0;
+    this._noAutoSolve[index] = 0; // Clear anti-autosolve on manual reset
     const trace: MutationTrace = { row, col, itemIndex: -1, type: 'TOGGLE' }; // Using TOGGLE to represent state reset 
     this._undoStack.push({ traces: [trace], snapshot });
     return this._grid[index];
@@ -303,7 +337,11 @@ export class GameState {
     if (!this._isError) {
       const last = this._undoStack[this._undoStack.length - 1];
       if (last) {
-        this._restoreSnapshot = { grid: new Uint16Array(last.snapshot.grid), confirmed: new Uint8Array(last.snapshot.confirmed) };
+        this._restoreSnapshot = { 
+          grid: new Uint16Array(last.snapshot.grid), 
+          confirmed: new Uint8Array(last.snapshot.confirmed),
+          noAutoSolve: new Uint8Array(last.snapshot.noAutoSolve)
+        };
       }
       this._isError = true;
     }

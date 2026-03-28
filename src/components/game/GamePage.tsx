@@ -65,16 +65,16 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     setBinnedClueIds(prev => {
       const isBinning = !prev.has(clueId);
 
-      // Warning System: Prevent binning if it makes the puzzle unsolvable
+      // Warning System: Prevent binning if any item in the clue is unsolved
       if (warningsEnabled && isBinning && gameState && puzzle) {
-        const nextIds = new Set(prev);
-        nextIds.add(clueId);
-        const activeClues = puzzle.clues.filter(c => !nextIds.has(c.id));
-        const analysis = analyzeState(gameState, activeClues);
-        if (!analysis.isSolvable) {
-          triggerRedFlash();
-          setHintCount(c => c + 1);
-          return prev; // Prevent the binning action
+        const clue = puzzle.clues.find(c => c.id === clueId);
+        if (clue) {
+          const allResolved = clue.params.every(p => gameState.isItemConfirmed(p.row, p.item));
+          if (!allResolved) {
+            triggerRedFlash();
+            setHintCount(c => c + 1);
+            return prev; // Prevent the binning action
+          }
         }
       }
 
@@ -404,7 +404,7 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
 
       {/* Main */}
-      <main className={`flex-1 flex overflow-hidden transition-colors duration-300 ${flashRed ? 'bg-red-500/20' : ''}`}>
+      <main className="flex-1 flex overflow-hidden">
 
         {/* Left: Board + Vertical Clues */}
         <div className="flex-1 flex flex-col overflow-hidden">
@@ -420,6 +420,7 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 onStateChange={handleStateChange}
                 hintHighlights={hintHighlights}
                 isLocked={isCascading}
+                flashRed={flashRed}
               />
 
             )}

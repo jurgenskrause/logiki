@@ -30,9 +30,10 @@ interface GameBoardProps {
   onStateChange: () => void;
   hintHighlights?: { cellId: string; items: { id: number; color: 'red' | 'green' }[] }[];
   isLocked?: boolean;
+  flashRed?: boolean;
 }
 
-export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns, clues = [], gameState, onStateChange, hintHighlights = [], isLocked = false }) => {
+export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns, clues = [], gameState, onStateChange, hintHighlights = [], isLocked = false, flashRed = false }) => {
   const cells: Cell[] = [];
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
@@ -167,7 +168,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns, cl
       className="w-full h-full flex items-center justify-center p-4 relative animate-in fade-in duration-500 overflow-hidden"
     >
       <div 
-        className="bg-slate-100 dark:bg-slate-900 shadow-2xl overflow-hidden transition-all duration-300 relative border-4 border-slate-300 dark:border-slate-800 rounded-lg flex-shrink-0"
+        className={`bg-slate-100 dark:bg-slate-900 shadow-2xl overflow-hidden transition-all duration-300 relative border-4 rounded-lg flex-shrink-0 ${
+          flashRed ? 'border-red-500 shadow-[0_0_50px_rgba(239,68,68,0.6)]' : 'border-slate-300 dark:border-slate-800'
+        }`}
         style={{
           width: boardWidth || '100%',
           height: boardHeight || 'auto',
@@ -183,6 +186,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns, cl
         <div className="absolute inset-0 pointer-events-none opacity-5 mix-blend-overlay dark:opacity-10" 
              style={{ backgroundImage: 'radial-gradient(circle, #000 1px, transparent 1px)', backgroundSize: '10px 10px' }} 
         />
+
+        <div className={`absolute inset-0 z-50 pointer-events-none transition-colors duration-300 ${flashRed ? 'bg-red-500/30' : 'bg-transparent'}`} />
         
         {cells.map(cell => {
           const hl = hintHighlights.find(h => h.cellId === cell.id);
