@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import type { ActiveClue } from '../../engine/Solver';
 import { BoardCell } from './BoardCell';
 import { ZoomOverlay } from './ZoomOverlay';
+import { GameState } from '../../engine/GameState';
+import { getFallbackEmoji } from '../../utils/themeRegistry';
 
 interface Option {
   id: number;
@@ -19,8 +21,6 @@ interface Cell {
   isImmutable: boolean;
 }
 
-import { GameState } from '../../engine/GameState';
-
 interface GameBoardProps {
   rows: number;
   cols: number;
@@ -31,8 +31,6 @@ interface GameBoardProps {
   hintHighlights?: { cellId: string; items: { id: number; color: 'red' | 'green' }[] }[];
   isLocked?: boolean;
 }
-
-import { getFallbackEmoji } from '../../utils/themeRegistry';
 
 export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns, clues = [], gameState, onStateChange, hintHighlights = [], isLocked = false }) => {
   const cells: Cell[] = [];
@@ -107,22 +105,34 @@ export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns, cl
   };
 
   const handleInteract = (cellId: string, possibilityId: number, action: 'eliminate' | 'solve' | 'zoom_trigger') => {
-    if (isLocked) return; // Prop-controlled lock
+    if (isLocked) return;
 
-    if (action === 'zoom_trigger') {
-      if (needsZoom) setZoomTarget(cellId);
-      return;
-    }
-
+    // 1. MUST parse coordinates first as they are needed for BOTH zoom and actual interaction
     const [rStr, cStr] = cellId.split('-');
     const r = parseInt(rStr, 10);
     const c = parseInt(cStr, 10);
 
+    // 2. Check immutability immediately
     const isImmutable = clues.some(clue => 
       clue.type === 'ANCHOR' && clue.targetCol === c && clue.params[0]?.row === r
     );
     if (isImmutable) return;
 
+    // 3. Check for REVERT action (any click on a confirmed cell)
+    const isActuallyResolved = gameState.isConfirmed(r, c);
+    if (isActuallyResolved) {
+      gameState.revertCell(r, c);
+      onStateChange();
+      return;
+    }
+
+    // 4. Handle Zoom logic for unconfirmed cells
+    if (action === 'zoom_trigger') {
+      if (needsZoom) setZoomTarget(cellId);
+      return;
+    }
+
+    // 5. Normal interaction
     if (action === 'eliminate') {
       gameState.toggleBit(r, c, possibilityId);
     } else if (action === 'solve') {
@@ -131,8 +141,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns, cl
     
     onStateChange();
   };
-
-
 
   const currentZoomCell = cells.find(c => c.id === zoomTarget);
 
@@ -145,11 +153,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns, cl
   if (containerSize.width > 0 && containerSize.height > 0) {
     const containerAspect = containerSize.width / containerSize.height;
     if (containerAspect > boardAspectRatio) {
-      // Container is wider than board: fit height, calc width
       boardHeight = containerSize.height;
       boardWidth = boardHeight * boardAspectRatio;
     } else {
-      // Container is taller than board: fit width, calc height
       boardWidth = containerSize.width;
       boardHeight = boardWidth / boardAspectRatio;
     }

@@ -1,8 +1,15 @@
 import type { CategoryIndex, ColumnIndex, Bitmask, ItemIndex, MutationTrace } from '../types';
 
 /**
+ * MutationGroup represents a set of changes that happened as a result of one user action.
+ */
+interface MutationGroup {
+  traces: MutationTrace[];
+  snapshot: GameSnapshot;
+}
+
+/**
  * GameSnapshot Interface
- * Internal structure for history management.
  */
 interface GameSnapshot {
   grid: Uint16Array;
@@ -12,8 +19,6 @@ interface GameSnapshot {
 /**
  * GameState Class
  * Encapsulates the mathematical state of the logic puzzle.
- * Uses a memory-efficient Uint16Array to track cell possibilities via bitmasks.
- * Strictly agnostic: No UI or theme-specific logic.
  */
 export class GameState {
   private _rows: number;
@@ -22,58 +27,36 @@ export class GameState {
   private _confirmed: Uint8Array;
   private _solution: Uint8Array;
 
-  // History Stacks
-  private _undoStack: GameSnapshot[] = [];
-  private _redoStack: GameSnapshot[] = [];
+  // History Stacks - Now tracking groups of mutations
+  private _undoStack: MutationGroup[] = [];
+  private _redoStack: MutationGroup[] = [];
 
   // Error State
   private _isError: boolean = false;
   private _restoreSnapshot: GameSnapshot | null = null;
 
-  /**
-   * Initializes a new GameState instance.
-   * @param rows Number of categories (rows)
-   * @param cols Number of items per category (columns)
-   */
   constructor(rows: CategoryIndex, cols: ColumnIndex) {
     this._rows = rows;
     this._cols = cols;
-    
-    // Memory-efficient 1D array to represent the 2D grid
     this._grid = new Uint16Array(rows * cols);
-    // Parallel array for tracking explicitly confirmed solutions
     this._confirmed = new Uint8Array(rows * cols);
-    // Source of truth solution key
     this._solution = new Uint8Array(rows * cols);
-    
-    // Initialize with the "Full Mask"
     const initialMask: Bitmask = (1 << cols) - 1;
     this._grid.fill(initialMask);
     this._confirmed.fill(0);
   }
 
-  /**
-   * Sets the target solution for the puzzle.
-   * @param data Uint8Array containing the correct ItemIndex for every cell.
-   * @throws Error if the solution length does not match the grid dimensions.
-   */
   public setSolution(data: Uint8Array): void {
     if (data.length !== this._rows * this._cols) {
-      throw new Error(`Invalid solution length: expected ${this._rows * this._cols}, got ${data.length}`);
+      throw new Error(`Invalid solution length`);
     }
     this._solution = new Uint8Array(data);
   }
 
-  /**
-   * Maps 2D grid coordinates to the 1D Uint16Array index.
-   */
   private _getIndex(row: CategoryIndex, col: ColumnIndex): number {
     return row * this._cols + col;
   }
 
-  /**
-   * Validates if the given coordinates and item index are within grid bounds.
-   */
   private _isValid(row: CategoryIndex, col: ColumnIndex, itemIndex?: ItemIndex): boolean {
     const rowOk = row >= 0 && row < this._rows;
     const colOk = col >= 0 && col < this._cols;
@@ -82,157 +65,141 @@ export class GameState {
   }
 
   /**
-   * Saves a snapshot of the current state to the undoStack.
+   * Captures the state BEFORE a set of mutations.
    */
-  private _pushState(): void {
-    this._undoStack.push({
+  private _createSnapshot(): GameSnapshot {
+    return {
       grid: new Uint16Array(this._grid),
       confirmed: new Uint8Array(this._confirmed)
-    });
-
-    this._redoStack = [];
+    };
   }
 
-  /**
-   * Reverts to the previous state.
-   */
   public undo(): void {
     if (this._undoStack.length === 0) return;
-
+    const group = this._undoStack.pop()!;
     this._redoStack.push({
-      grid: new Uint16Array(this._grid),
-      confirmed: new Uint8Array(this._confirmed)
+      traces: group.traces,
+      snapshot: this._createSnapshot()
     });
-
-    const snapshot = this._undoStack.pop()!;
-    this._grid = snapshot.grid;
-    this._confirmed = snapshot.confirmed;
+    this._grid = group.snapshot.grid;
+    this._confirmed = group.snapshot.confirmed;
   }
 
-  /**
-   * Restores a previously undone state.
-   */
   public redo(): void {
     if (this._redoStack.length === 0) return;
-
+    const group = this._redoStack.pop()!;
     this._undoStack.push({
-      grid: new Uint16Array(this._grid),
-      confirmed: new Uint8Array(this._confirmed)
+      traces: group.traces,
+      snapshot: this._createSnapshot()
+    });
+    this._grid = group.snapshot.grid;
+    this._confirmed = group.snapshot.confirmed;
+  }
+
+  /**
+   * Reverts a specific cell's most recent confirmation and all its cascading effects.
+   */
+  public revertCell(row: CategoryIndex, col: ColumnIndex): void {
+    if (!this._isValid(row, col)) return;
+    
+    // 1. Find the most recent mutation group where this cell was CONFIRMED
+    const groupIndex = [...this._undoStack].reverse().findIndex(group => 
+      group.traces.some(t => t.row === row && t.col === col && t.type === 'CONFIRM')
+    );
+
+    if (groupIndex === -1) return;
+
+    // Convert reverse index to actual index
+    const actualIndex = this._undoStack.length - 1 - groupIndex;
+    const groupToRevert = this._undoStack[actualIndex];
+
+    // 2. Identify all cells affected by this specific mutation group
+    const affectedCells = new Set<string>();
+    groupToRevert.traces.forEach(t => affectedCells.add(`${t.row}-${t.col}`));
+
+    // 3. Restore those specific cells to their state BEFORE this group happened
+    const beforeGrid = groupToRevert.snapshot.grid;
+    const beforeConfirmed = groupToRevert.snapshot.confirmed;
+
+    affectedCells.forEach(cellId => {
+      const [r, c] = cellId.split('-').map(Number);
+      const idx = this._getIndex(r, c);
+      this._grid[idx] = beforeGrid[idx];
+      this._confirmed[idx] = beforeConfirmed[idx];
     });
 
-    const snapshot = this._redoStack.pop()!;
-    this._grid = snapshot.grid;
-    this._confirmed = snapshot.confirmed;
+    // 4. Remove this group from history and clear redo stack
+    this._undoStack.splice(actualIndex, 1);
+    this._redoStack = [];
+
+    // 5. Important: Any LATER mutations might now be invalid or refer to stale bits.
+    // To ensure consistency, we should ideally re-apply subsequent mutations or
+    // simply clear subsequent history. For now, we clear everything AFTER this point
+    // to prevent logical contradictions in the undo/redo chain.
+    this._undoStack = this._undoStack.slice(0, actualIndex);
   }
 
-  /**
-   * Number of categories in the grid.
-   */
-  public get rows(): number {
-    return this._rows;
-  }
+  public get rows(): number { return this._rows; }
+  public get cols(): number { return this._cols; }
+  public get grid(): Uint16Array { return this._grid.slice(); }
 
-  /**
-   * Number of items per category in the grid.
-   */
-  public get cols(): number {
-    return this._cols;
-  }
-
-  /**
-   * Returns a snapshot of the current grid state.
-   */
-  public get grid(): Uint16Array {
-    return this._grid.slice();
-  }
-
-  /**
-   * Returns a snapshot of the current confirmation state.
-   */
   public getConfirmedState(): Uint8Array {
     return this._confirmed.slice();
   }
 
-  /**
-   * Returns true if the cell has been explicitly confirmed.
-   */
   public isConfirmed(row: CategoryIndex, col: ColumnIndex): boolean {
     if (!this._isValid(row, col)) return false;
     return this._confirmed[this._getIndex(row, col)] === 1;
   }
 
-  /**
-   * Counts how many bits are set in a cell's bitmask.
-   */
   public getPossibleCount(row: CategoryIndex, col: ColumnIndex): number {
     if (!this._isValid(row, col)) return 0;
     let mask = this._grid[this._getIndex(row, col)];
-    // Bit counting (popcount) logic
     let count = 0;
-    while (mask > 0) {
-      mask &= (mask - 1);
-      count++;
-    }
+    while (mask > 0) { mask &= (mask - 1); count++; }
     return count;
   }
 
-  /**
-   * Checks if a cell is both confirmed and matches the solution.
-   */
   public isCellCorrect(row: CategoryIndex, col: ColumnIndex): boolean {
     if (!this._isValid(row, col)) return false;
     const index = this._getIndex(row, col);
-    
-    // Integrity rules:
-    // 1. Must be player-confirmed
     if (this._confirmed[index] !== 1) return false;
-    // 2. Must have exactly one bit set (sanity check)
     if (this.getPossibleCount(row, col) !== 1) return false;
-    // 3. The bit must match the solution: grid[index] === (1 << solution[index])
     return this._grid[index] === (1 << this._solution[index]);
   }
 
-  /**
-   * Checks if every cell in the grid is correctly confirmed according to the solution.
-   */
   public isPuzzleComplete(): boolean {
     const totalCells = this._rows * this._cols;
     for (let i = 0; i < totalCells; i++) {
-      const r = Math.floor(i / this._cols) as CategoryIndex;
-      const c = (i % this._cols) as ColumnIndex;
-      if (!this.isCellCorrect(r, c)) return false;
+        if (!this.isCellCorrect(Math.floor(i / this._cols), i % this._cols)) return false;
     }
     return true;
   }
 
-   /**
-   * Toggles the possibility bit for a specific item in a cell.
-   * Triggers recursive auto-solve if a deduction becomes obvious.
-   */
-   /**
-   * Toggles the possibility bit for a specific item in a cell.
-   * Returns only the initial trace. Player/UI must call runRecursiveAutoSolve or step deduction manually for animation.
-   */
   public toggleBit(row: CategoryIndex, col: ColumnIndex, itemIndex: ItemIndex): MutationTrace[] {
     if (!this._isValid(row, col, itemIndex)) return [];
     if (this.isConfirmed(row, col)) return [];
 
-    this._pushState();
+    const snapshot = this._createSnapshot();
     const index = this._getIndex(row, col);
     this._grid[index] ^= (1 << itemIndex);
     
-    return [{ row, col, itemIndex, type: 'TOGGLE' }];
+    const trace: MutationTrace = { row, col, itemIndex, type: 'TOGGLE' };
+    this._undoStack.push({ traces: [trace], snapshot });
+    this._redoStack = [];
+    return [trace];
   }
 
-  /**
-   * Forces a cell to a single value and marks it as player-confirmed.
-   */
   public confirmCell(row: CategoryIndex, col: ColumnIndex, itemIndex: ItemIndex): MutationTrace[] {
     if (!this._isValid(row, col, itemIndex)) return [];
-
-    this._pushState();
+    const snapshot = this._createSnapshot();
     const traces: MutationTrace[] = [];
     this._applyConfirmation(row, col, itemIndex, traces);
+    
+    if (traces.length > 0) {
+      this._undoStack.push({ traces, snapshot });
+      this._redoStack = [];
+    }
     return traces;
   }
 
@@ -244,7 +211,6 @@ export class GameState {
     this._confirmed[index] = 1;
     traces.push({ row, col, itemIndex, type: 'CONFIRM' });
 
-    // Prune this item from all other columns in this row
     const maskToExclude = (1 << itemIndex);
     const inverseMask = ~maskToExclude;
     for (let c = 0; c < this._cols; c++) {
@@ -252,17 +218,14 @@ export class GameState {
       const targetIndex = this._getIndex(row, c);
       if ((this._grid[targetIndex] & maskToExclude) !== 0) {
         this._grid[targetIndex] &= inverseMask;
+        // Collect eliminated items as PRUNE traces
         traces.push({ row, col: c as ColumnIndex, itemIndex, type: 'PRUNE' });
       }
     }
   }
 
-  /**
-   * Finds and applies ONE tier of deductions (finds the first naked or hidden single).
-   * Returns the traces if a change was made, null otherwise.
-   * UI can call this in a timer loop for the "visual cascade".
-   */
   public findAndApplyNextDeduction(): MutationTrace[] | null {
+    const snapshot = this._createSnapshot();
     const traces: MutationTrace[] = [];
 
     // 1. Naked Singles
@@ -270,12 +233,13 @@ export class GameState {
       for (let c = 0; c < this._cols; c++) {
         const idx = this._getIndex(r as any, c as any);
         if (this._confirmed[idx]) continue;
-
         const mask = this._grid[idx];
         if (this._getPossibleCountFromMask(mask) === 1) {
           const item = Math.log2(mask) as ItemIndex;
           this._applyConfirmation(r as any, c as any, item, traces);
-          return traces; // Found and applied one, return to UI for animation frame
+          this._undoStack.push({ traces, snapshot });
+          this._redoStack = [];
+          return traces;
         }
       }
     }
@@ -286,7 +250,6 @@ export class GameState {
         const bit = 1 << item;
         let possibleCols: number[] = [];
         let confirmedCol: number = -1;
-
         for (let c = 0; c < this._cols; c++) {
           const idx = this._getIndex(r as any, c as any);
           if (this._grid[idx] & bit) {
@@ -294,21 +257,18 @@ export class GameState {
             if (this._confirmed[idx]) confirmedCol = c;
           }
         }
-
         if (possibleCols.length === 1 && confirmedCol === -1) {
           this._applyConfirmation(r as any, possibleCols[0] as any, item as any, traces);
-          return traces; // Found and applied one, return to UI
+          this._undoStack.push({ traces, snapshot });
+          this._redoStack = [];
+          return traces;
         }
       }
     }
 
-    return null; // Nothing left to auto-solve
+    return null;
   }
 
-
-  /**
-   * Full atomic resolution (old behavior).
-   */
   public resolveAllDeductions(): MutationTrace[] {
     const allTraces: MutationTrace[] = [];
     let step;
@@ -318,25 +278,20 @@ export class GameState {
     return allTraces;
   }
 
-
   private _getPossibleCountFromMask(mask: number): number {
     let count = 0;
     let m = mask;
-    while (m > 0) {
-      m &= (m - 1);
-      count++;
-    }
+    while (m > 0) { m &= (m - 1); count++; }
     return count;
   }
 
-  /**
-   * Removes the confirmed status from a cell without altering its bitmask.
-   */
   public unconfirmCell(row: CategoryIndex, col: ColumnIndex): Bitmask {
     if (!this._isValid(row, col)) return 0;
-    this._pushState();
+    const snapshot = this._createSnapshot();
     const index = this._getIndex(row, col);
     this._confirmed[index] = 0;
+    const trace: MutationTrace = { row, col, itemIndex: -1, type: 'TOGGLE' }; // Using TOGGLE to represent state reset 
+    this._undoStack.push({ traces: [trace], snapshot });
     return this._grid[index];
   }
 
@@ -348,19 +303,12 @@ export class GameState {
     if (!this._isError) {
       const last = this._undoStack[this._undoStack.length - 1];
       if (last) {
-        this._restoreSnapshot = { grid: new Uint16Array(last.grid), confirmed: new Uint8Array(last.confirmed) };
+        this._restoreSnapshot = { grid: new Uint16Array(last.snapshot.grid), confirmed: new Uint8Array(last.snapshot.confirmed) };
       }
       this._isError = true;
     }
   }
 
-  public get restoreSnapshot(): { grid: Uint16Array; confirmed: Uint8Array } | null {
-    return this._restoreSnapshot;
-  }
-
-  public clearError(): void {
-    this._isError = false;
-    this._restoreSnapshot = null;
-  }
+  public get restoreSnapshot(): { grid: Uint16Array; confirmed: Uint8Array } | null { return this._restoreSnapshot; }
+  public clearError(): void { this._isError = false; this._restoreSnapshot = null; }
 }
-
