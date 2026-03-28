@@ -86,9 +86,17 @@ export class GameState {
       traces: group.traces,
       snapshot: this._createSnapshot()
     });
-    this._grid = group.snapshot.grid;
-    this._confirmed = group.snapshot.confirmed;
-    this._noAutoSolve = group.snapshot.noAutoSolve;
+    this._grid = new Uint16Array(group.snapshot.grid);
+    this._confirmed = new Uint8Array(group.snapshot.confirmed);
+    this._noAutoSolve = new Uint8Array(group.snapshot.noAutoSolve);
+
+    // Anti-autosolve: Flag any cell that is currently unconfirmed but has only 1 option left.
+    // This prevents the engine from immediately stealing the cell back via auto-deduction.
+    for (let i = 0; i < this._grid.length; i++) {
+      if (this._confirmed[i] === 0 && this._getPossibleCountFromMask(this._grid[i]) === 1) {
+        this._noAutoSolve[i] = 1;
+      }
+    }
   }
 
   public redo(): void {
@@ -355,6 +363,16 @@ export class GameState {
       this._grid = new Uint16Array(this._restoreSnapshot.grid);
       this._confirmed = new Uint8Array(this._restoreSnapshot.confirmed);
       this._noAutoSolve = new Uint8Array(this._restoreSnapshot.noAutoSolve);
+
+      // Anti-autosolve: Flag any cell that is currently unconfirmed but has only 1 option left.
+      // This prevents the engine from immediately stealing the cell back via auto-deduction
+      // when restoring from an error state.
+      for (let i = 0; i < this._grid.length; i++) {
+        if (this._confirmed[i] === 0 && this._getPossibleCountFromMask(this._grid[i]) === 1) {
+          this._noAutoSolve[i] = 1;
+        }
+      }
+
       this.clearError();
       // Clear redo stack on manual restoration
       this._redoStack = [];
