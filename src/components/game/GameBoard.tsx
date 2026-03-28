@@ -199,6 +199,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns, cl
               onInteract={handleInteract}
               cellSizeRef={handleCellSize}
               highlightItems={hl?.items ?? []}
+              needsZoom={needsZoom}
             />
           );
         })}

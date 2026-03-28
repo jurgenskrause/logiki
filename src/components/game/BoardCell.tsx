@@ -17,6 +17,7 @@ interface BoardCellProps {
   subColumns: number;
   /** Items to highlight in this cell: id = option.id, color drives ring/bg */
   highlightItems?: { id: number; color: 'red' | 'green' }[];
+  needsZoom?: boolean;
 }
 
 export const BoardCell: React.FC<BoardCellProps> = ({ 
@@ -29,6 +30,7 @@ export const BoardCell: React.FC<BoardCellProps> = ({
   onInteract,
   subColumns,
   highlightItems = [],
+  needsZoom = false,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const cellId = `${row}-${col}`;
@@ -87,12 +89,15 @@ export const BoardCell: React.FC<BoardCellProps> = ({
       ) : (
         // Unresolved State: The Option Matrix, exactly 2 rows, N columns
         <div 
-          className="w-full h-full grid gap-[1px] bg-slate-200 dark:bg-slate-700 p-[1px]"
+          className="w-full h-full grid gap-[1px] bg-slate-200 dark:bg-slate-700 p-[1px] relative"
           style={{ 
             gridTemplateRows: 'repeat(2, minmax(0, 1fr))',
             gridTemplateColumns: `repeat(${subColumns}, minmax(0, 1fr))` 
           }}
         >
+          {needsZoom && (
+             <div className="absolute inset-0 z-20 cursor-zoom-in" />
+          )}
           {options.map((opt) => {
             const hlColor = highlightMap.get(opt.id);
             const ringClass = hlColor === 'red'
