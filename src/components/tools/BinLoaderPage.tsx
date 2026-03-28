@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ManifestLoader, type PuzzleManifest } from '../../engine/ManifestLoader';
 
-export const BinLoaderPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+export const BinLoaderPage: React.FC = () => {
   const [fileInfo, setFileInfo] = useState<{ name: string; size: number } | null>(null);
   const [puzzles, setPuzzles] = useState<PuzzleManifest[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -52,14 +52,7 @@ export const BinLoaderPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 p-8 flex flex-col items-center">
-      <header className="w-full max-w-4xl flex justify-between items-center mb-12">
-        <button 
-          onClick={onBack}
-          className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors text-sm font-bold flex items-center gap-2"
-        >
-          <span className="material-icons text-sm">arrow_back</span>
-          Back
-        </button>
+      <header className="flex items-center gap-4 mb-8 bg-slate-900 border border-slate-800 p-4 rounded-3xl shrink-0 w-full sticky top-0 z-10">
         <h1 className="text-2xl font-black text-blue-400 uppercase tracking-tighter">LGK Binary Inspector</h1>
       </header>
 

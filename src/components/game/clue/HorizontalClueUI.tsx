@@ -8,9 +8,10 @@ interface HorizontalClueProps {
   isHighlighted?: boolean;
   onDiscard?: (clueId: string) => void;
   isBinned?: boolean;
+  onDoubleTap?: (clue: ActiveClue) => void;
 }
 
-export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover, isHighlighted, onDiscard, isBinned }) => {
+export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover, isHighlighted, onDiscard, isBinned, onDoubleTap }) => {
   const { type, params } = clue;
 
   // Render icons for each param
@@ -71,6 +72,7 @@ export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover,
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initialPosRef = useRef<{ x: number; y: number } | null>(null);
   const isTouchRef = useRef(false);
+  const lastTapRef = useRef<number>(0);
 
   useEffect(() => {
     return () => {
@@ -82,6 +84,19 @@ export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover,
   }, []);
 
   const handlePointerDown = (e: React.PointerEvent) => {
+    // Ignore right mouse button to prevent starting timer when context menu handles it
+    if (e.button === 2) return;
+
+    const now = Date.now();
+    if (now - lastTapRef.current < 300) {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = null;
+      lastTapRef.current = 0;
+      onDoubleTap?.(clue);
+      return;
+    }
+    lastTapRef.current = now;
+
     if (e.pointerType !== 'mouse') {
       isTouchRef.current = true;
     } else {

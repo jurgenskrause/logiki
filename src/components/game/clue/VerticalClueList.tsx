@@ -22,6 +22,7 @@ interface VerticalClueListProps {
   highlightedClue?: ActiveClue | null;
   onClueToggleBin?: (clueId: string) => void;
   binnedIds?: Set<string>;
+  onClueDoubleTap?: (clue: ActiveClue) => void;
 }
 
 function useMediaQuery(query: string) {
@@ -41,7 +42,7 @@ interface SortableClue {
   clue: ActiveClue;
 }
 
-export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClueHover, highlightedClue, onClueToggleBin, binnedIds }) => {
+export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClueHover, highlightedClue, onClueToggleBin, binnedIds, onClueDoubleTap }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
 
@@ -151,6 +152,7 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
                    isHighlighted={highlightedClue === item.clue} 
                    onDiscard={onClueToggleBin}
                    isBinned={binnedIds?.has(item.clue.id)}
+                   onDoubleTap={onClueDoubleTap}
                 />
               </SortableClueWrapper>
             ))}

@@ -7,6 +7,7 @@ import { HorizontalClueList } from './clue/HorizontalClueList';
 import { VerticalClueList } from './clue/VerticalClueList';
 import { analyzeState, applyHint, type HintResult } from '../../engine/HintService';
 import { describeRule } from '../../engine/ClueDescriber';
+import type { ActiveClue } from '../../engine/Solver';
 
 function useMediaQuery(query: string) {
   const [matches, setMatches] = useState(false);
@@ -22,10 +23,11 @@ function useMediaQuery(query: string) {
 
 const loader = new ManifestLoader();
 
-export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+export const GamePage: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [selectedDifficulty, setSelectedDifficulty] = useState<number>(1);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [explainedClue, setExplainedClue] = useState<ActiveClue | null>(null);
 
   const [puzzle, setPuzzle] = useState<PuzzleManifest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -317,16 +319,84 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         />
       )}
 
+      {/* Clue Explanation Modal */}
+      {explainedClue && (
+        <div 
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" 
+          onPointerDown={() => setExplainedClue(null)}
+        >
+          <div 
+            className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-xl max-w-sm w-full border border-slate-200 dark:border-slate-700 animate-in zoom-in-95 duration-200" 
+            onPointerDown={e => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold flex items-center gap-2 text-slate-800 dark:text-slate-100">
+                <span className="material-icons text-blue-500">info</span>
+                Clue Explanation
+              </h3>
+              <button onClick={() => setExplainedClue(null)} className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 transition-colors flex items-center justify-center">
+                <span className="material-icons text-base">close</span>
+              </button>
+            </div>
+            <p className="text-slate-700 dark:text-slate-200 mb-8 text-xl sm:text-2xl font-bold leading-relaxed text-center py-6 px-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-700/50 shadow-inner">
+              {describeRule(explainedClue)}
+            </p>
+            <div className="flex justify-end">
+              <button onClick={() => setExplainedClue(null)} className="px-5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-lg text-slate-800 dark:text-slate-200 font-bold transition-colors">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
+      {/* ====== MOBILE HEADER ====== */}
+      <header className="md:hidden flex items-center px-2 h-16 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm z-10 shrink-0">
+        <button onClick={() => setIsMenuOpen(true)} className="p-3 mr-2 rounded-full flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors text-slate-700 dark:text-slate-300 shrink-0">
+          <span className="material-icons">menu</span>
+        </button>
 
-      {/* Header — single row: Left | Hint text (center) | Right */}
-      <header className="flex items-center gap-3 px-4 h-16 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm z-10 shrink-0">
+        {hintShowing && activeHint ? (
+           <>
+             <div className="flex-1 min-w-0 pr-2">
+                <p className="text-xs font-bold text-slate-800 dark:text-slate-100 leading-tight line-clamp-2">
+                  {activeHint.text}
+                </p>
+             </div>
+             <button
+               onClick={handleHintClick}
+               className="px-4 py-2 rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 hover:bg-emerald-200 font-bold text-sm shrink-0 shadow-sm"
+             >
+               Apply
+             </button>
+           </>
+        ) : (
+           <>
+             <div className="flex-1 flex justify-center">
+               <button
+                 onClick={handleHintClick}
+                 disabled={!activeHint}
+                 className={`px-8 py-2 rounded-full flex items-center gap-2 font-bold text-base transition-all shadow-sm ${hintBtnClass}`}
+               >
+                 <span className="material-icons text-base">lightbulb</span>
+                 Hint
+               </button>
+             </div>
+             {/* Invisible placeholder to offset the burger menu width and keep the Hint button dead-center */}
+             <div className="w-12 shrink-0 pointer-events-none" />
+           </>
+        )}
+      </header>
 
+      {/* ====== DESKTOP HEADER ====== */}
+      <header className="hidden md:flex items-center gap-3 px-4 h-16 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm z-10 shrink-0">
+        
         {/* Left buttons */}
         <div className="flex items-center gap-2 shrink-0">
-          <button onClick={onBack}
-            className="px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors text-sm font-bold shadow-sm">
-            ← Back
+          <button onClick={() => setIsMenuOpen(true)}
+            className="p-2 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors shadow-sm flex items-center justify-center">
+            <span className="material-icons text-sm">menu</span>
           </button>
           <button onClick={() => setIsMenuOpen(true)}
             className="px-3 py-1.5 rounded-lg bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 hover:bg-indigo-200 transition-colors text-sm font-bold shadow-sm flex items-center gap-1">
@@ -534,6 +604,7 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 highlightedClue={hintShowing && activeHint ? activeHint.clue : null}
                 onClueToggleBin={handleToggleBin}
                 binnedIds={binnedClueIds}
+                onClueDoubleTap={setExplainedClue}
               />
             )}
           </div>
@@ -559,6 +630,7 @@ export const GamePage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 highlightedClue={hintShowing && activeHint ? activeHint.clue : null}
                 onClueToggleBin={handleToggleBin}
                 binnedIds={binnedClueIds}
+                onClueDoubleTap={setExplainedClue}
               />
             )}
           </div>

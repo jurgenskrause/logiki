@@ -34,6 +34,7 @@ interface HorizontalClueListProps {
   highlightedClue?: ActiveClue | null;
   onClueToggleBin?: (clueId: string) => void;
   binnedIds?: Set<string>;
+  onClueDoubleTap?: (clue: ActiveClue) => void;
 }
 
 const CLUE_MAX_HEIGHT = 56 + 12; // h-14 + gap-3
@@ -44,7 +45,7 @@ interface SortableClue {
   clue: ActiveClue;
 }
 
-export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, onClueHover, highlightedClue, onClueToggleBin, binnedIds }) => {
+export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, onClueHover, highlightedClue, onClueToggleBin, binnedIds, onClueDoubleTap }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerHeight, setContainerHeight] = useState(0);
   
@@ -148,6 +149,7 @@ export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, o
                    isHighlighted={highlightedClue === item.clue} 
                    onDiscard={onClueToggleBin}
                    isBinned={binnedIds?.has(item.clue.id)}
+                   onDoubleTap={onClueDoubleTap}
                 />
               </SortableClueWrapper>
             ))}
