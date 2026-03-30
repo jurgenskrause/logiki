@@ -141,6 +141,7 @@ export const GamePage: React.FC = () => {
       setActiveHint(prev => prev ? { ...prev, action: { ...prev.action, type: 'RESTORE' } } : null);
     } else {
       if (gameState.isError) gameState.clearError();
+      gameState.saveGoodState();
       setActiveHint(result.hint);
     }
 

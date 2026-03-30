@@ -35,7 +35,9 @@ export class GameState {
 
   // Error State
   private _isError: boolean = false;
-  private _restoreSnapshot: GameSnapshot | null = null;
+  private _goodStateSnapshot: GameSnapshot | null = null;
+  private _goodStateUndoLength: number = 0;
+  private _restoreSnapshot: { snapshot: GameSnapshot; undoStackLength: number; } | null = null;
 
   constructor(rows: CategoryIndex, cols: ColumnIndex) {
     this._rows = rows;
@@ -341,28 +343,40 @@ export class GameState {
   public get redoStackLength(): number { return this._redoStack.length; }
   public get isError(): boolean { return this._isError; }
 
+  public saveGoodState(): void {
+    if (!this._isError) {
+      this._goodStateSnapshot = this._createSnapshot();
+      this._goodStateUndoLength = this._undoStack.length;
+    }
+  }
+
   public markError(): void {
     if (!this._isError) {
-      const last = this._undoStack[this._undoStack.length - 1];
-      if (last) {
+      if (this._goodStateSnapshot) {
         this._restoreSnapshot = { 
-          grid: new Uint16Array(last.snapshot.grid), 
-          confirmed: new Uint8Array(last.snapshot.confirmed),
-          noAutoSolve: new Uint8Array(last.snapshot.noAutoSolve)
+          snapshot: {
+            grid: new Uint16Array(this._goodStateSnapshot.grid), 
+            confirmed: new Uint8Array(this._goodStateSnapshot.confirmed),
+            noAutoSolve: new Uint8Array(this._goodStateSnapshot.noAutoSolve)
+          },
+          undoStackLength: this._goodStateUndoLength
         };
       }
       this._isError = true;
     }
   }
 
-  public get restoreSnapshot(): { grid: Uint16Array; confirmed: Uint8Array; noAutoSolve: Uint8Array } | null { return this._restoreSnapshot as any; }
+  public get restoreSnapshot(): { snapshot: GameSnapshot; undoStackLength: number; } | null { return this._restoreSnapshot; }
   public clearError(): void { this._isError = false; this._restoreSnapshot = null; }
 
   public restoreToLastValid(): void {
     if (this._isError && this._restoreSnapshot) {
-      this._grid = new Uint16Array(this._restoreSnapshot.grid);
-      this._confirmed = new Uint8Array(this._restoreSnapshot.confirmed);
-      this._noAutoSolve = new Uint8Array(this._restoreSnapshot.noAutoSolve);
+      this._grid = new Uint16Array(this._restoreSnapshot.snapshot.grid);
+      this._confirmed = new Uint8Array(this._restoreSnapshot.snapshot.confirmed);
+      this._noAutoSolve = new Uint8Array(this._restoreSnapshot.snapshot.noAutoSolve);
+
+      // Cleanly slice the undo stack back to the exact length it was when the snapshot was taken, deleting all the mistakes from history
+      this._undoStack = this._undoStack.slice(0, this._restoreSnapshot.undoStackLength);
 
       // Anti-autosolve: Flag any cell that is currently unconfirmed but has only 1 option left.
       // This prevents the engine from immediately stealing the cell back via auto-deduction
