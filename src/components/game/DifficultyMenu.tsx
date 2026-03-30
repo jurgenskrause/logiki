@@ -29,7 +29,7 @@ const GridIcon: React.FC<{ size: number }> = ({ size }) => {
 export const DifficultyMenu: React.FC<DifficultyMenuProps> = ({ onSelect, onClose }) => {
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/80 backdrop-blur-md transition-all duration-500"
+      className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/80 backdrop-blur-md transition-all duration-500"
       onClick={onClose}
     >
       <div 
