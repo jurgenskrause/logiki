@@ -8,7 +8,7 @@ import {
   useSensor,
   useSensors
 } from '@dnd-kit/core';
-import type { DragEndEvent } from '@dnd-kit/core';
+import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import {
   SortableContext,
   rectSortingStrategy,
@@ -54,6 +54,7 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
   const CLUE_HEIGHT = itemHeight + gap;
   
   const [orderedClues, setOrderedClues] = useState<SortableClue[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -102,7 +103,14 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
     });
   }, [cluesHash]);
 
+  const handleDragStart = (event: DragStartEvent) => {
+    setIsDragging(true);
+    const dragged = orderedClues.find(c => c.id === event.active.id)?.clue;
+    if (dragged) onClueHover?.(dragged);
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
+    setIsDragging(false);
     const { active, over } = event;
     if (over && active.id !== over.id) {
       setOrderedClues((items) => {
@@ -111,6 +119,10 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
         return arrayMove(items, oldIndex, newIndex);
       });
     }
+  };
+
+  const handleDragCancel = () => {
+    setIsDragging(false);
   };
 
   const maxCluesPerRow = Math.floor(containerWidth / CLUE_MAX_WIDTH) || 1;
@@ -129,7 +141,9 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
       <DndContext 
         sensors={sensors}
         collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
       >
         <SortableContext 
           items={orderedClues.map(c => c.id)}
@@ -148,7 +162,7 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
               <SortableClueWrapper key={item.id} id={item.id}>
                 <VerticalClueUI 
                    clue={item.clue} 
-                   onHover={onClueHover} 
+                   onHover={isDragging ? undefined : onClueHover} 
                    isHighlighted={highlightedClue === item.clue} 
                    onDiscard={onClueToggleBin}
                    isBinned={binnedIds?.has(item.clue.id)}
