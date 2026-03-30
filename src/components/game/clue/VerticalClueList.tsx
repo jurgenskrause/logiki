@@ -134,8 +134,7 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
       ref={containerRef}
       className="flex-1 w-full h-full p-4 overflow-hidden relative flex items-center justify-center"
       style={{
-        height: `${actualRows * CLUE_HEIGHT + 32}px`,
-        transition: 'height 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+        height: `${actualRows * CLUE_HEIGHT + 32}px`
       }}
     >
       <DndContext 

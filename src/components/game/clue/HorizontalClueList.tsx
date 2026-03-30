@@ -132,8 +132,7 @@ export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, o
       ref={containerRef}
       className="flex-1 w-full h-full p-2 md:p-4 overflow-x-hidden md:overflow-visible relative"
       style={isDesktop ? {
-        width: `${actualCols * CLUE_WIDTH + 32}px`,
-        transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+        width: `${actualCols * CLUE_WIDTH + 32}px`
       } : {}}
     >
       <DndContext 

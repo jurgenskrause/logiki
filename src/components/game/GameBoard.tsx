@@ -166,7 +166,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns, cl
   return (
     <div 
       ref={containerRef}
-      className="w-full h-full flex items-center justify-center p-1 md:p-4 relative animate-in fade-in duration-500 overflow-hidden"
+      className="w-full h-full flex items-center justify-center p-1 md:p-4 relative overflow-hidden"
     >
       <div 
         className={`bg-slate-100 dark:bg-slate-900 shadow-2xl overflow-hidden transition-all duration-300 relative border-4 rounded-lg flex-shrink-0 ${
