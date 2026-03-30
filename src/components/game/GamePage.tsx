@@ -45,6 +45,9 @@ export const GamePage: React.FC = () => {
     if (puzzle) {
       setIsGameStarted(false);
       setElapsedSeconds(0);
+      setBinnedClueIds(new Set());
+      setShowBin(false);
+      setHintCount(0);
     }
   }, [puzzle]);
 
@@ -580,7 +583,7 @@ export const GamePage: React.FC = () => {
         >
           {puzzle && gameState && (
             <div className="relative w-full h-full flex items-center justify-center">
-              <div className={`w-full h-full flex items-center justify-center transition-all duration-700 ${!isGameStarted ? 'blur-[8px] opacity-60 scale-[0.98] pointer-events-none' : ''}`}>
+              <div className={`w-full h-full flex items-center justify-center ${!isGameStarted ? 'blur-[8px] opacity-60 scale-[0.98] pointer-events-none' : ''}`}>
                 <GameBoard
                   key={gameKey}
                   rows={puzzle.rows}
@@ -664,7 +667,7 @@ export const GamePage: React.FC = () => {
         <div className={`col-start-1 row-start-3 md:col-start-2 md:row-start-1 md:row-span-2 min-h-0 md:h-full bg-slate-100 dark:bg-slate-900 border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800 shrink-0 shadow-inner z-10 w-full md:w-auto ${
           activeMobileTab === 'horizontal' ? 'flex flex-col' : 'hidden md:flex md:flex-col'
         }`}>
-          <div className={`flex-1 overflow-y-auto overflow-x-hidden md:overflow-x-auto md:overflow-y-hidden relative custom-scrollbar transition-all duration-700 ${!isGameStarted ? 'blur-[8px] opacity-60 pointer-events-none' : ''}`}>
+          <div className={`flex-1 overflow-y-auto overflow-x-hidden md:overflow-x-auto md:overflow-y-hidden relative custom-scrollbar ${!isGameStarted ? 'blur-[8px] opacity-60 pointer-events-none' : ''}`}>
             {showBin && (
                 <div className="absolute top-2 left-2 z-20 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-[10px] font-black uppercase tracking-tighter text-amber-600 dark:text-amber-400 pointer-events-none">
                   Binned
@@ -690,7 +693,7 @@ export const GamePage: React.FC = () => {
         <div className={`col-start-1 row-start-3 md:col-start-1 md:row-start-2 min-h-0 md:max-h-[45vh] bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0 shadow-inner z-10 w-full ${
           activeMobileTab === 'vertical' ? 'flex flex-col' : 'hidden md:flex md:flex-col'
         }`}>
-          <div className={`flex-1 overflow-y-auto overflow-x-hidden relative custom-scrollbar transition-all duration-700 ${!isGameStarted ? 'blur-[8px] opacity-60 pointer-events-none' : ''}`}>
+          <div className={`flex-1 overflow-y-auto overflow-x-hidden relative custom-scrollbar ${!isGameStarted ? 'blur-[8px] opacity-60 pointer-events-none' : ''}`}>
             {showBin && (
               <div className="absolute top-2 left-2 z-20 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-[10px] font-black uppercase tracking-tighter text-amber-600 dark:text-amber-400 pointer-events-none">
                 Binned Clues
