@@ -152,7 +152,7 @@ export const GamePage: React.FC = () => {
   // ─── Loaders ────────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    loader.loadFromUrl('/daily.bin')
+    loader.loadFromUrl(`${import.meta.env.BASE_URL}daily.bin`)
       .then(() => {
         setIsManifestLoaded(true);
         setIsLoading(false);

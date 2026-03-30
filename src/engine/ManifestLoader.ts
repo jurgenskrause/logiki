@@ -4,19 +4,21 @@ import type { ActiveClue } from './Solver';
 const VERSION = 0x01;
 const SECRET_SALT = 'logiki-daily-secret-2026';
 
-export enum ClueType {
-  VERTICAL = 0,
-  LEFT_OF = 1,
-  ADJACENT = 2,
-  SEQUENCE_THREE = 3,
-  VERTICAL_NOT = 4,
-  VERTICAL_TRIO = 5,
-  VERTICAL_NOT_TRIO = 6,
-  GAPPED_NOT_MIDDLE = 7,
-  DISJUNCTIVE_XOR = 8,
-  NEGATIVE_ANCHOR = 9,
-  ANCHOR = 10,
-}
+export const ClueType = {
+  VERTICAL: 0,
+  LEFT_OF: 1,
+  ADJACENT: 2,
+  SEQUENCE_THREE: 3,
+  VERTICAL_NOT: 4,
+  VERTICAL_TRIO: 5,
+  VERTICAL_NOT_TRIO: 6,
+  GAPPED_NOT_MIDDLE: 7,
+  DISJUNCTIVE_XOR: 8,
+  NEGATIVE_ANCHOR: 9,
+  ANCHOR: 10,
+} as const;
+
+export type ClueType = typeof ClueType[keyof typeof ClueType];
 
 const TYPE_REVERSE_MAP: Record<number, string> = {
   [ClueType.VERTICAL]: 'VERTICAL',

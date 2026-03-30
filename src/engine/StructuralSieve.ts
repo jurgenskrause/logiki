@@ -290,6 +290,7 @@ export class StructuralSieve {
 
   public toActiveClue(entry: TopologyEntry, solution: SolutionGrid): ActiveClue {
     return {
+      id: `err-${Math.random().toString(36).substr(2, 9)}`,
       type: entry.type,
       params: entry.slots.map(s => ({
         row: s.r,
