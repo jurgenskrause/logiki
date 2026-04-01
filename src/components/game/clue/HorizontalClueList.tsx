@@ -130,9 +130,10 @@ export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, o
   return (
     <div 
       ref={containerRef}
-      className="flex-1 w-full h-full p-2 md:p-4 overflow-x-hidden md:overflow-visible relative"
+      className="flex-1 w-full h-full p-2 md:p-4 overflow-hidden relative"
       style={isDesktop ? {
-        width: `${actualCols * CLUE_WIDTH + 32}px`
+        width: `${actualCols * CLUE_WIDTH + 32}px`,
+        maxWidth: `${actualCols * CLUE_WIDTH + 32}px`
       } : {}}
     >
       <DndContext 
@@ -147,11 +148,11 @@ export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, o
           strategy={rectSortingStrategy}
         >
           <div 
-            className={`w-full h-full ${isDesktop ? 'grid gap-3' : 'grid grid-cols-4 gap-1 content-start'}`}
+            className={`w-full h-full overflow-hidden ${isDesktop ? 'grid gap-3' : 'grid grid-cols-4 gap-1 content-start'}`}
             style={isDesktop ? {
               gridTemplateRows: `repeat(${maxCluesPerColumn}, minmax(0, 1fr))`,
-              gridAutoFlow: 'column',
-              gridAutoColumns: `minmax(${CLUE_WIDTH - 12}px, 1fr)`
+              gridTemplateColumns: `repeat(${actualCols}, minmax(0, 1fr))`,
+              gridAutoFlow: 'column'
             } : {}}
           >
             {orderedClues.map((item) => (
