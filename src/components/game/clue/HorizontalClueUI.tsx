@@ -145,7 +145,6 @@ export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover,
       onMouseEnter={() => !isBinned && onHover?.(clue)}
       onMouseLeave={() => {
         onHover?.(null);
-        handlePointerUp();
       }}
       onContextMenu={(e) => {
         e.preventDefault();

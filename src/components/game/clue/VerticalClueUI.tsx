@@ -161,7 +161,6 @@ export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue, onHover, isH
       onMouseEnter={() => !isBinned && onHover && onHover(clue)}
       onMouseLeave={() => {
         onHover && onHover(null);
-        handlePointerUp();
       }}
       onContextMenu={(e) => {
         e.preventDefault();
