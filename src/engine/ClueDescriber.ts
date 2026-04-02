@@ -25,63 +25,63 @@ export function describeDeduction(clue: ActiveClue, action: HintAction): string 
     case 'VERTICAL_PAIR':
     case 'VERTICAL': {
       const [a, b] = [icon(p[0].row, p[0].item), icon(p[1].row, p[1].item)];
-      return `${a} and ${b} share the same column. Therefore, ${targetIcon} ${resultText}`;
+      return `${a} and ${b} share the same column. <nl> Therefore, ${targetIcon} ${resultText}`;
     }
 
     case 'VERTICAL_NOT': {
       const [a, b] = [icon(p[0].row, p[0].item), icon(p[1].row, p[1].item)];
-      return `${a} and ${b} can never be in the same column. Therefore, ${targetIcon} ${resultText}`;
+      return `${a} and ${b} can never be in the same column. <nl> Therefore, ${targetIcon} ${resultText}`;
     }
 
     case 'VERTICAL_TRIO': {
       const symbols = p.map(x => icon(x.row, x.item));
-      return `${symbols.join(', ')} all share the same column. Therefore, ${targetIcon} ${resultText}`;
+      return `${symbols.join(', ')} all share the same column. <nl> Therefore, ${targetIcon} ${resultText}`;
     }
 
     case 'VERTICAL_NOT_TRIO': {
       const [a, b, c] = p.map(x => icon(x.row, x.item));
-      return `${a} and ${b} share a column, but ${c} is excluded. Therefore, ${targetIcon} ${resultText}`;
+      return `${a} and ${b} share a column, but ${c} is excluded. <nl> Therefore, ${targetIcon} ${resultText}`;
     }
 
     case 'ADJACENT': {
       const [a, b] = [icon(p[0].row, p[0].item), icon(p[1].row, p[1].item)];
-      return `${a} and ${b} are side-by-side. Therefore, ${targetIcon} ${resultText}`;
+      return `${a} and ${b} are side-by-side. <nl> Therefore, ${targetIcon} ${resultText}`;
     }
 
     case 'LEFT_OF': {
       const [a, b] = [icon(p[0].row, p[0].item), icon(p[1].row, p[1].item)];
-      return `${a} must be to the left of ${b}. Therefore, ${targetIcon} ${resultText}`;
+      return `${a} must be to the left of ${b}. <nl> Therefore, ${targetIcon} ${resultText}`;
     }
 
     case 'SEQUENCE_THREE': {
       const [a, b, c] = p.map(x => icon(x.row, x.item));
-      return `${a} and ${b} and ${c} are in three adjacent columns. Therefore, ${targetIcon} ${resultText}`;
+      return `${a} and ${b} and ${c} are in three adjacent columns. <nl> Therefore, ${targetIcon} ${resultText}`;
     }
 
     case 'GAPPED_NOT_MIDDLE':
     case 'GAPPED_EXCLUSION': {
       const [a, c, b] = p.map(x => icon(x.row, x.item));
       if (targetIcon === b) {
-        return `${b} cannot be directly between ${a} and ${c}. Therefore, ${targetIcon} cannot be here.`;
+        return `${b} cannot be directly between ${a} and ${c}. <nl> Therefore, ${targetIcon} cannot be here.`;
       }
-      return `${a} and ${c} are exactly one column apart. Therefore, ${targetIcon} ${resultText}`;
+      return `${a} and ${c} are exactly one column apart. <nl> Therefore, ${targetIcon} ${resultText}`;
     }
 
     case 'DISJUNCTIVE_XOR': {
       const [pivot, b, c] = p.map(x => icon(x.row, x.item));
-      return `${pivot} belongs with ${b} or ${c}, but not both. Therefore, ${targetIcon} ${resultText}`;
+      return `${pivot} belongs with ${b} or ${c}, but not both. <nl> Therefore, ${targetIcon} ${resultText}`;
     }
 
     case 'ANCHOR': {
-      return `${targetIcon} belongs in a specific fixed location. Therefore, it ${resultText}`;
+      return `${targetIcon} belongs in a specific fixed location. <nl> Therefore, it ${resultText}`;
     }
 
     case 'NEGATIVE_ANCHOR': {
-      return `${targetIcon} is blocked from this specific region. Therefore, it ${resultText}`;
+      return `${targetIcon} is blocked from this specific region. <nl> Therefore, it ${resultText}`;
     }
 
     default:
-      return `A logical constraint applies. Therefore, ${targetIcon} ${resultText}`;
+      return `A logical constraint applies. <nl> Therefore, ${targetIcon} ${resultText}`;
   }
 }
 
@@ -112,7 +112,7 @@ export function describeRule(clue: ActiveClue): string {
     }
     case 'ADJACENT': {
       const [a, b] = [icon(p[0].row, p[0].item), icon(p[1].row, p[1].item)];
-      return `${a} and ${b} are side-by-side. A and B may be reversed.`;
+      return `${a} and ${b} are side-by-side. <nl> A and B may be reversed.`;
     }
     case 'LEFT_OF': {
       const [a, b] = [icon(p[0].row, p[0].item), icon(p[1].row, p[1].item)];
@@ -120,12 +120,12 @@ export function describeRule(clue: ActiveClue): string {
     }
     case 'SEQUENCE_THREE': {
       const [a, b, c] = p.map(x => icon(x.row, x.item));
-      return `${a} and ${b} and ${c} are in three adjacent columns, ${b} is in the middle. ${a} and ${c} may be reversed.`;
+      return `${a} and ${b} and ${c} are in three adjacent columns, ${b} is in the middle. <nl> A and c may be reversed.`;
     }
     case 'GAPPED_NOT_MIDDLE':
     case 'GAPPED_EXCLUSION': {
       const [a, c, b] = p.map(x => icon(x.row, x.item));
-      return `${a} and ${c} are separated by one column, ${b} cannot be in that column. ${a} and ${c} may be reversed.`;
+      return `${a} and ${c} are separated by one column, ${b} cannot be in that column. <nl> A and c may be reversed.`;
     }
     case 'DISJUNCTIVE_XOR':
     case 'VERTICAL_DISJUNCTIVE_EXCLUSION': {
