@@ -18,67 +18,64 @@ export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue, onHover, isH
   const icons = params.map(p => getFallbackEmoji(p.row, p.item));
 
   const renderContent = () => {
+    const iconClass = "text-base md:text-xl drop-shadow-sm leading-none flex items-center justify-center";
+    
     switch (type) {
       case 'VERTICAL':
       case 'VERTICAL_PAIR':
         return (
-          <div className="flex flex-col items-center justify-center w-full h-full gap-0.5 md:gap-1">
-            <span className="text-base md:text-xl drop-shadow-sm">{icons[0]}</span>
+          <div className="flex flex-col items-center justify-around w-full h-full py-1">
+            <span className={iconClass}>{icons[0]}</span>
             <span className="material-icons text-slate-300 transform scale-50 md:scale-75 leading-none">link</span>
-            <span className="text-base md:text-xl drop-shadow-sm">{icons[1]}</span>
+            <span className={iconClass}>{icons[1]}</span>
           </div>
         );
       case 'VERTICAL_NOT':
       case 'VERTICAL_NOT_PAIR':
         return (
-          <div className="flex flex-col items-center justify-center w-full h-full gap-0.5 md:gap-1">
-            <span className="text-base md:text-xl drop-shadow-sm">{icons[0]}</span>
+          <div className="flex flex-col items-center justify-around w-full h-full py-1">
+            <span className={iconClass}>{icons[0]}</span>
             <span className="material-icons text-red-500 transform scale-50 md:scale-75 leading-none">link_off</span>
-            <span className="text-base md:text-xl drop-shadow-sm">{icons[1]}</span>
+            <span className={iconClass}>{icons[1]}</span>
           </div>
         );
       case 'VERTICAL_TRIO':
         return (
-          <div className="flex flex-col items-center justify-around w-full h-full py-1 md:py-2">
-            <span className="text-sm md:text-lg drop-shadow-sm">{icons[0]}</span>
-            <span className="text-sm md:text-lg drop-shadow-sm">{icons[1]}</span>
-            <span className="text-sm md:text-lg drop-shadow-sm">{icons[2]}</span>
+          <div className="flex flex-col items-center justify-around w-full h-full py-1">
+            <span className={iconClass}>{icons[0]}</span>
+            <span className={iconClass}>{icons[1]}</span>
+            <span className={iconClass}>{icons[2]}</span>
           </div>
         );
       case 'VERTICAL_NOT_TRIO':
         return (
-          <div className="flex flex-col items-center justify-around w-full h-full py-0.5 md:py-1">
-            <span className="text-base md:text-xl drop-shadow-sm">{icons[0]}</span>
+          <div className="flex flex-col items-center justify-around w-full h-full py-1">
+            <span className={iconClass}>{icons[0]}</span>
             <div className="relative flex items-center justify-center">
-               <span className="text-sm md:text-lg drop-shadow-sm">{icons[2]}</span>
-               <span className="material-icons absolute text-red-500 text-base md:text-xl font-bold opacity-80">close</span>
+               <span className={iconClass}>{icons[2]}</span>
+               <span className="material-icons absolute text-red-500 text-lg md:text-2xl font-bold opacity-80">close</span>
             </div>
-            <span className="text-base md:text-xl drop-shadow-sm">{icons[1]}</span>
+            <span className={iconClass}>{icons[1]}</span>
           </div>
         );
       case 'DISJUNCTIVE_XOR':
       case 'VERTICAL_DISJUNCTIVE_EXCLUSION':
         return (
-          <div className="flex flex-col items-center justify-center w-full h-full py-0.5 md:py-1">
-            {/* Top item above XOR group */}
-            <span className="text-base md:text-xl drop-shadow-sm mb-1 md:mb-2">{icons[0]}</span>
+          <div className="flex flex-col items-center justify-around w-full h-full py-1">
+            <span className={iconClass}>{icons[0]}</span>
             
-            {/* Bottom XOR group */}
-            <div className="relative flex flex-col items-center h-8 md:h-12 justify-center scale-90 md:scale-100">
-              <span className="text-sm md:text-lg drop-shadow-sm z-10">{icons[1]}</span>
-              
-              {/* Overlapping circular arrows */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-                 <span className="material-icons text-indigo-500 text-sm md:text-xl animate-spin-slow bg-white/50 dark:bg-slate-800/50 rounded-full">sync</span>
-              </div>
-              
-              <span className="text-sm md:text-lg drop-shadow-sm z-10">{icons[2]}</span>
+            <div className="relative flex flex-col items-center justify-center gap-1.5 md:gap-3">
+               <span className={iconClass}>{icons[1]}</span>
+               <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+                  <span className="material-icons text-blue-500 text-[8px] md:text-[10px] transform scale-50 bg-white/90 dark:bg-slate-900/90 rounded-full p-0.5 shadow-xs border border-slate-200 dark:border-slate-700">sync</span>
+               </div>
+               <span className={iconClass}>{icons[2]}</span>
             </div>
           </div>
         );
       default:
         return (
-          <div className="flex flex-col items-center gap-0.5 md:gap-1 justify-center w-full h-full opacity-50">
+          <div className="flex flex-col items-center gap-1 justify-center w-full h-full opacity-50">
             {icons.map((ic, i) => <span key={i} className="text-xs md:text-sm">{ic}</span>)}
           </div>
         );

@@ -68,8 +68,8 @@ export function describeDeduction(clue: ActiveClue, action: HintAction): string 
     }
 
     case 'DISJUNCTIVE_XOR': {
-      const [a, b, c] = p.map(x => icon(x.row, x.item));
-      return `${c} belongs with ${a} or ${b}, but not both. Therefore, ${targetIcon} ${resultText}`;
+      const [pivot, b, c] = p.map(x => icon(x.row, x.item));
+      return `${pivot} belongs with ${b} or ${c}, but not both. Therefore, ${targetIcon} ${resultText}`;
     }
 
     case 'ANCHOR': {
@@ -129,8 +129,8 @@ export function describeRule(clue: ActiveClue): string {
     }
     case 'DISJUNCTIVE_XOR':
     case 'VERTICAL_DISJUNCTIVE_EXCLUSION': {
-      const [a, b, c] = p.map(x => icon(x.row, x.item));
-      return `${c} belongs with ${a} or ${b}, but not both.`;
+      const [pivot, b, c] = p.map(x => icon(x.row, x.item));
+      return `${pivot} is in the same column as ${b} or ${c}, but not both.`;
     }
     case 'ANCHOR': {
       const a = icon(p[0].row, p[0].item);
