@@ -44,11 +44,12 @@ interface SortableClue {
 
 export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClueHover, highlightedClue, onClueToggleBin, binnedIds, onClueDoubleTap }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
 
   const isDesktop = useMediaQuery('(min-width: 768px)');
-  const itemWidth = isDesktop ? 64 : 48; // w-16 vs w-12
-  const itemHeight = isDesktop ? 112 : 80; // h-28 vs h-20
+  const itemWidth = isDesktop ? 96 : 72; // w-24 vs w-[72px]
+  const itemHeight = isDesktop ? 168 : 120; // h-[168px] vs h-[120px]
   const gap = isDesktop ? 8 : 4; // gap-2 vs gap-1
   const CLUE_MAX_WIDTH = itemWidth + gap;
   const CLUE_HEIGHT = itemHeight + gap;
@@ -128,14 +129,23 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
   const maxCluesPerRow = Math.floor(containerWidth / CLUE_MAX_WIDTH) || 1;
   const numRows = Math.ceil(orderedClues.length / maxCluesPerRow) || 1;
   const actualRows = Math.min(numRows, 3);
+  
+  const maxRowsPerPage = 2;
+  const itemsPerPage = maxCluesPerRow * maxRowsPerPage;
+
+  const handlePrevPage = () => {
+    if (scrollRef.current) scrollRef.current.scrollBy({ left: -scrollRef.current.clientWidth, behavior: 'smooth' });
+  };
+
+  const handleNextPage = () => {
+    if (scrollRef.current) scrollRef.current.scrollBy({ left: scrollRef.current.clientWidth, behavior: 'smooth' });
+  };
 
   return (
     <div 
       ref={containerRef}
-      className="flex-1 w-full h-full p-4 overflow-hidden relative flex items-center justify-center"
-      style={{
-        height: `${actualRows * CLUE_HEIGHT + 32}px`
-      }}
+      className={`flex-1 w-full ${isDesktop ? 'h-full p-4' : 'p-0'} overflow-hidden relative flex items-center justify-center`}
+      style={isDesktop ? { height: `${actualRows * CLUE_HEIGHT + 32}px` } : {}}
     >
       <DndContext 
         sensors={sensors}
@@ -148,28 +158,89 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
           items={orderedClues.map(c => c.id)}
           strategy={rectSortingStrategy}
         >
-          <div 
-            className="grid gap-2 w-full justify-center"
-            style={{
-              gridTemplateColumns: `repeat(${maxCluesPerRow}, minmax(0, 1fr))`,
-              gridAutoFlow: 'row',
-              gridAutoRows: `minmax(${CLUE_HEIGHT - 8}px, 1fr)`,
-              maxWidth: `${maxCluesPerRow * CLUE_MAX_WIDTH}px`
-            }}
-          >
-            {orderedClues.map((item) => (
-              <SortableClueWrapper key={item.id} id={item.id}>
-                <VerticalClueUI 
-                   clue={item.clue} 
-                   onHover={isDragging ? undefined : onClueHover} 
-                   isHighlighted={highlightedClue === item.clue} 
-                   onDiscard={onClueToggleBin}
-                   isBinned={binnedIds?.has(item.clue.id)}
-                   onDoubleTap={onClueDoubleTap}
-                />
-              </SortableClueWrapper>
-            ))}
-          </div>
+          {isDesktop ? (
+            <div 
+              className="grid gap-2 w-full justify-center"
+              style={{
+                gridTemplateColumns: `repeat(${maxCluesPerRow}, minmax(0, 1fr))`,
+                gridAutoFlow: 'row',
+                gridAutoRows: `minmax(${CLUE_HEIGHT - 8}px, 1fr)`,
+                maxWidth: `${maxCluesPerRow * CLUE_MAX_WIDTH}px`
+              }}
+            >
+              {orderedClues.map((item) => (
+                <SortableClueWrapper key={item.id} id={item.id}>
+                  <VerticalClueUI 
+                     clue={item.clue} 
+                     onHover={isDragging ? undefined : onClueHover} 
+                     isHighlighted={highlightedClue === item.clue} 
+                     onDiscard={onClueToggleBin}
+                     isBinned={binnedIds?.has(item.clue.id)}
+                     onDoubleTap={onClueDoubleTap}
+                  />
+                </SortableClueWrapper>
+              ))}
+            </div>
+          ) : (
+            <>
+              {orderedClues.length === 0 && (
+                 <div className="w-full h-full flex flex-col items-center justify-center opacity-30 pointer-events-none">
+                    <span className="material-icons text-5xl mb-2">grid_view</span>
+                    <span className="font-bold text-sm tracking-widest uppercase">No Vertical Clues</span>
+                 </div>
+              )}
+              <div 
+                 ref={scrollRef} 
+                 className={`flex w-full ${isDesktop ? 'h-full' : 'pb-10 pt-2'} overflow-x-auto snap-x snap-mandatory scroll-smooth [&::-webkit-scrollbar]:hidden relative z-10`} 
+                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
+                {Array.from({ length: Math.ceil(orderedClues.length / itemsPerPage) || 1 }).map((_, pageIdx) => {
+                   const pageItems = orderedClues.slice(pageIdx * itemsPerPage, (pageIdx + 1) * itemsPerPage);
+                   return (
+                     <div key={pageIdx} className="w-full shrink-0 flex-none snap-center flex justify-center items-center py-2 overflow-hidden">
+                        <div 
+                          className="grid gap-1 justify-center"
+                          style={{
+                             gridTemplateColumns: `repeat(${maxCluesPerRow}, minmax(0, 1fr))`,
+                             gridAutoFlow: 'row',
+                             gridAutoRows: `max-content`
+                          }}
+                        >
+                            {pageItems.map(item => (
+                              <SortableClueWrapper key={item.id} id={item.id}>
+                                <VerticalClueUI 
+                                   clue={item.clue} 
+                                   onHover={isDragging ? undefined : onClueHover} 
+                                   isHighlighted={highlightedClue === item.clue} 
+                                   onDiscard={onClueToggleBin}
+                                   isBinned={binnedIds?.has(item.clue.id)}
+                                   onDoubleTap={onClueDoubleTap}
+                                />
+                              </SortableClueWrapper>
+                            ))}
+                        </div>
+                     </div>
+                   );
+                })}
+              </div>
+              {Math.ceil(orderedClues.length / itemsPerPage) > 1 && (
+                  <div className="absolute bottom-1 left-0 right-0 flex justify-center gap-12 pointer-events-none z-20">
+                      <button 
+                         onClick={handlePrevPage}
+                         className="pointer-events-auto w-10 h-10 rounded-full bg-slate-800/90 dark:bg-slate-700/90 text-white flex items-center justify-center hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors shadow-lg active:scale-95 border border-white/10"
+                      >
+                          <span className="material-icons text-lg">arrow_back_ios_new</span>
+                      </button>
+                      <button 
+                         onClick={handleNextPage}
+                         className="pointer-events-auto w-10 h-10 rounded-full bg-slate-800/90 dark:bg-slate-700/90 text-white flex items-center justify-center hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors shadow-lg active:scale-95 border border-white/10"
+                      >
+                          <span className="material-icons text-lg">arrow_forward_ios</span>
+                      </button>
+                  </div>
+              )}
+            </>
+          )}
         </SortableContext>
       </DndContext>
     </div>

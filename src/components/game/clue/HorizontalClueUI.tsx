@@ -21,49 +21,49 @@ export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover,
     switch (type) {
       case 'LEFT_OF':
         return (
-          <div className="flex items-center justify-center w-full h-full gap-2 md:gap-5">
-            <span className="text-lg md:text-xl drop-shadow-sm">{icons[0]}</span>
-            <span className="material-icons text-slate-400 text-sm md:text-base">east</span>
-            <span className="text-lg md:text-xl drop-shadow-sm">{icons[1]}</span>
+          <div className="flex items-center justify-center w-full h-full gap-1 sm:gap-3 md:gap-7">
+            <span className="text-lg sm:text-2xl md:text-3xl drop-shadow-sm">{icons[0]}</span>
+            <span className="material-icons text-slate-400 dark:text-slate-300 text-base sm:text-xl md:text-2xl">east</span>
+            <span className="text-lg sm:text-2xl md:text-3xl drop-shadow-sm">{icons[1]}</span>
           </div>
         );
       case 'ADJACENT':
         return (
-          <div className="flex items-center justify-between w-full h-full px-1 md:px-2">
-            <span className="text-base md:text-lg drop-shadow-sm opacity-50 grayscale scale-[0.8] md:scale-90">{icons[1]}</span>
+          <div className="flex items-center justify-between w-full h-full px-1 sm:px-2 md:px-3">
+            <span className="text-base sm:text-xl md:text-2xl drop-shadow-sm opacity-50 grayscale scale-[0.8] md:scale-90">{icons[1]}</span>
             <div className="flex flex-col items-center">
-               <span className="text-lg md:text-xl drop-shadow-sm z-10">{icons[0]}</span>
-               <span className="material-icons text-slate-400 dark:text-slate-300 text-[10px] md:text-xs transform -my-1">swap_horiz</span>
+               <span className="text-lg sm:text-2xl md:text-3xl drop-shadow-sm z-10">{icons[0]}</span>
+               <span className="material-icons text-slate-400 dark:text-slate-300 text-xs sm:text-sm md:text-base transform -my-1">swap_horiz</span>
             </div>
-            <span className="text-base md:text-lg drop-shadow-sm opacity-50 grayscale scale-[0.8] md:scale-90">{icons[1]}</span>
+            <span className="text-base sm:text-xl md:text-2xl drop-shadow-sm opacity-50 grayscale scale-[0.8] md:scale-90">{icons[1]}</span>
           </div>
         );
       case 'SEQUENCE_THREE':
         return (
-          <div className="flex items-center justify-between w-full h-full px-0 md:px-2">
-            <span className="text-lg md:text-xl drop-shadow-sm">{icons[0]}</span>
-            <span className="material-icons text-slate-400 dark:text-slate-300 transform scale-[0.35] md:scale-50 -mx-2 md:-mx-1">swap_horiz</span>
-            <span className="text-lg md:text-xl drop-shadow-sm">{icons[1]}</span>
-            <span className="material-icons text-slate-400 dark:text-slate-300 transform scale-[0.35] md:scale-50 -mx-2 md:-mx-1">swap_horiz</span>
-            <span className="text-lg md:text-xl drop-shadow-sm">{icons[2]}</span>
+          <div className="flex items-center justify-between w-full h-full px-0.5 sm:px-1 md:px-3">
+            <span className="text-lg sm:text-2xl md:text-3xl drop-shadow-sm">{icons[0]}</span>
+            <span className="material-icons text-slate-400 dark:text-slate-300 transform scale-50 sm:scale-[0.6] md:scale-75 -mx-4 sm:-mx-3 md:-mx-2">swap_horiz</span>
+            <span className="text-lg sm:text-2xl md:text-3xl drop-shadow-sm">{icons[1]}</span>
+            <span className="material-icons text-slate-400 dark:text-slate-300 transform scale-50 sm:scale-[0.6] md:scale-75 -mx-4 sm:-mx-3 md:-mx-2">swap_horiz</span>
+            <span className="text-lg sm:text-2xl md:text-3xl drop-shadow-sm">{icons[2]}</span>
           </div>
         );
       case 'GAPPED_NOT_MIDDLE':
       case 'GAPPED_EXCLUSION':
         return (
-          <div className="flex items-center justify-between w-full h-full px-1 md:px-2">
-            <span className="text-lg md:text-xl drop-shadow-sm">{icons[0]}</span>
-            <div className="relative mx-1 md:mx-1 flex items-center justify-center">
-               <span className="text-lg md:text-xl">{icons[2]}</span>
-               <span className="material-icons absolute text-red-500 text-xl md:text-2xl font-bold opacity-100">close</span>
+          <div className="flex items-center justify-between w-full h-full px-1 sm:px-2 md:px-3">
+            <span className="text-lg sm:text-2xl md:text-3xl drop-shadow-sm">{icons[0]}</span>
+            <div className="relative mx-1 md:mx-2 flex items-center justify-center">
+               <span className="text-lg sm:text-2xl md:text-3xl">{icons[2]}</span>
+               <span className="material-icons absolute text-red-500 text-2xl sm:text-3xl md:text-4xl font-bold opacity-100">close</span>
             </div>
-            <span className="text-lg md:text-xl drop-shadow-sm">{icons[1]}</span>
+            <span className="text-lg sm:text-2xl md:text-3xl drop-shadow-sm">{icons[1]}</span>
           </div>
         );
       default:
         return (
           <div className="flex items-center gap-1 justify-center w-full h-full opacity-50">
-            {icons.map((ic, i) => <span key={i} className="text-base md:text-lg">{ic}</span>)}
+            {icons.map((ic, i) => <span key={i} className="text-lg sm:text-xl md:text-2xl">{ic}</span>)}
           </div>
         );
     }
@@ -144,7 +144,7 @@ export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover,
 
   return (
     <div 
-      className={`w-full h-11 md:w-32 md:h-14 bg-white dark:bg-slate-800 rounded-lg shadow-md hover:border-blue-400 group flex items-center justify-center shrink-0 select-none touch-none ${
+      className={`w-full h-14 sm:w-40 sm:h-[66px] md:max-w-none md:w-48 md:h-[84px] shrink-0 bg-white dark:bg-slate-800 rounded-lg shadow-md hover:border-blue-400 group flex items-center justify-center select-none touch-none ${
         isHighlighted 
           ? 'animate-hard-flash z-10' 
           : 'border border-slate-200 dark:border-slate-700'

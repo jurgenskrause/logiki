@@ -695,20 +695,16 @@ export const GamePage: React.FC = () => {
             1. NO ANIMATION ON START (Must NOT use transition-all or scale here to avoid 'pop-in' or sluggishness)
             2. Fully hidden (opacity-0) until user clicks 'Start' to ensure a smooth, empty initial load.
         */}
-        <main className={`w-full h-full grid grid-cols-1 grid-rows-[minmax(0,1fr)_auto_auto] md:grid-cols-[minmax(0,1fr)_auto] md:grid-rows-[minmax(0,1fr)_auto] overflow-hidden ${
+        <main className={`w-full h-full flex flex-col md:grid md:grid-cols-[minmax(0,1fr)_auto] md:grid-rows-[minmax(0,1fr)_auto] overflow-hidden ${
           !isGameStarted ? 'blur-[12px] opacity-0 pointer-events-none' : 'blur-0 opacity-100'
         }`}>
 
         {/* Row 1 (Mobile) / Col 1 Row 1 (Desktop): Board */}
         <div 
-          className="col-start-1 row-start-1 min-h-0 min-w-0 flex items-center justify-center p-0 md:p-4 mb-2 md:mb-0 relative overflow-hidden w-full md:w-auto" 
-          style={{ 
-            containerType: 'size',
-            aspectRatio: isDesktop ? 'auto' : String(boardAspectRatio)
-          }}
+          className="flex-1 md:col-start-1 md:row-start-1 min-h-[0px] min-w-0 flex items-center justify-center p-0 md:p-4 mb-2 md:mb-0 relative overflow-hidden w-full md:w-auto" 
         >
           {puzzle && gameState && (
-            <div className="relative w-full h-full flex items-center justify-center">
+            <div className="relative flex items-center justify-center max-w-full max-h-full" style={{ aspectRatio: isDesktop ? 'auto' : String(boardAspectRatio), height: isDesktop ? '100%' : 'auto', width: '100%', containerType: 'size' }}>
               <GameBoard
                 key={gameKey}
                 rows={puzzle.rows}
@@ -727,7 +723,7 @@ export const GamePage: React.FC = () => {
         </div>
 
         {/* Row 2 (Mobile Only): Swappable Drawer Tabs */}
-        <div className="col-start-1 row-start-2 md:hidden flex items-center justify-between px-4 py-2 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 shadow-sm z-20 shrink-0 gap-2">
+        <div className="shrink-0 md:col-start-1 md:row-start-2 md:hidden flex items-center justify-between px-4 py-2 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 shadow-sm z-20 gap-2">
           
           <button
             onClick={() => setShowBin(!showBin)}
@@ -776,10 +772,10 @@ export const GamePage: React.FC = () => {
         </div>
 
         {/* Row 3 (Mobile) / Col 2 Row 1-span-2 (Desktop): Horizontal Clues */}
-        <div className={`col-start-1 row-start-3 md:col-start-2 md:row-start-1 md:row-span-2 md:min-h-0 md:h-full bg-slate-100 dark:bg-slate-900 border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800 shrink-0 shadow-inner w-full md:w-auto flex flex-col ${
-          activeMobileTab === 'horizontal' ? 'z-10 relative visible pointer-events-auto' : 'z-0 invisible pointer-events-none md:visible md:flex md:pointer-events-auto md:relative md:z-10'
+        <div className={`flex-none md:flex-1 md:col-start-2 md:row-start-1 md:row-span-2 md:min-h-0 md:h-full bg-slate-100 dark:bg-slate-900 border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800 shrink-0 shadow-inner w-full md:w-auto flex flex-col ${
+          activeMobileTab === 'horizontal' ? 'z-10 relative visible pointer-events-auto md:h-auto' : 'z-0 invisible pointer-events-none h-0 md:visible md:flex md:pointer-events-auto md:relative md:z-10 md:h-auto'
         }`}>
-          <div className="flex-1 overflow-visible md:overflow-x-auto md:overflow-y-hidden relative custom-scrollbar">
+          <div className="flex-1 overflow-hidden relative md:overflow-x-auto md:overflow-y-hidden">
             {showBin && (
                 <div className="absolute top-2 left-2 z-20 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-[10px] font-black uppercase tracking-tighter text-amber-600 dark:text-amber-400 pointer-events-none">
                   Binned
@@ -802,12 +798,12 @@ export const GamePage: React.FC = () => {
         </div>
 
         {/* Row 3 (Mobile) / Col 1 Row 2 (Desktop): Vertical Clues */}
-        <div className={`col-start-1 row-start-3 md:col-start-1 md:row-start-2 md:min-h-0 md:max-h-[45vh] bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0 shadow-inner w-full flex flex-col ${
-          activeMobileTab === 'vertical' ? 'z-10 relative visible pointer-events-auto' : 'z-0 invisible pointer-events-none md:visible md:flex md:pointer-events-auto md:relative md:z-10'
+        <div className={`flex-none md:flex-1 md:col-start-1 md:row-start-2 md:min-h-0 md:h-full bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0 shadow-inner w-full flex flex-col ${
+          activeMobileTab === 'vertical' ? 'z-10 relative visible pointer-events-auto md:h-auto' : 'z-0 invisible pointer-events-none h-0 md:visible md:flex md:pointer-events-auto md:relative md:z-10 md:h-auto'
         }`}>
-          <div className="flex-1 overflow-visible md:overflow-y-auto md:overflow-x-hidden relative custom-scrollbar">
+          <div className="flex-1 overflow-hidden relative md:overflow-y-auto md:overflow-x-hidden md:custom-scrollbar">
             {showBin && (
-              <div className="absolute top-2 left-2 z-20 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-[10px] font-black uppercase tracking-tighter text-amber-600 dark:text-amber-400 pointer-events-none">
+              <div className="absolute top-2 left-2 z-20 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-[10px] font-black uppercase tracking-tighter text-amber-600 dark:text-amber-400 pointer-events-none hidden md:block">
                 Binned Clues
               </div>
             )}

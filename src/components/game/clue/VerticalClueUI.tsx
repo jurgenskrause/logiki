@@ -18,30 +18,30 @@ export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue, onHover, isH
   const icons = params.map(p => getFallbackEmoji(p.row, p.item));
 
   const renderContent = () => {
-    const iconClass = "text-base md:text-xl drop-shadow-sm leading-none flex items-center justify-center";
+    const iconClass = "text-2xl md:text-3xl drop-shadow-sm leading-none flex items-center justify-center";
     
     switch (type) {
       case 'VERTICAL':
       case 'VERTICAL_PAIR':
         return (
-          <div className="flex flex-col items-center justify-around w-full h-full py-1">
+          <div className="flex flex-col items-center justify-around w-full h-full py-2">
             <span className={iconClass}>{icons[0]}</span>
-            <span className="material-icons text-slate-400 dark:text-slate-300 transform scale-50 md:scale-75 leading-none">link</span>
+            <span className="material-icons text-slate-400 dark:text-slate-300 text-xl md:text-2xl leading-none">link</span>
             <span className={iconClass}>{icons[1]}</span>
           </div>
         );
       case 'VERTICAL_NOT':
       case 'VERTICAL_NOT_PAIR':
         return (
-          <div className="flex flex-col items-center justify-around w-full h-full py-1">
+          <div className="flex flex-col items-center justify-around w-full h-full py-2">
             <span className={iconClass}>{icons[0]}</span>
-            <span className="material-icons text-red-500 transform scale-50 md:scale-75 leading-none">link_off</span>
+            <span className="material-icons text-red-500 text-xl md:text-2xl leading-none">link_off</span>
             <span className={iconClass}>{icons[1]}</span>
           </div>
         );
       case 'VERTICAL_TRIO':
         return (
-          <div className="flex flex-col items-center justify-around w-full h-full py-1">
+          <div className="flex flex-col items-center justify-around w-full h-full py-2">
             <span className={iconClass}>{icons[0]}</span>
             <span className={iconClass}>{icons[1]}</span>
             <span className={iconClass}>{icons[2]}</span>
@@ -49,11 +49,11 @@ export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue, onHover, isH
         );
       case 'VERTICAL_NOT_TRIO':
         return (
-          <div className="flex flex-col items-center justify-around w-full h-full py-1">
+          <div className="flex flex-col items-center justify-around w-full h-full py-2">
             <span className={iconClass}>{icons[0]}</span>
             <div className="relative flex items-center justify-center">
                <span className={iconClass}>{icons[2]}</span>
-               <span className="material-icons absolute text-red-500 text-lg md:text-2xl font-bold opacity-100">close</span>
+               <span className="material-icons absolute text-red-500 text-3xl md:text-4xl font-bold opacity-100">close</span>
             </div>
             <span className={iconClass}>{icons[1]}</span>
           </div>
@@ -61,13 +61,13 @@ export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue, onHover, isH
       case 'DISJUNCTIVE_XOR':
       case 'VERTICAL_DISJUNCTIVE_EXCLUSION':
         return (
-          <div className="flex flex-col items-center justify-around w-full h-full py-1">
+          <div className="flex flex-col items-center justify-around w-full h-full py-2">
             <span className={iconClass}>{icons[0]}</span>
             
-            <div className="relative flex flex-col items-center justify-center gap-1.5 md:gap-3">
+            <div className="relative flex flex-col items-center justify-center gap-2 md:gap-4">
                <span className={iconClass}>{icons[1]}</span>
                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-                  <span className="material-icons text-blue-500 text-[8px] md:text-[10px] transform scale-50 bg-white/90 dark:bg-slate-900/90 rounded-full p-0.5 shadow-xs border border-slate-200 dark:border-slate-700">sync</span>
+                  <span className="material-icons text-blue-500 text-[10px] md:text-[14px] bg-white/90 dark:bg-slate-900/90 rounded-full p-0.5 shadow-xs border border-slate-200 dark:border-slate-700">sync</span>
                </div>
                <span className={iconClass}>{icons[2]}</span>
             </div>
@@ -76,7 +76,7 @@ export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue, onHover, isH
       default:
         return (
           <div className="flex flex-col items-center gap-1 justify-center w-full h-full opacity-50">
-            {icons.map((ic, i) => <span key={i} className="text-xs md:text-sm">{ic}</span>)}
+            {icons.map((ic, i) => <span key={i} className="text-xl md:text-2xl">{ic}</span>)}
           </div>
         );
     }
@@ -157,7 +157,7 @@ export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue, onHover, isH
 
   return (
     <div 
-      className={`w-12 h-20 md:w-16 md:h-28 bg-white dark:bg-slate-800 rounded-lg shadow-md hover:border-indigo-500 group flex items-center justify-center shrink-0 select-none touch-none ${
+      className={`w-[72px] h-[120px] md:w-24 md:h-[168px] bg-white dark:bg-slate-800 rounded-lg shadow-md hover:border-indigo-500 group flex items-center justify-center shrink-0 select-none touch-none ${
         isHighlighted
           ? 'animate-hard-flash z-10'
           : 'border-2 border-slate-200 dark:border-slate-700'
