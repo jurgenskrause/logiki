@@ -102,25 +102,34 @@ export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue, onHover, isH
     if (e.button === 2) return;
 
     const now = Date.now();
+    
+    // Check for Double Tap (within 300ms of last pointer down)
     if (now - lastTapRef.current < 300) {
-      if (timerRef.current) clearTimeout(timerRef.current);
-      timerRef.current = null;
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
       lastTapRef.current = 0;
       onDoubleTap?.(clue);
       return;
     }
     lastTapRef.current = now;
 
-    if (e.pointerType !== 'mouse') {
-      isTouchRef.current = true;
-    } else {
-      isTouchRef.current = false;
-    }
-    // Ignore right mouse button to prevent starting timer when context menu handles it
-    if (e.button === 2) return;
-
+    isTouchRef.current = e.pointerType !== 'mouse';
     hasDraggedRef.current = false;
     initialPosRef.current = { x: e.clientX, y: e.clientY };
+
+    // START Long Press timer - discard instantly when period elapses
+    timerRef.current = setTimeout(() => {
+       if (!hasDraggedRef.current) {
+         onDiscard?.(clue.id);
+         // Visual/Tactile feedback
+         if (isTouchRef.current && 'vibrate' in navigator) {
+           navigator.vibrate(10);
+         }
+       }
+       timerRef.current = null;
+    }, 600);
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
@@ -129,23 +138,21 @@ export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue, onHover, isH
       const dy = e.clientY - initialPosRef.current.y;
       if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
         hasDraggedRef.current = true;
+        if (timerRef.current) {
+          clearTimeout(timerRef.current);
+          timerRef.current = null;
+        }
       }
     }
   };
 
   const handlePointerUp = () => {
-    if (hasDraggedRef.current) {
-      hasDraggedRef.current = false;
-      initialPosRef.current = null;
-      return;
-    }
-
-    if (initialPosRef.current) {
-      timerRef.current = setTimeout(() => {
-        onDiscard?.(clue.id);
-      }, 300);
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
     }
     initialPosRef.current = null;
+    hasDraggedRef.current = false;
   };
 
   return (
