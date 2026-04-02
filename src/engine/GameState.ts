@@ -344,6 +344,8 @@ export class GameState {
     const index = this._getIndex(row, col);
     this._confirmed[index] = 0;
     this._noAutoSolve[index] = 0;
+    // Restore to all possible
+    this._grid[index] = (1 << this._cols) - 1;
     return this._grid[index];
   }
 }
