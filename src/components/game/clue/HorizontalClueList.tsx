@@ -148,7 +148,7 @@ export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, o
           strategy={rectSortingStrategy}
         >
           <div 
-            className={`w-full h-full overflow-hidden ${isDesktop ? 'grid gap-3' : 'grid grid-cols-4 gap-1 content-start'}`}
+            className={`w-full h-full ${isDesktop ? 'grid gap-3 overflow-hidden' : 'flex flex-wrap gap-2 justify-center content-start'}`}
             style={isDesktop ? {
               gridTemplateRows: `repeat(${maxCluesPerColumn}, minmax(0, 1fr))`,
               gridTemplateColumns: `repeat(${actualCols}, minmax(0, 1fr))`,

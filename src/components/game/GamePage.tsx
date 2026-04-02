@@ -674,7 +674,7 @@ export const GamePage: React.FC = () => {
             1. NO ANIMATION ON START (Must NOT use transition-all or scale here to avoid 'pop-in' or sluggishness)
             2. Fully hidden (opacity-0) until user clicks 'Start' to ensure a smooth, empty initial load.
         */}
-        <main className={`w-full h-full grid grid-cols-1 grid-rows-[auto_auto_minmax(0,1fr)] md:grid-cols-[minmax(0,1fr)_auto] md:grid-rows-[minmax(0,1fr)_auto] overflow-hidden ${
+        <main className={`w-full h-full grid grid-cols-1 grid-rows-[minmax(0,1fr)_auto_auto] md:grid-cols-[minmax(0,1fr)_auto] md:grid-rows-[minmax(0,1fr)_auto] overflow-hidden ${
           !isGameStarted ? 'blur-[12px] opacity-0 pointer-events-none' : 'blur-0 opacity-100'
         }`}>
 
@@ -755,10 +755,10 @@ export const GamePage: React.FC = () => {
         </div>
 
         {/* Row 3 (Mobile) / Col 2 Row 1-span-2 (Desktop): Horizontal Clues */}
-        <div className={`col-start-1 row-start-3 md:col-start-2 md:row-start-1 md:row-span-2 min-h-0 md:h-full bg-slate-100 dark:bg-slate-900 border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800 shrink-0 shadow-inner z-10 w-full md:w-auto ${
-          activeMobileTab === 'horizontal' ? 'flex flex-col' : 'hidden md:flex md:flex-col'
+        <div className={`col-start-1 row-start-3 md:col-start-2 md:row-start-1 md:row-span-2 md:min-h-0 md:h-full bg-slate-100 dark:bg-slate-900 border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800 shrink-0 shadow-inner w-full md:w-auto flex flex-col ${
+          activeMobileTab === 'horizontal' ? 'z-10 relative visible pointer-events-auto' : 'z-0 invisible pointer-events-none md:visible md:flex md:pointer-events-auto md:relative md:z-10'
         }`}>
-          <div className="flex-1 overflow-y-auto overflow-x-hidden md:overflow-x-auto md:overflow-y-hidden relative custom-scrollbar">
+          <div className="flex-1 overflow-visible md:overflow-x-auto md:overflow-y-hidden relative custom-scrollbar">
             {showBin && (
                 <div className="absolute top-2 left-2 z-20 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-[10px] font-black uppercase tracking-tighter text-amber-600 dark:text-amber-400 pointer-events-none">
                   Binned
@@ -781,10 +781,10 @@ export const GamePage: React.FC = () => {
         </div>
 
         {/* Row 3 (Mobile) / Col 1 Row 2 (Desktop): Vertical Clues */}
-        <div className={`col-start-1 row-start-3 md:col-start-1 md:row-start-2 min-h-0 md:max-h-[45vh] bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0 shadow-inner z-10 w-full ${
-          activeMobileTab === 'vertical' ? 'flex flex-col' : 'hidden md:flex md:flex-col'
+        <div className={`col-start-1 row-start-3 md:col-start-1 md:row-start-2 md:min-h-0 md:max-h-[45vh] bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0 shadow-inner w-full flex flex-col ${
+          activeMobileTab === 'vertical' ? 'z-10 relative visible pointer-events-auto' : 'z-0 invisible pointer-events-none md:visible md:flex md:pointer-events-auto md:relative md:z-10'
         }`}>
-          <div className="flex-1 overflow-y-auto overflow-x-hidden relative custom-scrollbar">
+          <div className="flex-1 overflow-visible md:overflow-y-auto md:overflow-x-hidden relative custom-scrollbar">
             {showBin && (
               <div className="absolute top-2 left-2 z-20 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-[10px] font-black uppercase tracking-tighter text-amber-600 dark:text-amber-400 pointer-events-none">
                 Binned Clues
