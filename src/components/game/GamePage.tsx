@@ -449,7 +449,9 @@ export const GamePage: React.FC = () => {
               </button>
             </div>
             <p className="text-slate-700 dark:text-slate-200 mb-8 text-xl sm:text-2xl font-bold leading-relaxed text-center py-6 px-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-700/50 shadow-inner">
-              {describeRule(explainedClue)}
+              {describeRule(explainedClue).split('<nl>').map((line, i) => (
+                <span key={i} className="block">{line.trim()}</span>
+              ))}
             </p>
             <div className="flex justify-end">
               <button onClick={() => setExplainedClue(null)} className="px-5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-lg text-slate-800 dark:text-slate-200 font-bold transition-colors">
@@ -472,13 +474,7 @@ export const GamePage: React.FC = () => {
 
         {/* IMMERSIVE LEFT-ALIGNED TEXT AREA (Mobile) */}
         <div className="flex-1 min-w-0 h-full flex items-center justify-start z-50 pointer-events-none select-none" style={{ containerType: 'inline-size' }}>
-          {hoveredClueText ? (
-            <p className="font-bold text-slate-800 dark:text-slate-100 leading-tight line-clamp-2 pr-2 bg-slate-50/95 dark:bg-slate-900/95 rounded shadow-[5px_0_10px_rgba(248,250,252,0.95)] dark:shadow-[5px_0_10px_rgba(15,23,42,0.95)] animate-in fade-in duration-150 pointer-events-auto" style={{ fontSize: 'clamp(10px, 4.5cqw, 14px)' }}>
-              {hoveredClueText.split('<nl>').map((line, i) => (
-                <span key={i} className="block">{line.trim()}</span>
-              ))}
-            </p>
-          ) : hintShowing && activeHint ? (
+          {hintShowing && activeHint ? (
             <p className="font-bold text-slate-800 dark:text-slate-100 leading-tight line-clamp-2 pr-2 bg-slate-50/95 dark:bg-slate-900/95 rounded shadow-[5px_0_10px_rgba(248,250,252,0.95)] dark:shadow-[5px_0_10px_rgba(15,23,42,0.95)] animate-in fade-in duration-200 pointer-events-auto" style={{ fontSize: 'clamp(10px, 4.5cqw, 14px)' }}>
               {activeHint.text.split('<nl>').map((line, i) => (
                 <span key={i} className="block">{line.trim()}</span>
