@@ -40,7 +40,7 @@ export function describeDeduction(clue: ActiveClue, action: HintAction): string 
 
     case 'VERTICAL_NOT_TRIO': {
       const [a, b, c] = p.map(x => icon(x.row, x.item));
-      return `${a} and ${b} share a column, but ${c} is excluded. <nl> Therefore, ${targetIcon} ${resultText}`;
+      return `${a} and ${b} are in the same column, but ${c} is not in that column. <nl> Therefore, ${targetIcon} ${resultText}`;
     }
 
     case 'ADJACENT': {
@@ -108,7 +108,7 @@ export function describeRule(clue: ActiveClue): string {
     }
     case 'VERTICAL_NOT_TRIO': {
       const [a, b, c] = p.map(x => icon(x.row, x.item));
-      return `${a} and ${b} share a column, but ${c} is excluded.`;
+      return `${a} and ${b} are in the same column, but ${c} is not in that column.`;
     }
     case 'ADJACENT': {
       const [a, b] = [icon(p[0].row, p[0].item), icon(p[1].row, p[1].item)];

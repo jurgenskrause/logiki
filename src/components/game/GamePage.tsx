@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { DifficultyMenu } from './DifficultyMenu';
 import { SideMenu } from './SideMenu';
+import { HelpModal } from './HelpModal';
 import { GameBoard } from './GameBoard';
 import { ManifestLoader, type PuzzleManifest } from '../../engine/ManifestLoader';
 import { GameState } from '../../engine/GameState';
@@ -86,6 +87,7 @@ export const GamePage: React.FC = () => {
   // Clue Bin state
   const [binnedClueIds, setBinnedClueIds] = useState<Set<string>>(new Set());
   const [showBin, setShowBin] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   // Mobile Drawer Tab Navigation
   const [activeMobileTab, setActiveMobileTab] = useState<'horizontal' | 'vertical'>('horizontal');
@@ -416,6 +418,10 @@ export const GamePage: React.FC = () => {
         <SideMenu
           onClose={() => setIsSideMenuOpen(false)}
           onOpenDifficulty={() => setIsMenuOpen(true)}
+          onOpenHelp={() => {
+            setIsSideMenuOpen(false);
+            setIsHelpOpen(true);
+          }}
           warningsEnabled={warningsEnabled}
           onToggleWarnings={setWarningsEnabled}
           zoomEnabled={zoomEnabled}
@@ -423,6 +429,11 @@ export const GamePage: React.FC = () => {
           isDarkMode={isDarkMode}
           onToggleDarkMode={() => setIsDarkMode(prev => !prev)}
         />
+      )}
+
+      {/* Help Modal */}
+      {isHelpOpen && (
+        <HelpModal onClose={() => setIsHelpOpen(false)} />
       )}
 
       {/* Clue Explanation Modal */}
@@ -563,8 +574,14 @@ export const GamePage: React.FC = () => {
             {selectedDifficulty > 0 ? `Level ${selectedDifficulty}` : 'Daily'}
           </button>
           <button onClick={() => setIsDarkMode(!isDarkMode)}
-            className="p-2.5 rounded-xl bg-slate-200/80 dark:bg-slate-800/80 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors shadow-sm flex items-center justify-center">
+            className="p-2.5 rounded-xl bg-slate-200/80 dark:bg-slate-800/80 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors shadow-sm flex items-center justify-center"
+            title="Toggle Theme">
             <span className="material-icons text-sm">{isDarkMode ? 'light_mode' : 'dark_mode'}</span>
+          </button>
+          <button onClick={() => setIsHelpOpen(true)}
+            className="p-2.5 rounded-xl bg-slate-200/80 dark:bg-slate-800/80 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors shadow-sm flex items-center justify-center"
+            title="How to Play">
+            <span className="material-icons text-sm">help_outline</span>
           </button>
         </div>
 

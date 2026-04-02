@@ -3,6 +3,7 @@ import React from 'react';
 interface SideMenuProps {
   onClose: () => void;
   onOpenDifficulty: () => void;
+  onOpenHelp: () => void;
   warningsEnabled: boolean;
   onToggleWarnings: (enabled: boolean) => void;
   zoomEnabled: boolean;
@@ -14,6 +15,7 @@ interface SideMenuProps {
 export const SideMenu: React.FC<SideMenuProps> = ({ 
   onClose, 
   onOpenDifficulty, 
+  onOpenHelp,
   warningsEnabled, 
   onToggleWarnings,
   zoomEnabled,
@@ -58,6 +60,22 @@ export const SideMenu: React.FC<SideMenuProps> = ({
             <div>
               <div className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Change Difficulty</div>
               <div className="text-xs font-medium text-slate-500">Select grid size</div>
+            </div>
+          </button>
+
+          <button 
+            onClick={() => {
+              onClose();
+              onOpenHelp();
+            }}
+            className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left group"
+          >
+            <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-500">
+              <span className="material-icons">help_outline</span>
+            </div>
+            <div>
+              <div className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">How to Play</div>
+              <div className="text-xs font-medium text-slate-500">Game rules and controls</div>
             </div>
           </button>
 
