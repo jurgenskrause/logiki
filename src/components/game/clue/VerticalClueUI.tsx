@@ -26,7 +26,7 @@ export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue, onHover, isH
         return (
           <div className="flex flex-col items-center justify-around w-full h-full py-1">
             <span className={iconClass}>{icons[0]}</span>
-            <span className="material-icons text-slate-300 transform scale-50 md:scale-75 leading-none">link</span>
+            <span className="material-icons text-slate-400 dark:text-slate-300 transform scale-50 md:scale-75 leading-none">link</span>
             <span className={iconClass}>{icons[1]}</span>
           </div>
         );
@@ -53,7 +53,7 @@ export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue, onHover, isH
             <span className={iconClass}>{icons[0]}</span>
             <div className="relative flex items-center justify-center">
                <span className={iconClass}>{icons[2]}</span>
-               <span className="material-icons absolute text-red-500 text-lg md:text-2xl font-bold opacity-80">close</span>
+               <span className="material-icons absolute text-red-500 text-lg md:text-2xl font-bold opacity-100">close</span>
             </div>
             <span className={iconClass}>{icons[1]}</span>
           </div>
@@ -157,10 +157,10 @@ export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue, onHover, isH
 
   return (
     <div 
-      className={`w-12 h-20 md:w-16 md:h-28 bg-slate-800 dark:bg-slate-950 rounded-lg shadow-md hover:border-indigo-500 group flex items-center justify-center shrink-0 select-none touch-none ${
+      className={`w-12 h-20 md:w-16 md:h-28 bg-white dark:bg-slate-800 rounded-lg shadow-md hover:border-indigo-500 group flex items-center justify-center shrink-0 select-none touch-none ${
         isHighlighted
           ? 'animate-hard-flash z-10'
-          : 'border-2 border-slate-700 dark:border-slate-800'
+          : 'border-2 border-slate-200 dark:border-slate-700'
       } ${isBinned ? 'ring-2 ring-white/10 ring-inset scale-[0.98]' : ''}`}
       onMouseEnter={() => !isBinned && onHover && onHover(clue)}
       onMouseLeave={() => {
@@ -176,7 +176,7 @@ export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue, onHover, isH
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
     >
-      <div className="text-white w-full h-full pointer-events-none">
+      <div className="text-slate-700 dark:text-slate-200 w-full h-full pointer-events-none">
          {renderContent()}
       </div>
     </div>

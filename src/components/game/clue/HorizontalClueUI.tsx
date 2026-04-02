@@ -33,7 +33,7 @@ export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover,
             <span className="text-base md:text-lg drop-shadow-sm opacity-50 grayscale scale-[0.8] md:scale-90">{icons[1]}</span>
             <div className="flex flex-col items-center">
                <span className="text-lg md:text-xl drop-shadow-sm z-10">{icons[0]}</span>
-               <span className="material-icons text-slate-300 text-[10px] md:text-xs transform -my-1">swap_horiz</span>
+               <span className="material-icons text-slate-400 dark:text-slate-300 text-[10px] md:text-xs transform -my-1">swap_horiz</span>
             </div>
             <span className="text-base md:text-lg drop-shadow-sm opacity-50 grayscale scale-[0.8] md:scale-90">{icons[1]}</span>
           </div>
@@ -42,9 +42,9 @@ export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover,
         return (
           <div className="flex items-center justify-between w-full h-full px-0 md:px-2">
             <span className="text-lg md:text-xl drop-shadow-sm">{icons[0]}</span>
-            <span className="material-icons text-slate-300 transform scale-[0.35] md:scale-50 -mx-2 md:-mx-1">swap_horiz</span>
+            <span className="material-icons text-slate-400 dark:text-slate-300 transform scale-[0.35] md:scale-50 -mx-2 md:-mx-1">swap_horiz</span>
             <span className="text-lg md:text-xl drop-shadow-sm">{icons[1]}</span>
-            <span className="material-icons text-slate-300 transform scale-[0.35] md:scale-50 -mx-2 md:-mx-1">swap_horiz</span>
+            <span className="material-icons text-slate-400 dark:text-slate-300 transform scale-[0.35] md:scale-50 -mx-2 md:-mx-1">swap_horiz</span>
             <span className="text-lg md:text-xl drop-shadow-sm">{icons[2]}</span>
           </div>
         );
@@ -54,8 +54,8 @@ export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover,
           <div className="flex items-center justify-between w-full h-full px-1 md:px-2">
             <span className="text-lg md:text-xl drop-shadow-sm">{icons[0]}</span>
             <div className="relative mx-1 md:mx-1 flex items-center justify-center">
-               <span className="text-lg md:text-xl blur-[1px] opacity-30 grayscale">{icons[2]}</span>
-               <span className="material-icons absolute text-red-500 text-lg md:text-xl font-bold opacity-80">close</span>
+               <span className="text-lg md:text-xl">{icons[2]}</span>
+               <span className="material-icons absolute text-red-500 text-xl md:text-2xl font-bold opacity-100">close</span>
             </div>
             <span className="text-lg md:text-xl drop-shadow-sm">{icons[1]}</span>
           </div>
@@ -144,10 +144,10 @@ export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover,
 
   return (
     <div 
-      className={`w-full h-11 md:w-32 md:h-14 bg-slate-800 dark:bg-slate-950 rounded-lg shadow-md hover:border-blue-400 group flex items-center justify-center shrink-0 select-none touch-none ${
+      className={`w-full h-11 md:w-32 md:h-14 bg-white dark:bg-slate-800 rounded-lg shadow-md hover:border-blue-400 group flex items-center justify-center shrink-0 select-none touch-none ${
         isHighlighted 
           ? 'animate-hard-flash z-10' 
-          : 'border border-slate-700 dark:border-slate-800'
+          : 'border border-slate-200 dark:border-slate-700'
       } ${isBinned ? 'ring-2 ring-white/10 ring-inset scale-[0.98]' : ''}`}
       onMouseEnter={() => !isBinned && onHover?.(clue)}
       onMouseLeave={() => {
@@ -163,7 +163,7 @@ export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover,
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
     >
-      <div className="text-white w-full h-full pointer-events-none">
+      <div className="text-slate-700 dark:text-slate-200 w-full h-full pointer-events-none">
          {renderContent()}
       </div>
     </div>
