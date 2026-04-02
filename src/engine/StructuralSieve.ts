@@ -104,6 +104,26 @@ export class StructuralSieve {
     const maxEntropy = canvas.countTotalBits();
 
     // ----------------------------------------------------------------------
+    // Phase 0: Pre-seed Anchor Clues
+    // ----------------------------------------------------------------------
+    const maxAnchors = Math.floor((N * M) / 16);
+    const numAnchors = Math.floor(rng() * (maxAnchors + 1));
+    for (let i = 0; i < numAnchors; i++) {
+      const anchor = this.findSymmetryBreaker(canvas, solution);
+      if (anchor) {
+        activeClues.push(anchor);
+        activeList.push(this.toActiveClue(anchor, solution));
+        this.totalSolves++;
+        const result = this.logicSolver.solve(activeList, canvas);
+        if (result === 'CONTRADICTION') {
+          throw new ContradictionError(anchor, canvas.getInvalidCells());
+        }
+        canvas.rowSweep();
+        await yieldState(canvas, `⚓ Pre-seeded Anchor (${i + 1}/${numAnchors}).`, anchor);
+      }
+    }
+
+    // ----------------------------------------------------------------------
     // Phase 1: Progressive Clue Commitment
     // ----------------------------------------------------------------------
     let iterationsWithoutCommit = 0;
@@ -296,7 +316,7 @@ export class StructuralSieve {
         row: s.r,
         item: solution.getItemIndexAtSlot(s)
       })),
-      targetCol: entry.type.includes('ANCHOR') ? parseInt(entry.topologyID.split('C')[1]) : undefined
+      targetCol: entry.type.includes('ANCHOR') ? entry.slots[0].c : undefined
     };
   }
 }

@@ -9,6 +9,20 @@ import { VerticalClueList } from './clue/VerticalClueList';
 import { analyzeState, applyHint, type HintResult } from '../../engine/HintService';
 import { describeRule } from '../../engine/ClueDescriber';
 import type { ActiveClue } from '../../engine/Solver';
+import { buildTopologyLibrary } from '../../engine/PermutationGenerator';
+import { TieringService } from '../../engine/TieringService';
+import { StructuralSieve } from '../../engine/StructuralSieve';
+
+function seedRNG(seed: string) {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) {
+    h = Math.imul(31, h) + seed.charCodeAt(i) | 0;
+  }
+  return () => {
+    h = Math.imul(48271, h) | 0;
+    return (h >>> 0) / 4294967296; 
+  };
+}
 
 function useMediaQuery(query: string) {
   const [matches, setMatches] = useState(false);
@@ -173,17 +187,56 @@ export const GamePage: React.FC = () => {
     // We keep track of individual puzzle loads
     const t = setTimeout(async () => {
       setIsLoading(true);
-      const dateStr = '2026-03-30';
       const difficulty = selectedDifficulty === 0 ? 1 : selectedDifficulty;
 
+      const urlParams = new URLSearchParams(window.location.search);
+      const isRandom = urlParams.get('random') === 'true';
+      const seedParam = urlParams.get('seed') || Math.random().toString(36).substring(2, 9);
+
       try {
-        const data = await loader.getPuzzle(dateStr, difficulty);
-        if (data) {
+        if (isRandom) {
+          const gridSize = difficulty + 3;
+          const rng = seedRNG(seedParam);
+          const sieve = new StructuralSieve();
+          
+          const topoReport = buildTopologyLibrary(gridSize, gridSize, false);
+          const tiering = new TieringService(topoReport.library);
+          tiering.shuffle(rng);
+          
+          const telemetry = await sieve.generateAsync(
+            tiering, 
+            gridSize, 
+            gridSize, 
+            async () => {}, // Sync UI progress hook omitted for performance
+            rng
+          );
+
+          // Build a matching hash payload so GameState Win conditions can pass
+          const solGrid = (telemetry.solution as any).getRawSolution(gridSize, gridSize);
+          const hashBuffer = await window.crypto.subtle.digest('SHA-256', solGrid);
+          const integrityHash = new Uint8Array(hashBuffer);
+
+          const puzzleData: PuzzleManifest = {
+            rows: gridSize,
+            cols: gridSize,
+            difficulty: difficulty,
+            clues: telemetry.clues.map(c => sieve.toActiveClue(c, telemetry.solution as any)),
+            integrityHash
+          };
+
           setActiveHint(null);
           setHintShowing(false);
-          setPuzzle(data);
+          setPuzzle(puzzleData);
         } else {
-          setLoadError('Puzzle not found.');
+          const dateStr = '2026-03-30';
+          const data = await loader.getPuzzle(dateStr, difficulty);
+          if (data) {
+            setActiveHint(null);
+            setHintShowing(false);
+            setPuzzle(data);
+          } else {
+            setLoadError('Puzzle not found.');
+          }
         }
       } catch (err) {
         setLoadError('Error fetching puzzle.');
