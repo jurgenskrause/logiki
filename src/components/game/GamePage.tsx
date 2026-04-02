@@ -573,8 +573,12 @@ export const GamePage: React.FC = () => {
 
 
 
-      {/* Main */}
-      <main className="flex-1 grid grid-cols-1 grid-rows-[auto_auto_minmax(0,1fr)] md:grid-cols-[minmax(0,1fr)_auto] md:grid-rows-[minmax(0,1fr)_auto] overflow-hidden">
+      {/* Main Game Area Wrapper */}
+      <div className="flex-1 relative overflow-hidden">
+        {/* The Game Grid - Unified Blur/Opacity Applied Here */}
+        <main className={`w-full h-full grid grid-cols-1 grid-rows-[auto_auto_minmax(0,1fr)] md:grid-cols-[minmax(0,1fr)_auto] md:grid-rows-[minmax(0,1fr)_auto] overflow-hidden transition-all duration-700 ${
+          !isGameStarted ? 'blur-[12px] opacity-50 scale-[0.97] pointer-events-none' : 'blur-0 opacity-100 scale-100'
+        }`}>
 
         {/* Row 1 (Mobile) / Col 1 Row 1 (Desktop): Board */}
         <div 
@@ -586,33 +590,19 @@ export const GamePage: React.FC = () => {
         >
           {puzzle && gameState && (
             <div className="relative w-full h-full flex items-center justify-center">
-              <div className={`w-full h-full flex items-center justify-center ${!isGameStarted ? 'blur-[8px] opacity-60 scale-[0.98] pointer-events-none' : ''}`}>
-                <GameBoard
-                  key={gameKey}
-                  rows={puzzle.rows}
-                  cols={puzzle.cols}
-                  subColumns={subColumns}
-                  clues={puzzle.clues}
-                  gameState={gameState}
-                  onStateChange={handleStateChange}
-                  hintHighlights={hintHighlights}
-                  isLocked={isCascading}
-                  flashRed={flashRed}
-                  zoomEnabled={zoomEnabled}
-                />
-              </div>
-
-              {!isGameStarted && (
-                <div className="absolute inset-0 z-50 flex items-center justify-center animate-in zoom-in-95 duration-500">
-                  <button 
-                    onClick={() => setIsGameStarted(true)}
-                    className="px-8 py-4 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white rounded-2xl font-black text-2xl uppercase tracking-widest shadow-2xl hover:shadow-indigo-500/50 transition-all transform hover:scale-110 active:scale-95 border border-white/20 flex flex-col items-center"
-                  >
-                    <span>Start Puzzle</span>
-                    <span className="text-[10px] font-bold text-blue-200 mt-1 uppercase tracking-widest">Level {selectedDifficulty} // {puzzle.rows}x{puzzle.cols}</span>
-                  </button>
-                </div>
-              )}
+              <GameBoard
+                key={gameKey}
+                rows={puzzle.rows}
+                cols={puzzle.cols}
+                subColumns={subColumns}
+                clues={puzzle.clues}
+                gameState={gameState}
+                onStateChange={handleStateChange}
+                hintHighlights={hintHighlights}
+                isLocked={isCascading}
+                flashRed={flashRed}
+                zoomEnabled={zoomEnabled}
+              />
             </div>
           )}
         </div>
@@ -670,7 +660,7 @@ export const GamePage: React.FC = () => {
         <div className={`col-start-1 row-start-3 md:col-start-2 md:row-start-1 md:row-span-2 min-h-0 md:h-full bg-slate-100 dark:bg-slate-900 border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800 shrink-0 shadow-inner z-10 w-full md:w-auto ${
           activeMobileTab === 'horizontal' ? 'flex flex-col' : 'hidden md:flex md:flex-col'
         }`}>
-          <div className={`flex-1 overflow-y-auto overflow-x-hidden md:overflow-x-auto md:overflow-y-hidden relative custom-scrollbar ${!isGameStarted ? 'blur-[8px] opacity-60 pointer-events-none' : ''}`}>
+          <div className="flex-1 overflow-y-auto overflow-x-hidden md:overflow-x-auto md:overflow-y-hidden relative custom-scrollbar">
             {showBin && (
                 <div className="absolute top-2 left-2 z-20 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-[10px] font-black uppercase tracking-tighter text-amber-600 dark:text-amber-400 pointer-events-none">
                   Binned
@@ -696,7 +686,7 @@ export const GamePage: React.FC = () => {
         <div className={`col-start-1 row-start-3 md:col-start-1 md:row-start-2 min-h-0 md:max-h-[45vh] bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0 shadow-inner z-10 w-full ${
           activeMobileTab === 'vertical' ? 'flex flex-col' : 'hidden md:flex md:flex-col'
         }`}>
-          <div className={`flex-1 overflow-y-auto overflow-x-hidden relative custom-scrollbar ${!isGameStarted ? 'blur-[8px] opacity-60 pointer-events-none' : ''}`}>
+          <div className="flex-1 overflow-y-auto overflow-x-hidden relative custom-scrollbar">
             {showBin && (
               <div className="absolute top-2 left-2 z-20 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-[10px] font-black uppercase tracking-tighter text-amber-600 dark:text-amber-400 pointer-events-none">
                 Binned Clues
@@ -719,6 +709,31 @@ export const GamePage: React.FC = () => {
         </div>
 
       </main>
+
+        {/* Unified Start Puzzle Overlay - Stays Sharp above the blurred main grid */}
+        {!isGameStarted && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center p-4">
+             <div className="absolute inset-0 bg-slate-900/10 backdrop-blur-[2px] pointer-events-none" />
+             <div className="relative animate-form-enter">
+              <button 
+                onClick={() => setIsGameStarted(true)}
+                className="px-10 py-5 bg-gradient-to-br from-blue-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 text-white rounded-3xl font-black text-3xl uppercase tracking-widest shadow-[0_20px_50px_rgba(79,70,229,0.4)] hover:shadow-indigo-500/60 transition-all transform hover:scale-105 active:scale-95 border border-white/20 flex flex-col items-center group overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                <span className="relative z-10">Start Puzzle</span>
+                <span className="relative z-10 text-[11px] font-bold text-blue-100 mt-2 uppercase tracking-[0.2em] opacity-80">
+                  Level {selectedDifficulty} // {puzzle?.rows}x{puzzle?.cols}
+                </span>
+                <div className="mt-4 flex gap-1 items-center opacity-60 group-hover:opacity-100 transition-opacity">
+                   {[...Array(3)].map((_, i) => (
+                     <div key={i} className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" style={{ animationDelay: `${i * 0.15}s` }} />
+                   ))}
+                </div>
+              </button>
+             </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
