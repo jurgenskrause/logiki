@@ -91,8 +91,9 @@ export const GamePage: React.FC = () => {
         gs.confirmCell(row, clue.targetCol, item);
       }
     });
-    // @ts-ignore — clear history so anchors cannot be undone
-    gs._undoStack = [];
+    // Save the post-anchor state as the initial history entry
+    gs.pushHistory();
+    gs.saveGoodState();
     return gs;
   }, [puzzle]);
 
@@ -220,7 +221,9 @@ export const GamePage: React.FC = () => {
       cascadeTimerRef.current = setTimeout(runCascade, 250);
     } else {
       setIsCascading(false);
-      // Once cascade finishes, run a deep analysis for the next hint
+      // Cascade complete — save this equilibrium state to history
+      gameState.pushHistory();
+      // Then run a deep analysis for the next hint
       setTimeout(runAnalysis, 50);
     }
   }, [gameState, runAnalysis]);
@@ -248,10 +251,10 @@ export const GamePage: React.FC = () => {
       const activeClues = puzzle.clues.filter(c => !binnedClueIds.has(c.id));
       const result = analyzeState(gameState, activeClues);
       if (!result.isSolvable) {
-        gameState.undo();
+        gameState.revertToCurrentCheckpoint();
         triggerRedFlash();
         setHintCount(c => c + 1);
-        setTick(t => t + 1); // Force board re-render to reflect undo
+        setTick(t => t + 1);
         return; // Prevent cascade and further action
       }
     }
@@ -431,16 +434,16 @@ export const GamePage: React.FC = () => {
                </button>
                <button
                  onClick={() => {
-                   if (gameState && gameState.undoStackLength > 0) {
+                   if (gameState && gameState.canUndo) {
                      gameState.undo();
-                     if (gameState.isError) gameState.clearError();
                      setHintShowing(false);
-                     handleStateChange();
+                     setTick(t => t + 1);
+                     setTimeout(runAnalysis, 50);
                    }
                  }}
-                 disabled={!gameState || gameState.undoStackLength === 0}
+                 disabled={!gameState || !gameState.canUndo}
                  className={`px-4 py-2 rounded-full flex items-center gap-1 font-bold text-sm transition-colors shadow-sm ${
-                   gameState && gameState.undoStackLength > 0
+                   gameState && gameState.canUndo
                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 hover:bg-blue-200'
                      : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600 opacity-50 cursor-not-allowed'
                  }`}
@@ -549,16 +552,16 @@ export const GamePage: React.FC = () => {
           </button>
           <button
             onClick={() => {
-              if (gameState && gameState.undoStackLength > 0) {
+              if (gameState && gameState.canUndo) {
                 gameState.undo();
-                if (gameState.isError) gameState.clearError();
                 setHintShowing(false);
-                handleStateChange();
+                setTick(t => t + 1);
+                setTimeout(runAnalysis, 50);
               }
             }}
-            disabled={!gameState || gameState.undoStackLength === 0}
+            disabled={!gameState || !gameState.canUndo}
             className={`px-4 py-2 rounded-lg flex items-center gap-2 font-bold text-sm transition-colors shadow-sm ${
-              gameState && gameState.undoStackLength > 0
+              gameState && gameState.canUndo
                 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800'
                 : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600 cursor-not-allowed opacity-50'
             }`}>

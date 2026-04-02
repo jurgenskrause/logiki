@@ -153,7 +153,7 @@ export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue, onHover, isH
 
   return (
     <div 
-      className={`w-12 h-20 md:w-16 md:h-28 bg-slate-800 dark:bg-slate-950 rounded-lg shadow-md hover:border-indigo-500 group transition-all duration-200 flex items-center justify-center shrink-0 select-none touch-none ${
+      className={`w-12 h-20 md:w-16 md:h-28 bg-slate-800 dark:bg-slate-950 rounded-lg shadow-md hover:border-indigo-500 group flex items-center justify-center shrink-0 select-none touch-none ${
         isHighlighted
           ? 'animate-hard-flash z-10'
           : 'border-2 border-slate-700 dark:border-slate-800'

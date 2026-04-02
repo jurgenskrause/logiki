@@ -137,7 +137,7 @@ export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover,
 
   return (
     <div 
-      className={`w-full h-11 md:w-32 md:h-14 bg-slate-800 dark:bg-slate-950 rounded-lg shadow-md hover:border-blue-400 group transition-all duration-200 flex items-center justify-center shrink-0 select-none touch-none ${
+      className={`w-full h-11 md:w-32 md:h-14 bg-slate-800 dark:bg-slate-950 rounded-lg shadow-md hover:border-blue-400 group flex items-center justify-center shrink-0 select-none touch-none ${
         isHighlighted 
           ? 'animate-hard-flash z-10' 
           : 'border border-slate-700 dark:border-slate-800'

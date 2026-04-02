@@ -68,7 +68,7 @@ export const BoardCell: React.FC<BoardCellProps> = ({
     <div 
       ref={containerRef}
       className={`relative w-full border bg-white dark:bg-slate-800 
-                  flex items-center justify-center overflow-hidden transition-colors cursor-pointer
+                  flex items-center justify-center overflow-hidden cursor-pointer
                   hover:bg-slate-50 dark:hover:bg-slate-750
                   ${highlightItems.length > 0 
                     ? 'animate-hard-flash z-10' 
@@ -117,7 +117,7 @@ export const BoardCell: React.FC<BoardCellProps> = ({
                   e.stopPropagation();
                   onInteract(cellId, opt.id, 'solve');
                 }}
-                className={`w-full h-full aspect-square flex items-center justify-center bg-white dark:bg-slate-800 transition-all
+                className={`w-full h-full aspect-square flex items-center justify-center bg-white dark:bg-slate-800 
                             ${opt.isActive ? 'opacity-100 grayscale-0' : 'opacity-20 grayscale'}
                             ${ringClass}`}
                 style={{ containerType: 'size' }}

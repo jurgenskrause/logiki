@@ -15,7 +15,7 @@ The Logiki engine is designed around a discrete coordinate system, immutable sta
 - **CoordinateSpace** & **Slot**: Defines the basic geometric boundaries (an `M x N` grid) and its discrete atomic units (`Slot`s).
 - **LogicCanvas**: Uses typed bitmasks to track the possibility space of every coordinate for every item. Designed for high performance, providing `O(1)` pruning operations and real-time contradiction detection.
 - **Solver**: A deterministic deduction engine that processes `ActiveClue` items, routing them to specific handlers, and propagates state mutations throughout the `LogicCanvas`.
-- **GameState**: The top-level state manager for interactive application data.
+- **GameState**: The top-level state manager for interactive application data. Uses a discrete linear-history model relying on full immutable snapshots for its `undo()` constraint validation architecture.
 - **SolutionGrid**: Represents a ground-truth, fully solved and mathematically valid grid environment.
 - **SelectionDeck**: Provides seeded determinism for shuffling, dealing, and selecting options during procedural generation.
 

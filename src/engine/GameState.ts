@@ -1,15 +1,8 @@
 import type { CategoryIndex, ColumnIndex, Bitmask, ItemIndex, MutationTrace } from '../types';
 
 /**
- * MutationGroup represents a set of changes that happened as a result of one user action.
- */
-interface MutationGroup {
-  traces: MutationTrace[];
-  snapshot: GameSnapshot;
-}
-
-/**
- * GameSnapshot Interface
+ * GameSnapshot — a complete deep copy of the mutable board state.
+ * At ~144 bytes per snapshot (for a 6×6 grid), storing hundreds is negligible.
  */
 interface GameSnapshot {
   grid: Uint16Array;
@@ -19,7 +12,14 @@ interface GameSnapshot {
 
 /**
  * GameState Class
- * Encapsulates the mathematical state of the logic puzzle.
+ * 
+ * Uses a linear history model:
+ * - _history[] stores post-cascade equilibrium snapshots
+ * - _cursor points to "where we are" in history
+ * - _lastGoodIndex marks the last known contradiction-free state
+ * 
+ * Undo/redo simply move _cursor and load the snapshot.
+ * Restore jumps cursor to _lastGoodIndex and trims history above.
  */
 export class GameState {
   private _rows: number;
@@ -29,15 +29,13 @@ export class GameState {
   private _solution: Uint8Array;
   private _noAutoSolve: Uint8Array;
 
-  // History Stacks - Now tracking groups of mutations
-  private _undoStack: MutationGroup[] = [];
-  private _redoStack: MutationGroup[] = [];
+  // Linear history
+  private _history: GameSnapshot[] = [];
+  private _cursor: number = -1;
+  private _lastGoodIndex: number = -1;
 
   // Error State
   private _isError: boolean = false;
-  private _goodStateSnapshot: GameSnapshot | null = null;
-  private _goodStateUndoLength: number = 0;
-  private _restoreSnapshot: { snapshot: GameSnapshot; undoStackLength: number; } | null = null;
 
   constructor(rows: CategoryIndex, cols: ColumnIndex) {
     this._rows = rows;
@@ -70,9 +68,8 @@ export class GameState {
     return rowOk && colOk && itemOk;
   }
 
-  /**
-   * Captures the state BEFORE a set of mutations.
-   */
+  // ─── Snapshot Helpers ──────────────────────────────────────────────────────
+
   private _createSnapshot(): GameSnapshot {
     return {
       grid: new Uint16Array(this._grid),
@@ -81,92 +78,117 @@ export class GameState {
     };
   }
 
-  public undo(): void {
-    if (this._undoStack.length === 0) return;
-    const group = this._undoStack.pop()!;
-    this._redoStack.push({
-      traces: group.traces,
-      snapshot: this._createSnapshot()
-    });
-    this._grid = new Uint16Array(group.snapshot.grid);
-    this._confirmed = new Uint8Array(group.snapshot.confirmed);
-    this._noAutoSolve = new Uint8Array(group.snapshot.noAutoSolve);
+  private _loadSnapshot(snapshot: GameSnapshot): void {
+    this._grid = new Uint16Array(snapshot.grid);
+    this._confirmed = new Uint8Array(snapshot.confirmed);
+    this._noAutoSolve = new Uint8Array(snapshot.noAutoSolve);
+  }
 
-    // Anti-autosolve: Flag any cell that is currently unconfirmed but has only 1 option left.
-    // This prevents the engine from immediately stealing the cell back via auto-deduction.
-    for (let i = 0; i < this._grid.length; i++) {
-      if (this._confirmed[i] === 0 && this._getPossibleCountFromMask(this._grid[i]) === 1) {
-        this._noAutoSolve[i] = 1;
-      }
+  // ─── History System ────────────────────────────────────────────────────────
+
+  /**
+   * Captures the current board state as a new history entry.
+   * Called AFTER user action + cascade have fully completed (equilibrium state).
+   * Trims any redo history above the cursor.
+   */
+  public pushHistory(): void {
+    // Trim redo entries above cursor
+    this._history = this._history.slice(0, this._cursor + 1);
+    // Push current state
+    this._history.push(this._createSnapshot());
+    this._cursor = this._history.length - 1;
+    // Safety: if lastGoodIndex was in trimmed range, clamp it
+    if (this._lastGoodIndex >= this._history.length) {
+      this._lastGoodIndex = this._cursor;
     }
   }
 
-  public redo(): void {
-    if (this._redoStack.length === 0) return;
-    const group = this._redoStack.pop()!;
-    this._undoStack.push({
-      traces: group.traces,
-      snapshot: this._createSnapshot()
-    });
-    this._grid = group.snapshot.grid;
-    this._confirmed = group.snapshot.confirmed;
-    this._noAutoSolve = group.snapshot.noAutoSolve;
+  /**
+   * Step back one entry in history. Returns true if successful.
+   * Each entry represents one complete user action + cascade, so this
+   * atomically undoes everything.
+   */
+  public undo(): boolean {
+    if (this._cursor <= 0) return false;
+    this._cursor--;
+    this._loadSnapshot(this._history[this._cursor]);
+    this._isError = false;
+    return true;
   }
 
   /**
-   * Reverts a specific cell's most recent confirmation and all its cascading effects.
+   * Step forward one entry in history. Returns true if successful.
    */
-  public revertCell(row: CategoryIndex, col: ColumnIndex): void {
-    if (!this._isValid(row, col)) return;
-    
-    // 1. Find the most recent mutation group where this cell was CONFIRMED
-    const groupIndex = [...this._undoStack].reverse().findIndex(group => 
-      group.traces.some(t => t.row === row && t.col === col && t.type === 'CONFIRM')
-    );
-
-    if (groupIndex === -1) return;
-
-    // Convert reverse index to actual index
-    const actualIndex = this._undoStack.length - 1 - groupIndex;
-    const groupToRevert = this._undoStack[actualIndex];
-
-    // 2. Identify all cells affected by this specific mutation group
-    const affectedCells = new Set<string>();
-    groupToRevert.traces.forEach(t => affectedCells.add(`${t.row}-${t.col}`));
-
-    // 3. Restore those specific cells to their state BEFORE this group happened
-    const beforeGrid = groupToRevert.snapshot.grid;
-    const beforeConfirmed = groupToRevert.snapshot.confirmed;
-    const beforeNoAutoSolve = groupToRevert.snapshot.noAutoSolve;
-
-    affectedCells.forEach(cellId => {
-      const [r, c] = cellId.split('-').map(Number);
-      const idx = this._getIndex(r as CategoryIndex, c as ColumnIndex);
-      this._grid[idx] = beforeGrid[idx];
-      this._confirmed[idx] = beforeConfirmed[idx];
-      this._noAutoSolve[idx] = beforeNoAutoSolve[idx];
-
-      // Anti-Autosolve: If reverting this cell puts it in a state with exactly 1 option left,
-      // flag it so the engine doesn't immediately auto-solve it again.
-      if (this._confirmed[idx] === 0 && this._getPossibleCountFromMask(this._grid[idx]) === 1) {
-        this._noAutoSolve[idx] = 1;
-      }
-    });
-
-    // 4. Remove this group from history and clear redo stack
-    this._undoStack.splice(actualIndex, 1);
-    this._redoStack = [];
-
-    // 5. Important: Any LATER mutations might now be invalid or refer to stale bits.
-    // To ensure consistency, we should ideally re-apply subsequent mutations or
-    // simply clear subsequent history. For now, we clear everything AFTER this point
-    // to prevent logical contradictions in the undo/redo chain.
-    this._undoStack = this._undoStack.slice(0, actualIndex);
+  public redo(): boolean {
+    if (this._cursor >= this._history.length - 1) return false;
+    this._cursor++;
+    this._loadSnapshot(this._history[this._cursor]);
+    return true;
   }
+
+  /**
+   * Reloads the snapshot at the current cursor position without moving the cursor.
+   * Used by the warning system to silently discard an invalid move.
+   */
+  public revertToCurrentCheckpoint(): void {
+    if (this._cursor >= 0 && this._cursor < this._history.length) {
+      this._loadSnapshot(this._history[this._cursor]);
+    }
+  }
+
+  // ─── Error & Good-State Tracking ───────────────────────────────────────────
+
+  /**
+   * Marks the current history position as the last known valid state.
+   * Called when analysis confirms no contradiction.
+   * Guarded: does not update while in error state.
+   */
+  public saveGoodState(): void {
+    if (!this._isError) {
+      this._lastGoodIndex = this._cursor;
+    }
+  }
+
+  /**
+   * Flags that the board is in a contradiction state.
+   * Only fires once — subsequent calls while already in error are ignored.
+   */
+  public markError(): void {
+    if (!this._isError) {
+      this._isError = true;
+    }
+  }
+
+  public clearError(): void {
+    this._isError = false;
+  }
+
+  /**
+   * Jumps the cursor back to the last known good state.
+   * Trims all history above that point (erases the mistake timeline).
+   * Preserves history below (user can still undo further).
+   */
+  public restoreToLastValid(): void {
+    if (this._isError && this._lastGoodIndex >= 0 && this._lastGoodIndex < this._history.length) {
+      this._cursor = this._lastGoodIndex;
+      this._loadSnapshot(this._history[this._cursor]);
+      // Trim history above the good state
+      this._history = this._history.slice(0, this._cursor + 1);
+      this._isError = false;
+    }
+  }
+
+  // ─── Public Accessors ──────────────────────────────────────────────────────
 
   public get rows(): number { return this._rows; }
   public get cols(): number { return this._cols; }
   public get grid(): Uint16Array { return this._grid.slice(); }
+  public get canUndo(): boolean { return this._cursor > 0; }
+  public get canRedo(): boolean { return this._cursor < this._history.length - 1; }
+  public get isError(): boolean { return this._isError; }
+
+  // Legacy compatibility
+  public get undoStackLength(): number { return this._cursor; }
 
   public getConfirmedState(): Uint8Array {
     return this._confirmed.slice();
@@ -211,31 +233,26 @@ export class GameState {
     return true;
   }
 
+  // ─── Mutation Methods ──────────────────────────────────────────────────────
+  // These directly mutate the live state. History is NOT pushed here —
+  // the caller (GamePage) pushes history AFTER cascade completes.
+
   public toggleBit(row: CategoryIndex, col: ColumnIndex, itemIndex: ItemIndex): MutationTrace[] {
     if (!this._isValid(row, col, itemIndex)) return [];
     if (this.isConfirmed(row, col)) return [];
 
-    const snapshot = this._createSnapshot();
     const index = this._getIndex(row, col);
     this._grid[index] ^= (1 << itemIndex);
-    this._noAutoSolve[index] = 0; // Clear flag on interaction
+    this._noAutoSolve[index] = 0;
     
     const trace: MutationTrace = { row, col, itemIndex, type: 'TOGGLE' };
-    this._undoStack.push({ traces: [trace], snapshot });
-    this._redoStack = [];
     return [trace];
   }
 
   public confirmCell(row: CategoryIndex, col: ColumnIndex, itemIndex: ItemIndex): MutationTrace[] {
     if (!this._isValid(row, col, itemIndex)) return [];
-    const snapshot = this._createSnapshot();
     const traces: MutationTrace[] = [];
     this._applyConfirmation(row, col, itemIndex, traces);
-    
-    if (traces.length > 0) {
-      this._undoStack.push({ traces, snapshot });
-      this._redoStack = [];
-    }
     return traces;
   }
 
@@ -245,7 +262,7 @@ export class GameState {
 
     this._grid[index] = (1 << itemIndex);
     this._confirmed[index] = 1;
-    this._noAutoSolve[index] = 0; // Clear flag on interaction
+    this._noAutoSolve[index] = 0;
     traces.push({ row, col, itemIndex, type: 'CONFIRM' });
 
     const maskToExclude = (1 << itemIndex);
@@ -255,14 +272,12 @@ export class GameState {
       const targetIndex = this._getIndex(row, c);
       if ((this._grid[targetIndex] & maskToExclude) !== 0) {
         this._grid[targetIndex] &= inverseMask;
-        // Collect eliminated items as PRUNE traces
         traces.push({ row, col: c as ColumnIndex, itemIndex, type: 'PRUNE' });
       }
     }
   }
 
   public findAndApplyNextDeduction(): MutationTrace[] | null {
-    const snapshot = this._createSnapshot();
     const traces: MutationTrace[] = [];
 
     // 1. Naked Singles
@@ -270,14 +285,12 @@ export class GameState {
       for (let c = 0; c < this._cols; c++) {
         const idx = this._getIndex(r as any, c as any);
         if (this._confirmed[idx]) continue;
-        if (this._noAutoSolve[idx]) continue; // Skip anti-autosolve flagged cells
+        if (this._noAutoSolve[idx]) continue;
         
         const mask = this._grid[idx];
         if (this._getPossibleCountFromMask(mask) === 1) {
           const item = Math.log2(mask) as ItemIndex;
           this._applyConfirmation(r as any, c as any, item, traces);
-          this._undoStack.push({ traces, snapshot });
-          this._redoStack = [];
           return traces;
         }
       }
@@ -299,11 +312,9 @@ export class GameState {
         if (possibleCols.length === 1 && confirmedCol === -1) {
           const targetCol = possibleCols[0];
           const targetIdx = this._getIndex(r as any, targetCol as any);
-          if (this._noAutoSolve[targetIdx]) continue; // Skip anti-autosolve flagged cells
+          if (this._noAutoSolve[targetIdx]) continue;
           
           this._applyConfirmation(r as any, targetCol as any, item as any, traces);
-          this._undoStack.push({ traces, snapshot });
-          this._redoStack = [];
           return traces;
         }
       }
@@ -330,66 +341,9 @@ export class GameState {
 
   public unconfirmCell(row: CategoryIndex, col: ColumnIndex): Bitmask {
     if (!this._isValid(row, col)) return 0;
-    const snapshot = this._createSnapshot();
     const index = this._getIndex(row, col);
     this._confirmed[index] = 0;
-    this._noAutoSolve[index] = 0; // Clear anti-autosolve on manual reset
-    const trace: MutationTrace = { row, col, itemIndex: -1, type: 'TOGGLE' }; // Using TOGGLE to represent state reset 
-    this._undoStack.push({ traces: [trace], snapshot });
+    this._noAutoSolve[index] = 0;
     return this._grid[index];
-  }
-
-  public get undoStackLength(): number { return this._undoStack.length; }
-  public get redoStackLength(): number { return this._redoStack.length; }
-  public get isError(): boolean { return this._isError; }
-
-  public saveGoodState(): void {
-    if (!this._isError) {
-      this._goodStateSnapshot = this._createSnapshot();
-      this._goodStateUndoLength = this._undoStack.length;
-    }
-  }
-
-  public markError(): void {
-    if (!this._isError) {
-      if (this._goodStateSnapshot) {
-        this._restoreSnapshot = { 
-          snapshot: {
-            grid: new Uint16Array(this._goodStateSnapshot.grid), 
-            confirmed: new Uint8Array(this._goodStateSnapshot.confirmed),
-            noAutoSolve: new Uint8Array(this._goodStateSnapshot.noAutoSolve)
-          },
-          undoStackLength: this._goodStateUndoLength
-        };
-      }
-      this._isError = true;
-    }
-  }
-
-  public get restoreSnapshot(): { snapshot: GameSnapshot; undoStackLength: number; } | null { return this._restoreSnapshot; }
-  public clearError(): void { this._isError = false; this._restoreSnapshot = null; }
-
-  public restoreToLastValid(): void {
-    if (this._isError && this._restoreSnapshot) {
-      this._grid = new Uint16Array(this._restoreSnapshot.snapshot.grid);
-      this._confirmed = new Uint8Array(this._restoreSnapshot.snapshot.confirmed);
-      this._noAutoSolve = new Uint8Array(this._restoreSnapshot.snapshot.noAutoSolve);
-
-      // Cleanly slice the undo stack back to the exact length it was when the snapshot was taken, deleting all the mistakes from history
-      this._undoStack = this._undoStack.slice(0, this._restoreSnapshot.undoStackLength);
-
-      // Anti-autosolve: Flag any cell that is currently unconfirmed but has only 1 option left.
-      // This prevents the engine from immediately stealing the cell back via auto-deduction
-      // when restoring from an error state.
-      for (let i = 0; i < this._grid.length; i++) {
-        if (this._confirmed[i] === 0 && this._getPossibleCountFromMask(this._grid[i]) === 1) {
-          this._noAutoSolve[i] = 1;
-        }
-      }
-
-      this.clearError();
-      // Clear redo stack on manual restoration
-      this._redoStack = [];
-    }
   }
 }

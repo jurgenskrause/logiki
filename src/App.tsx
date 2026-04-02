@@ -159,12 +159,15 @@ function App() {
               <span className="text-[10px] font-bold text-slate-500 uppercase">Redo Invalidation</span>
               {(() => {
                 const state = new GameState(6, 6);
+                state.pushHistory(); // Initial state
                 state.toggleBit(0, 0, 1);
+                state.pushHistory(); // Action 1
                 state.undo();
-                const midLen = state.redoStackLength;
+                const midRedo = state.canRedo;
                 state.toggleBit(0, 0, 2);
-                const finalLen = state.redoStackLength;
-                const success = midLen === 1 && finalLen === 0;
+                state.pushHistory(); // Action 2
+                const finalRedo = state.canRedo;
+                const success = midRedo === true && finalRedo === false;
                 return (
                   <div className={`p-4 rounded-2xl border ${success ? 'border-blue-500/50 bg-blue-500/5' : 'border-red-500/50 bg-red-500/5'}`}>
                     <p className="text-xs font-bold">{success ? 'INVALIDATED' : 'BRANCHED'}</p>

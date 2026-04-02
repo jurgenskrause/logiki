@@ -123,7 +123,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns, cl
     // 3. Check for REVERT action (any click on a confirmed cell)
     const isActuallyResolved = gameState.isConfirmed(r, c);
     if (isActuallyResolved) {
-      gameState.revertCell(r, c);
+      gameState.unconfirmCell(r, c);
       onStateChange();
       return;
     }
