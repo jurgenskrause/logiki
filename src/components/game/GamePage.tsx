@@ -184,6 +184,9 @@ export const GamePage: React.FC = () => {
   useEffect(() => {
     if (!isManifestLoaded) return;
 
+    // Immediately hide the board when starting a load or change
+    setIsGameStarted(false);
+
     // We keep track of individual puzzle loads
     const t = setTimeout(async () => {
       setIsLoading(true);
@@ -628,9 +631,13 @@ export const GamePage: React.FC = () => {
 
       {/* Main Game Area Wrapper */}
       <div className="flex-1 relative overflow-hidden">
-        {/* The Game Grid - Unified Blur/Opacity Applied Here */}
-        <main className={`w-full h-full grid grid-cols-1 grid-rows-[auto_auto_minmax(0,1fr)] md:grid-cols-[minmax(0,1fr)_auto] md:grid-rows-[minmax(0,1fr)_auto] overflow-hidden transition-all duration-700 ${
-          !isGameStarted ? 'blur-[12px] opacity-50 scale-[0.97] pointer-events-none' : 'blur-0 opacity-100 scale-100'
+        {/* 
+            The Game Grid:
+            1. NO ANIMATION ON START (Must NOT use transition-all or scale here to avoid 'pop-in' or sluggishness)
+            2. Fully hidden (opacity-0) until user clicks 'Start' to ensure a smooth, empty initial load.
+        */}
+        <main className={`w-full h-full grid grid-cols-1 grid-rows-[auto_auto_minmax(0,1fr)] md:grid-cols-[minmax(0,1fr)_auto] md:grid-rows-[minmax(0,1fr)_auto] overflow-hidden ${
+          !isGameStarted ? 'blur-[12px] opacity-0 pointer-events-none' : 'blur-0 opacity-100'
         }`}>
 
         {/* Row 1 (Mobile) / Col 1 Row 1 (Desktop): Board */}
