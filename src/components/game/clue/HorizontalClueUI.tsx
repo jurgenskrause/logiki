@@ -54,10 +54,10 @@ export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover,
           <div className="flex items-center justify-between w-full h-full px-1 md:px-2">
             <span className="text-lg md:text-xl drop-shadow-sm">{icons[0]}</span>
             <div className="relative mx-1 md:mx-1 flex items-center justify-center">
-               <span className="text-lg md:text-xl blur-[1px] opacity-30 grayscale">{icons[1]}</span>
+               <span className="text-lg md:text-xl blur-[1px] opacity-30 grayscale">{icons[2]}</span>
                <span className="material-icons absolute text-red-500 text-lg md:text-xl font-bold opacity-80">close</span>
             </div>
-            <span className="text-lg md:text-xl drop-shadow-sm">{icons[2]}</span>
+            <span className="text-lg md:text-xl drop-shadow-sm">{icons[1]}</span>
           </div>
         );
       default:
