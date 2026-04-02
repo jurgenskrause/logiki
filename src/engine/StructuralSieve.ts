@@ -108,9 +108,33 @@ export class StructuralSieve {
     // ----------------------------------------------------------------------
     const maxAnchors = Math.floor((N * M) / 16);
     const numAnchors = Math.floor(rng() * (maxAnchors + 1));
-    for (let i = 0; i < numAnchors; i++) {
-      const anchor = this.findSymmetryBreaker(canvas, solution);
-      if (anchor) {
+    
+    // Get all potential slots and shuffle them to pick random anchors
+    const allSlots: {r: number, c: number}[] = [];
+    for (let r = 0; r < N; r++) {
+      for (let c = 0; c < M; c++) {
+        allSlots.push({r, c});
+      }
+    }
+    
+    // Shuffle slots
+    for (let i = allSlots.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [allSlots[i], allSlots[j]] = [allSlots[j], allSlots[i]];
+    }
+
+    let anchorsPlaced = 0;
+    for (let i = 0; i < allSlots.length && anchorsPlaced < numAnchors; i++) {
+      const {r, c} = allSlots[i];
+      if (!canvas.isSolved(r, c)) {
+        const itemIndex = solution.getItemIndexAtSlot(new Slot(r, c));
+        const anchor: TopologyEntry = {
+          topologyID: `ANCHOR_R${r}I${itemIndex}C${c}`,
+          type: 'ANCHOR' as any,
+          slots: [new Slot(r, c)],
+          weight: 1
+        };
+
         activeClues.push(anchor);
         activeList.push(this.toActiveClue(anchor, solution));
         this.totalSolves++;
@@ -119,7 +143,8 @@ export class StructuralSieve {
           throw new ContradictionError(anchor, canvas.getInvalidCells());
         }
         canvas.rowSweep();
-        await yieldState(canvas, `⚓ Pre-seeded Anchor (${i + 1}/${numAnchors}).`, anchor);
+        anchorsPlaced++;
+        await yieldState(canvas, `⚓ Pre-seeded Anchor (${anchorsPlaced}/${numAnchors}) at R${r}C${c}.`, anchor);
       }
     }
 
@@ -134,7 +159,7 @@ export class StructuralSieve {
 
       if (masterPool.length === 0) {
         // No more ordinary clues left, try a symmetry breaker (Anchor)
-        const anchor = this.findSymmetryBreaker(canvas, solution);
+        const anchor = this.findSymmetryBreaker(canvas, solution, rng);
         if (anchor) {
           activeClues.push(anchor);
           const activeAnchor = this.toActiveClue(anchor, solution);
@@ -212,7 +237,7 @@ export class StructuralSieve {
         iterationsWithoutCommit++;
         // If we can't find ANY productive clues after multiple attempts, inject an Anchor
         if (iterationsWithoutCommit > 20 || (K === 150 && (!best || best.score <= 0))) {
-          const emergency = this.findSymmetryBreaker(canvas, solution);
+          const emergency = this.findSymmetryBreaker(canvas, solution, rng);
           if (!emergency) {
               throw new StalemateError(canvas, activeClues);
           }
@@ -291,21 +316,27 @@ export class StructuralSieve {
     return shuffled.slice(0, k);
   }
 
-  private findSymmetryBreaker(canvas: LogicCanvas, solution: SolutionGrid): TopologyEntry | null {
+  private findSymmetryBreaker(canvas: LogicCanvas, solution: SolutionGrid, rng: () => number = Math.random): TopologyEntry | null {
+    const unsolved: {r: number, c: number}[] = [];
     for (let r = 0; r < canvas.height; r++) {
       for (let c = 0; c < canvas.width; c++) {
         if (!canvas.isSolved(r, c)) {
-          const itemIndex = solution.getItemIndexAtSlot(new Slot(r, c));
-          return {
-            topologyID: `ANCHOR_R${r}I${itemIndex}C${c}`,
-            type: 'ANCHOR' as any,
-            slots: [new Slot(r, c)],
-            weight: 1
-          };
+          unsolved.push({r, c});
         }
       }
     }
-    return null;
+
+    if (unsolved.length === 0) return null;
+
+    // Pick one at random
+    const {r, c} = unsolved[Math.floor(rng() * unsolved.length)];
+    const itemIndex = solution.getItemIndexAtSlot(new Slot(r, c));
+    return {
+      topologyID: `ANCHOR_R${r}I${itemIndex}C${c}`,
+      type: 'ANCHOR' as any,
+      slots: [new Slot(r, c)],
+      weight: 1
+    };
   }
 
   public toActiveClue(entry: TopologyEntry, solution: SolutionGrid): ActiveClue {
