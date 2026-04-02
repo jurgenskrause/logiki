@@ -120,12 +120,12 @@ export function describeRule(clue: ActiveClue): string {
     }
     case 'SEQUENCE_THREE': {
       const [a, b, c] = p.map(x => icon(x.row, x.item));
-      return `${a} and ${b} and ${c} are in three adjacent columns, with ${b} in the middle. ${a} and ${c} may be reversed.`;
+      return `${a} and ${b} and ${c} are in three adjacent columns, ${b} is in the middle. ${a} and ${c} may be reversed.`;
     }
     case 'GAPPED_NOT_MIDDLE':
     case 'GAPPED_EXCLUSION': {
       const [a, c, b] = p.map(x => icon(x.row, x.item));
-      return `${a} and ${c} are separated by one column, ${b} cannot be in that column. A and C may be reversed.`;
+      return `${a} and ${c} are separated by one column, ${b} cannot be in that column. ${a} and ${c} may be reversed.`;
     }
     case 'DISJUNCTIVE_XOR':
     case 'VERTICAL_DISJUNCTIVE_EXCLUSION': {
