@@ -13,6 +13,9 @@ import type { ActiveClue } from '../../engine/Solver';
 import { buildTopologyLibrary } from '../../engine/PermutationGenerator';
 import { TieringService } from '../../engine/TieringService';
 import { StructuralSieve } from '../../engine/StructuralSieve';
+import eliminateSfx from '../../assets/sounds/eliminate.wav';
+import solveSfx from '../../assets/sounds/solve.wav';
+import mistakeSfx from '../../assets/sounds/mistake.wav';
 
 function seedRNG(seed: string) {
   let h = 0;
@@ -55,6 +58,44 @@ export const GamePage: React.FC = () => {
   // Timer
   const [isGameStarted, setIsGameStarted] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  // Sound system
+  const [isSoundEnabled, setIsSoundEnabled] = useState(true);
+  const eliminateAudioRef = useRef<HTMLAudioElement | null>(null);
+  const solveAudioRef = useRef<HTMLAudioElement | null>(null);
+  const mistakeAudioRef = useRef<HTMLAudioElement | null>(null);
+  const pendingSoundRef = useRef<'solve' | 'eliminate' | null>(null);
+
+  useEffect(() => {
+    eliminateAudioRef.current = new Audio(eliminateSfx);
+    solveAudioRef.current = new Audio(solveSfx);
+    mistakeAudioRef.current = new Audio(mistakeSfx);
+  }, []);
+
+  const playInteractionSound = useCallback((action?: string) => {
+    dismissHint();
+    if (!isSoundEnabled) return;
+
+    if (action === 'mistake') {
+      if (mistakeAudioRef.current) {
+        mistakeAudioRef.current.currentTime = 0;
+        mistakeAudioRef.current.play().catch(() => {});
+      }
+      return;
+    }
+
+    if (action === 'solve') {
+      if (solveAudioRef.current) {
+        solveAudioRef.current.currentTime = 0;
+        solveAudioRef.current.play().catch(() => {});
+      }
+    } else {
+      if (eliminateAudioRef.current) {
+        eliminateAudioRef.current.currentTime = 0;
+        eliminateAudioRef.current.play().catch(() => {});
+      }
+    }
+  }, [isSoundEnabled]);
 
   useEffect(() => {
     if (puzzle) {
@@ -299,6 +340,12 @@ export const GamePage: React.FC = () => {
     const nextTraces = gameState.findAndApplyNextDeduction();
     
     if (nextTraces) {
+      // Play solve sound if this step confirmed a cell
+      const hasConfirm = nextTraces.some(t => t.type === 'CONFIRM');
+      if (hasConfirm) {
+        playInteractionSound('solve');
+      }
+
       setTick(t => t + 1); // Force board re-render
       // Schedule next step with a delay for visual satisfaction
       cascadeTimerRef.current = setTimeout(runCascade, 250);
@@ -309,7 +356,7 @@ export const GamePage: React.FC = () => {
       // Then run a deep analysis for the next hint
       setTimeout(runAnalysis, 50);
     }
-  }, [gameState, runAnalysis]);
+  }, [gameState, runAnalysis, playInteractionSound]);
 
   // Timer Ticker
   useEffect(() => {
@@ -336,17 +383,25 @@ export const GamePage: React.FC = () => {
       if (!result.isSolvable) {
         gameState.revertToCurrentCheckpoint();
         triggerRedFlash();
+        playInteractionSound('mistake');
+        pendingSoundRef.current = null;
         setHintCount(c => c + 1);
         setTick(t => t + 1);
         return; // Prevent cascade and further action
       }
+    }
+
+    // Process pending sound if any (handles manual interactions)
+    if (pendingSoundRef.current) {
+      playInteractionSound(pendingSoundRef.current);
+      pendingSoundRef.current = null;
     }
     
     setTick(t => t + 1);
     setIsCascading(true);
     // Start the chain reaction
     cascadeTimerRef.current = setTimeout(runCascade, 250);
-  }, [runCascade, warningsEnabled, gameState, puzzle, binnedClueIds, triggerRedFlash]);
+  }, [runCascade, warningsEnabled, gameState, puzzle, binnedClueIds, triggerRedFlash, playInteractionSound]);
 
   // ─── Hint Button Logic ───────────────────────────────────────────────────────
 
@@ -356,6 +411,9 @@ export const GamePage: React.FC = () => {
 
     if (!hintShowing) {
       // First click: show banner + highlight
+      if (activeHint.clue?.type === 'error') {
+        playInteractionSound('mistake');
+      }
       setHintShowing(true);
       setHintCount(c => c + 1);
 
@@ -376,6 +434,7 @@ export const GamePage: React.FC = () => {
         if (activeHint.action.type === ('RESTORE' as any)) {
           gameState.restoreToLastValid();
         } else {
+          pendingSoundRef.current = activeHint.action.type === 'confirm' ? 'solve' : 'eliminate';
           applyHint(gameState, activeHint.action);
         }
         // Important: this trigger handles state change AND analysis AFTER the cascade
@@ -485,6 +544,8 @@ export const GamePage: React.FC = () => {
           onToggleZoom={setZoomEnabled}
           isDarkMode={isDarkMode}
           onToggleDarkMode={() => setIsDarkMode(prev => !prev)}
+          isSoundEnabled={isSoundEnabled}
+          onToggleSound={setIsSoundEnabled}
         />
       )}
 
@@ -769,7 +830,10 @@ export const GamePage: React.FC = () => {
                 subColumns={subColumns}
                 clues={puzzle.clues}
                 gameState={gameState}
-                onInteraction={dismissHint}
+                onInteraction={(action) => {
+                  if (action === 'zoom_trigger') return;
+                  pendingSoundRef.current = action === 'solve' ? 'solve' : 'eliminate';
+                }}
                 onStateChange={() => {
                   dismissHint();
                   handleStateChange();

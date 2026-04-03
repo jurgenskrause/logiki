@@ -10,6 +10,8 @@ interface SideMenuProps {
   onToggleZoom: (enabled: boolean) => void;
   isDarkMode: boolean;
   onToggleDarkMode: () => void;
+  isSoundEnabled: boolean;
+  onToggleSound: (enabled: boolean) => void;
 }
 
 export const SideMenu: React.FC<SideMenuProps> = ({ 
@@ -21,7 +23,9 @@ export const SideMenu: React.FC<SideMenuProps> = ({
   zoomEnabled,
   onToggleZoom,
   isDarkMode,
-  onToggleDarkMode
+  onToggleDarkMode,
+  isSoundEnabled,
+  onToggleSound
 }) => {
   return (
     <>
@@ -137,6 +141,29 @@ export const SideMenu: React.FC<SideMenuProps> = ({
                   />
                   <div className={`block w-10 h-5 rounded-full transition-colors duration-300 ${warningsEnabled ? 'bg-amber-500 shadow-md shadow-amber-500/20' : 'bg-slate-300 dark:bg-slate-700 shadow-inner'}`}></div>
                   <div className={`dot absolute left-1 top-1 bg-white w-3 h-3 rounded-full transition-transform duration-300 shadow-sm ${warningsEnabled ? 'transform translate-x-5' : ''}`}></div>
+                </div>
+              </label>
+            </div>
+            <div className="w-full flex items-center justify-between p-4 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+              <div className="flex items-center gap-4">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${isSoundEnabled ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-500' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
+                  <span className="material-icons">{isSoundEnabled ? 'volume_up' : 'volume_off'}</span>
+                </div>
+                <div>
+                  <div className="font-bold text-slate-800 dark:text-slate-200">Sound Effects</div>
+                  <div className="text-[10px] sm:text-xs font-medium text-slate-500 leading-tight mt-0.5">Play sounds on interaction</div>
+                </div>
+              </div>
+              <label className="flex items-center cursor-pointer shrink-0 ml-2">
+                <div className="relative">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only" 
+                    checked={isSoundEnabled} 
+                    onChange={e => onToggleSound(e.target.checked)} 
+                  />
+                  <div className={`block w-10 h-5 rounded-full transition-colors duration-300 ${isSoundEnabled ? 'bg-indigo-500 shadow-md shadow-indigo-500/20' : 'bg-slate-300 dark:bg-slate-700 shadow-inner'}`}></div>
+                  <div className={`dot absolute left-1 top-1 bg-white w-3 h-3 rounded-full transition-transform duration-300 shadow-sm ${isSoundEnabled ? 'transform translate-x-5' : ''}`}></div>
                 </div>
               </label>
             </div>
