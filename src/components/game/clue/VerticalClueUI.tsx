@@ -53,7 +53,9 @@ export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue, onHover, isH
             <span className={iconClass}>{icons[0]}</span>
             <div className="relative flex items-center justify-center">
                <span className={iconClass}>{icons[2]}</span>
-               <span className="material-icons absolute text-red-500 text-3xl md:text-4xl font-bold opacity-100">close</span>
+               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 md:w-[42px] md:h-[42px] border-[3px] md:border-[4px] border-red-500/90 rounded-full z-10 pointer-events-none drop-shadow-md">
+                  <div className="absolute top-1/2 left-[-10%] w-[120%] h-[3px] md:h-[4px] bg-red-500/90 transform -translate-y-1/2 rotate-45"></div>
+               </div>
             </div>
             <span className={iconClass}>{icons[1]}</span>
           </div>
