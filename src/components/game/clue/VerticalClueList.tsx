@@ -144,7 +144,7 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
   return (
     <div 
       ref={containerRef}
-      className={`flex-1 w-full ${isDesktop ? 'h-full p-4' : 'p-0'} overflow-hidden relative flex items-center justify-center`}
+      className={`flex-1 w-full ${isDesktop ? 'h-full p-4' : 'h-full p-0'} overflow-hidden relative flex items-center justify-center`}
       style={isDesktop ? { height: `${actualRows * CLUE_HEIGHT + 32}px` } : {}}
     >
       <DndContext 

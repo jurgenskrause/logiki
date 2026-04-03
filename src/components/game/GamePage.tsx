@@ -137,6 +137,29 @@ export const GamePage: React.FC = () => {
     });
   }, [warningsEnabled, gameState, puzzle, triggerRedFlash]);
 
+  // Dynamic yet stable drawer height for mobile
+  const initialMobileDrawerHeight = useMemo(() => {
+    if (!puzzle) return 0;
+    
+    // Horizontal calculation: Max 3 rows, h-14 (56px) + gap-1.5 (6px)
+    // Padding/Arrows estimated at 56px total (pb-12 + pt-2)
+    const horizontalCount = puzzle.clues.filter(c => 
+      ['LEFT_OF', 'ADJACENT', 'SEQUENCE_THREE', 'GAPPED_NOT_MIDDLE', 'GAPPED_EXCLUSION'].includes(c.type)
+    ).length;
+    const hRows = Math.min(3, Math.ceil(horizontalCount / 3));
+    const hNeeded = hRows > 0 ? (hRows * 56 + (hRows - 1) * 6 + 56) : 0;
+
+    // Vertical calculation: Max 2 rows, 120px height + gap-1.5 (6px)
+    const verticalCount = puzzle.clues.filter(c => 
+      !['LEFT_OF', 'ADJACENT', 'SEQUENCE_THREE', 'GAPPED_NOT_MIDDLE', 'GAPPED_EXCLUSION', 'ANCHOR'].includes(c.type)
+    ).length;
+    const vRows = Math.min(2, Math.ceil(verticalCount / 3));
+    const vNeeded = vRows > 0 ? (vRows * 120 + (vRows - 1) * 6 + 56) : 0;
+    
+    const finalHeight = Math.max(hNeeded, vNeeded);
+    return finalHeight > 0 ? Math.min(310, finalHeight) : 0;
+  }, [puzzle]);
+
   // ─── Analysis ───────────────────────────────────────────────────────────────
 
   const runAnalysis = useCallback(() => {
@@ -773,8 +796,8 @@ export const GamePage: React.FC = () => {
 
         {/* Row 3 (Mobile) / Col 2 Row 1-span-2 (Desktop): Horizontal Clues */}
         <div className={`flex-none md:flex-1 md:col-start-2 md:row-start-1 md:row-span-2 md:min-h-0 md:h-full bg-slate-100 dark:bg-slate-900 border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800 shrink-0 shadow-inner w-full md:w-auto flex flex-col ${
-          activeMobileTab === 'horizontal' ? 'z-10 relative visible pointer-events-auto md:h-auto' : 'z-0 invisible pointer-events-none h-0 md:visible md:flex md:pointer-events-auto md:relative md:z-10 md:h-auto'
-        }`}>
+          activeMobileTab === 'horizontal' ? `z-10 relative visible pointer-events-auto md:h-auto` : 'z-0 invisible pointer-events-none h-0 md:visible md:flex md:pointer-events-auto md:relative md:z-10 md:h-auto'
+        }`} style={!isDesktop && activeMobileTab === 'horizontal' ? { height: `${initialMobileDrawerHeight}px` } : {}}>
           <div className="flex-1 overflow-hidden relative md:overflow-x-auto md:overflow-y-hidden">
             {showBin && (
                 <div className="absolute top-2 left-2 z-20 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-[10px] font-black uppercase tracking-tighter text-amber-600 dark:text-amber-400 pointer-events-none">
@@ -799,8 +822,8 @@ export const GamePage: React.FC = () => {
 
         {/* Row 3 (Mobile) / Col 1 Row 2 (Desktop): Vertical Clues */}
         <div className={`flex-none md:flex-1 md:col-start-1 md:row-start-2 md:min-h-0 md:h-full bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0 shadow-inner w-full flex flex-col ${
-          activeMobileTab === 'vertical' ? 'z-10 relative visible pointer-events-auto md:h-auto' : 'z-0 invisible pointer-events-none h-0 md:visible md:flex md:pointer-events-auto md:relative md:z-10 md:h-auto'
-        }`}>
+          activeMobileTab === 'vertical' ? `z-10 relative visible pointer-events-auto md:h-auto` : 'z-0 invisible pointer-events-none h-0 md:visible md:flex md:pointer-events-auto md:relative md:z-10 md:h-auto'
+        }`} style={!isDesktop && activeMobileTab === 'vertical' ? { height: `${initialMobileDrawerHeight}px` } : {}}>
           <div className="flex-1 overflow-hidden relative md:overflow-y-auto md:overflow-x-hidden md:custom-scrollbar">
             {showBin && (
               <div className="absolute top-2 left-2 z-20 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-[10px] font-black uppercase tracking-tighter text-amber-600 dark:text-amber-400 pointer-events-none hidden md:block">
