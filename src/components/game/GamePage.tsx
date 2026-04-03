@@ -11,6 +11,18 @@ import { VerticalClueList } from './clue/VerticalClueList';
 import { analyzeState, applyHint, type HintResult } from '../../engine/HintService';
 import { describeRule } from '../../engine/ClueDescriber';
 import type { ActiveClue } from '../../engine/Solver';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  DragOverlay,
+  useDroppable
+} from '@dnd-kit/core';
+import { HorizontalClueUI } from './clue/HorizontalClueUI';
+import { VerticalClueUI } from './clue/VerticalClueUI';
 import { buildTopologyLibrary } from '../../engine/PermutationGenerator';
 import { TieringService } from '../../engine/TieringService';
 import { StructuralSieve } from '../../engine/StructuralSieve';
@@ -42,6 +54,66 @@ function useMediaQuery(query: string) {
   }, [query]);
   return matches;
 }
+
+const DroppableDesktopBin = ({ showBin, binnedCount, onToggle }: { showBin: boolean; binnedCount: number; onToggle: () => void }) => {
+  const { setNodeRef, isOver } = useDroppable({ id: 'bin-drop-desktop' });
+  return (
+    <button
+      ref={setNodeRef}
+      onClick={onToggle}
+      className={`relative hidden md:flex p-2.5 rounded-xl items-center justify-center transition-all shadow-sm ${
+        isOver 
+          ? 'bg-amber-400 text-white ring-4 ring-amber-300 scale-110 shadow-xl'
+          : showBin 
+            ? 'bg-amber-500 text-white shadow-inner ring-2 ring-amber-300' 
+            : binnedCount > 0
+              ? 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-300'
+              : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600'
+      }`}
+      title={showBin ? "Show Active Clues" : "Show Binned Clues"}
+    >
+      <span className="material-icons text-base text-inherit">{showBin ? 'visibility' : 'delete_outline'}</span>
+      {binnedCount > 0 && !showBin && (
+         <span className="absolute -top-1 -right-1 flex h-4 w-4 z-20">
+           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+           <span className="relative inline-flex rounded-full h-4 w-4 bg-amber-500 text-[10px] items-center justify-center text-white font-bold leading-none">
+             {binnedCount}
+           </span>
+         </span>
+      )}
+    </button>
+  );
+};
+
+const DroppableMobileBin = ({ showBin, binnedCount, onToggle }: { showBin: boolean; binnedCount: number; onToggle: () => void }) => {
+  const { setNodeRef, isOver } = useDroppable({ id: 'bin-drop-mobile' });
+  return (
+    <button
+      ref={setNodeRef}
+      onClick={onToggle}
+      className={`relative p-2 h-full rounded-lg flex items-center justify-center transition-all shadow-sm ${
+        isOver 
+          ? 'bg-amber-400 text-white ring-4 ring-amber-300 scale-110 shadow-xl'
+          : showBin 
+            ? 'bg-amber-500 text-white shadow-inner ring-2 ring-amber-300' 
+            : binnedCount > 0
+              ? 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-300'
+              : 'bg-slate-200 text-slate-400 dark:bg-slate-800 dark:text-slate-600'
+      }`}
+      title={showBin ? "Show Active Clues" : "Show Binned Clues"}
+    >
+      <span className="material-icons text-base text-inherit">{showBin ? 'visibility' : 'delete_outline'}</span>
+      {binnedCount > 0 && !showBin && (
+         <span className="absolute -top-1 -right-1 flex h-4 w-4 z-20">
+           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+           <span className="relative inline-flex rounded-full h-4 w-4 bg-amber-500 text-[10px] items-center justify-center text-white font-bold leading-none">
+             {binnedCount}
+           </span>
+         </span>
+      )}
+    </button>
+  );
+};
 
 const loader = new ManifestLoader();
 
@@ -186,9 +258,30 @@ export const GamePage: React.FC = () => {
   const [activeMobileTab, setActiveMobileTab] = useState<'horizontal' | 'vertical'>('horizontal');
   const [scrollToClueId, setScrollToClueId] = useState<string | null>(null);
   const isDesktop = useMediaQuery('(min-width: 768px)');
+  
+  // DND Kit states
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  
+  const sensors = useSensors(
+    useSensor(PointerSensor, { // For mouse re-order
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(TouchSensor, { // For touch: require long press to re-order, allowing quick swipes to scroll
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      }
+    })
+  );
 
-
-
+  const draggedClue = useMemo(() => {
+    if (!activeDragId || !puzzle) return null;
+    return puzzle.clues.find(c => c.id === activeDragId) || null;
+  }, [activeDragId, puzzle]);
+  
+  const isDraggedHorizontal = draggedClue && ['LEFT_OF', 'ADJACENT', 'SEQUENCE_THREE', 'GAPPED_NOT_MIDDLE', 'GAPPED_EXCLUSION'].includes(draggedClue.type);
 
   // ─── GameState ──────────────────────────────────────────────────────────────
 
@@ -233,28 +326,33 @@ export const GamePage: React.FC = () => {
     });
   }, [warningsEnabled, gameState, puzzle, triggerRedFlash]);
 
-  // Dynamic yet stable drawer height for mobile
-  const initialMobileDrawerHeight = useMemo(() => {
+  // Dynamic drawer height for mobile tracking bins
+  const mobileDrawerHeight = useMemo(() => {
     if (!puzzle) return 0;
     
-    // Horizontal calculation: Max 4 rows, h-14 (56px) + gap-1.5 (6px)
+    const visibleClues = puzzle.clues.filter(c => 
+      c.type !== 'ANCHOR' && 
+      (showBin ? binnedClueIds.has(c.id) : !binnedClueIds.has(c.id))
+    );
+
+    // Horizontal calculation: Max 4 rows
     // Padding/Arrows estimated at 56px total (pb-12 + pt-2)
-    const horizontalCount = puzzle.clues.filter(c => 
+    const horizontalCount = visibleClues.filter(c => 
       ['LEFT_OF', 'ADJACENT', 'SEQUENCE_THREE', 'GAPPED_NOT_MIDDLE', 'GAPPED_EXCLUSION'].includes(c.type)
     ).length;
-    const hRows = Math.min(4, Math.ceil(horizontalCount / 3));
+    const hRows = Math.min(4, Math.ceil(horizontalCount / 2));
     const hNeeded = hRows > 0 ? (hRows * 56 + (hRows - 1) * 6 + 56) : 0;
 
-    // Vertical calculation: Max 2 rows, 120px height + gap-1.5 (6px)
-    const verticalCount = puzzle.clues.filter(c => 
-      !['LEFT_OF', 'ADJACENT', 'SEQUENCE_THREE', 'GAPPED_NOT_MIDDLE', 'GAPPED_EXCLUSION', 'ANCHOR'].includes(c.type)
+    // Vertical calculation: Max 2 rows
+    const verticalCount = visibleClues.filter(c => 
+      !['LEFT_OF', 'ADJACENT', 'SEQUENCE_THREE', 'GAPPED_NOT_MIDDLE', 'GAPPED_EXCLUSION'].includes(c.type)
     ).length;
     const vRows = Math.min(2, Math.ceil(verticalCount / 3));
     const vNeeded = vRows > 0 ? (vRows * 120 + (vRows - 1) * 6 + 56) : 0;
     
     const finalHeight = Math.max(hNeeded, vNeeded);
     return finalHeight > 0 ? Math.min(360, finalHeight) : 0;
-  }, [puzzle]);
+  }, [puzzle, binnedClueIds, showBin]);
 
   // ─── Analysis ───────────────────────────────────────────────────────────────
 
@@ -585,6 +683,19 @@ export const GamePage: React.FC = () => {
       : 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-800';
 
   return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={(e) => setActiveDragId(e.active.id.toString())}
+      onDragEnd={(e) => {
+        const { active, over } = e;
+        if (over && over.id.toString().startsWith('bin-drop')) {
+           handleToggleBin(active.id.toString());
+        }
+        setActiveDragId(null);
+      }}
+      onDragCancel={() => setActiveDragId(null)}
+    >
     <div className={`flex flex-col h-[100dvh] w-screen overflow-hidden transition-colors duration-300
       ${isDarkMode ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
 
@@ -820,26 +931,13 @@ export const GamePage: React.FC = () => {
             </span>
             {hintShowing ? 'Apply' : 'Hint'}
           </button>
-          <button
-            onClick={() => setShowBin(!showBin)}
-            className={`relative hidden md:flex p-2.5 rounded-xl items-center justify-center transition-colors shadow-sm ${
-              showBin 
-                ? 'bg-amber-500 text-white shadow-inner ring-2 ring-amber-300' 
-                : binnedClueIds.size > 0
-                  ? 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-300'
-                  : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600'
-            }`}
-          >
-            <span className="material-icons text-base text-inherit">{showBin ? 'visibility' : 'delete_outline'}</span>
-            {binnedClueIds.size > 0 && !showBin && (
-              <span className="absolute -top-1 -right-1 flex h-4 w-4 z-20">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-4 w-4 bg-amber-500 text-[10px] items-center justify-center text-white font-bold leading-none">
-                  {binnedClueIds.size}
-                </span>
-              </span>
-            )}
-          </button>
+          
+          <DroppableDesktopBin 
+            showBin={showBin} 
+            binnedCount={binnedClueIds.size} 
+            onToggle={() => setShowBin(!showBin)} 
+          />
+          
           <button
             onClick={() => {
               if (gameState && gameState.canUndo) {
@@ -929,30 +1027,11 @@ export const GamePage: React.FC = () => {
         {/* Row 2 (Mobile Only): Swappable Drawer Tabs */}
         <div className="shrink-0 md:col-start-1 md:row-start-2 md:hidden flex items-center justify-between px-4 py-2 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 shadow-sm z-20 gap-2">
           
-          <button
-            onClick={() => {
-              dismissHint();
-              setShowBin(!showBin);
-            }}
-            className={`relative p-2 h-full rounded-lg flex items-center justify-center transition-colors shadow-sm ${
-              showBin 
-                ? 'bg-amber-500 text-white shadow-inner ring-2 ring-amber-300' 
-                : binnedClueIds.size > 0
-                  ? 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-300'
-                  : 'bg-slate-200 text-slate-400 dark:bg-slate-800 dark:text-slate-600'
-            }`}
-            title={showBin ? "Show Active Clues" : "Show Binned Clues"}
-          >
-            <span className="material-icons text-base">{showBin ? 'visibility' : 'delete_outline'}</span>
-            {binnedClueIds.size > 0 && !showBin && (
-              <span className="absolute -top-1 -right-1 flex h-4 w-4 z-20">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-4 w-4 bg-amber-500 text-[10px] items-center justify-center text-white font-bold leading-none">
-                  {binnedClueIds.size}
-                </span>
-              </span>
-            )}
-          </button>
+          <DroppableMobileBin 
+            showBin={showBin} 
+            binnedCount={binnedClueIds.size} 
+            onToggle={() => { dismissHint(); setShowBin(!showBin); }} 
+          />
 
           <div className="flex bg-slate-200 dark:bg-slate-800 rounded-lg p-1 w-full gap-1 shadow-inner">
             <button 
@@ -987,7 +1066,7 @@ export const GamePage: React.FC = () => {
         {/* Row 3 (Mobile) / Col 2 Row 1-span-2 (Desktop): Horizontal Clues */}
         <div className={`flex-none md:flex-1 md:col-start-2 md:row-start-1 md:row-span-2 md:min-h-0 md:h-full bg-slate-100 dark:bg-slate-900 border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800 shrink-0 shadow-inner w-full md:w-auto flex flex-col ${
           activeMobileTab === 'horizontal' ? `z-10 relative visible pointer-events-auto md:h-auto` : 'z-0 invisible pointer-events-none h-0 md:visible md:flex md:pointer-events-auto md:relative md:z-10 md:h-auto'
-        }`} style={!isDesktop && activeMobileTab === 'horizontal' ? { height: `${initialMobileDrawerHeight}px` } : {}}>
+        }`} style={!isDesktop && activeMobileTab === 'horizontal' ? { height: `${mobileDrawerHeight}px` } : {}}>
           <div className="flex-1 overflow-hidden relative md:overflow-x-auto md:overflow-y-hidden">
             {showBin && (
                 <div className="absolute top-2 left-2 z-20 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-[10px] font-black uppercase tracking-tighter text-amber-600 dark:text-amber-400 pointer-events-none">
@@ -1015,7 +1094,7 @@ export const GamePage: React.FC = () => {
         {/* Row 3 (Mobile) / Col 1 Row 2 (Desktop): Vertical Clues */}
         <div className={`flex-none md:flex-1 md:col-start-1 md:row-start-2 md:min-h-0 md:h-full bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0 shadow-inner w-full flex flex-col ${
           activeMobileTab === 'vertical' ? `z-10 relative visible pointer-events-auto md:h-auto` : 'z-0 invisible pointer-events-none h-0 md:visible md:flex md:pointer-events-auto md:relative md:z-10 md:h-auto'
-        }`} style={!isDesktop && activeMobileTab === 'vertical' ? { height: `${initialMobileDrawerHeight}px` } : {}}>
+        }`} style={!isDesktop && activeMobileTab === 'vertical' ? { height: `${mobileDrawerHeight}px` } : {}}>
           <div className="flex-1 overflow-hidden relative md:overflow-y-auto md:overflow-x-hidden md:custom-scrollbar">
             {showBin && (
               <div className="absolute top-2 left-2 z-20 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-[10px] font-black uppercase tracking-tighter text-amber-600 dark:text-amber-400 pointer-events-none hidden md:block">
@@ -1105,7 +1184,21 @@ export const GamePage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* DRAG OVERLAY */}
+      <DragOverlay zIndex={9999} dropAnimation={null}>
+        {draggedClue ? (
+          <div className="pointer-events-none drop-shadow-2xl">
+            {isDraggedHorizontal ? (
+               <HorizontalClueUI clue={draggedClue} isHighlighted={false} />
+            ) : (
+               <VerticalClueUI clue={draggedClue} isHighlighted={false} />
+            )}
+          </div>
+        ) : null}
+      </DragOverlay>
     </div>
+    </DndContext>
   );
 };
 

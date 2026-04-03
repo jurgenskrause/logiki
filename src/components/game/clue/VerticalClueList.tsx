@@ -2,12 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { VerticalClueUI } from './VerticalClueUI';
 import type { ActiveClue } from '../../../engine/Solver';
 import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  TouchSensor,
-  useSensor,
-  useSensors
+  useDndMonitor
 } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import {
@@ -60,20 +55,6 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
   const [orderedClues, setOrderedClues] = useState<SortableClue[]>([]);
   const [isDragging, setIsDragging] = useState(false);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { // For mouse re-order
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(TouchSensor, { // For touch: require long press to re-order, allowing quick swipes to scroll
-      activationConstraint: {
-        delay: 250,
-        tolerance: 5,
-      }
-    })
-  );
-
   useEffect(() => {
     if (!containerRef.current) return;
     const obs = new ResizeObserver((entries) => {
@@ -90,7 +71,7 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
   useEffect(() => {
     const verticalClues = clues.filter(c => 
       ['VERTICAL', 'VERTICAL_NOT', 'VERTICAL_TRIO', 'VERTICAL_NOT_TRIO', 'DISJUNCTIVE_XOR', 'VERTICAL_DISJUNCTIVE_EXCLUSION'].includes(c.type)
-    );
+    ).sort((a, b) => a.type.localeCompare(b.type));
     
     setOrderedClues(prev => {
       const newCluesMap = new Map(verticalClues.map(c => [c.id, c]));
@@ -113,28 +94,34 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
     });
   }, [cluesHash]);
 
-  const handleDragStart = (event: DragStartEvent) => {
-    setIsDragging(true);
-    const dragged = orderedClues.find(c => c.id === event.active.id)?.clue;
-    if (dragged) onClueHover?.(dragged);
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    setIsDragging(false);
-    const { active, over } = event;
-    if (over && active.id !== over.id) {
-      onMoveClue?.();
-      setOrderedClues((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id);
-        const newIndex = items.findIndex((item) => item.id === over.id);
-        return arrayMove(items, oldIndex, newIndex);
-      });
+  useDndMonitor({
+    onDragStart: (event: DragStartEvent) => {
+      if (orderedClues.some(c => c.id === event.active.id)) {
+        setIsDragging(true);
+        const dragged = orderedClues.find(c => c.id === event.active.id)?.clue;
+        if (dragged) onClueHover?.(dragged);
+      }
+    },
+    onDragEnd: (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (orderedClues.some(c => c.id === active.id)) {
+        setIsDragging(false);
+        if (over && active.id !== over.id) {
+          const oldIndex = orderedClues.findIndex((item) => item.id === active.id);
+          if (oldIndex !== -1) {
+             const newIndex = orderedClues.findIndex((item) => item.id === over.id);
+             if (newIndex !== -1) {
+                onMoveClue?.();
+                setOrderedClues((items) => arrayMove(items, oldIndex, newIndex));
+             }
+          }
+        }
+      }
+    },
+    onDragCancel: () => {
+      setIsDragging(false);
     }
-  };
-
-  const handleDragCancel = () => {
-    setIsDragging(false);
-  };
+  });
 
   const maxCluesPerRow = Math.floor(containerWidth / CLUE_MAX_WIDTH) || 1;
   const numRows = Math.ceil(orderedClues.length / maxCluesPerRow) || 1;
@@ -158,13 +145,6 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
       className={`flex-1 w-full ${isDesktop ? 'h-full px-1 py-1' : 'h-full p-0'} overflow-hidden relative flex items-center justify-center`}
       style={isDesktop ? { height: `${actualRows * CLUE_HEIGHT + 4}px` } : {}}
     >
-      <DndContext 
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-        onDragCancel={handleDragCancel}
-      >
         <SortableContext 
           items={orderedClues.map(c => c.id)}
           strategy={rectSortingStrategy}
@@ -230,7 +210,6 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
             </>
           )}
         </SortableContext>
-      </DndContext>
     </div>
   );
 };
