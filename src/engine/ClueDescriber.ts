@@ -112,7 +112,7 @@ export function describeRule(clue: ActiveClue): string {
     }
     case 'ADJACENT': {
       const [a, b] = [icon(p[0].row, p[0].item), icon(p[1].row, p[1].item)];
-      return `${a} and ${b} are side-by-side. <nl> A and B may be reversed.`;
+      return `${a} and ${b} are side-by-side. <nl> ${a} and ${b} may be reversed.`;
     }
     case 'LEFT_OF': {
       const [a, b] = [icon(p[0].row, p[0].item), icon(p[1].row, p[1].item)];
