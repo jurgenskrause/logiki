@@ -24,6 +24,7 @@ interface VerticalClueListProps {
   binnedIds?: Set<string>;
   onClueDoubleTap?: (clue: ActiveClue) => void;
   scrollToClueId?: string | null;
+  onMoveClue?: () => void;
 }
 
 function useMediaQuery(query: string) {
@@ -43,7 +44,7 @@ interface SortableClue {
   clue: ActiveClue;
 }
 
-export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClueHover, highlightedClue, onClueToggleBin, binnedIds, onClueDoubleTap, scrollToClueId }) => {
+export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClueHover, highlightedClue, onClueToggleBin, binnedIds, onClueDoubleTap, scrollToClueId, onMoveClue }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -115,6 +116,7 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
     setIsDragging(false);
     const { active, over } = event;
     if (over && active.id !== over.id) {
+      onMoveClue?.();
       setOrderedClues((items) => {
         const oldIndex = items.findIndex((item) => item.id === active.id);
         const newIndex = items.findIndex((item) => item.id === over.id);

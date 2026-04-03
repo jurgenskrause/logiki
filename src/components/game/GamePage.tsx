@@ -16,6 +16,7 @@ import { StructuralSieve } from '../../engine/StructuralSieve';
 import eliminateSfx from '../../assets/sounds/eliminate.wav';
 import solveSfx from '../../assets/sounds/solve.wav';
 import mistakeSfx from '../../assets/sounds/mistake.wav';
+import moveClueSfx from '../../assets/sounds/moveclue.wav';
 
 function seedRNG(seed: string) {
   let h = 0;
@@ -64,12 +65,14 @@ export const GamePage: React.FC = () => {
   const eliminateAudioRef = useRef<HTMLAudioElement | null>(null);
   const solveAudioRef = useRef<HTMLAudioElement | null>(null);
   const mistakeAudioRef = useRef<HTMLAudioElement | null>(null);
+  const moveClueAudioRef = useRef<HTMLAudioElement | null>(null);
   const pendingSoundRef = useRef<'solve' | 'eliminate' | null>(null);
 
   useEffect(() => {
     eliminateAudioRef.current = new Audio(eliminateSfx);
     solveAudioRef.current = new Audio(solveSfx);
     mistakeAudioRef.current = new Audio(mistakeSfx);
+    moveClueAudioRef.current = new Audio(moveClueSfx);
   }, []);
 
   const playInteractionSound = useCallback((action?: string) => {
@@ -80,6 +83,14 @@ export const GamePage: React.FC = () => {
       if (mistakeAudioRef.current) {
         mistakeAudioRef.current.currentTime = 0;
         mistakeAudioRef.current.play().catch(() => {});
+      }
+      return;
+    }
+
+    if (action === 'moveclue') {
+      if (moveClueAudioRef.current) {
+        moveClueAudioRef.current.currentTime = 0;
+        moveClueAudioRef.current.play().catch(() => {});
       }
       return;
     }
@@ -157,6 +168,7 @@ export const GamePage: React.FC = () => {
 
   const handleToggleBin = useCallback((clueId: string) => {
     dismissHint();
+    playInteractionSound('moveclue');
     setBinnedClueIds(prev => {
       const isBinning = !prev.has(clueId);
 
@@ -413,6 +425,7 @@ export const GamePage: React.FC = () => {
       // First click: show banner + highlight
       if (activeHint.clue?.type === 'error') {
         playInteractionSound('mistake');
+        triggerRedFlash();
       }
       setHintShowing(true);
       setHintCount(c => c + 1);
@@ -927,6 +940,7 @@ export const GamePage: React.FC = () => {
                 binnedIds={binnedClueIds}
                 onClueDoubleTap={setExplainedClue}
                 scrollToClueId={scrollToClueId}
+                onMoveClue={() => playInteractionSound('moveclue')}
               />
             )}
           </div>
@@ -954,6 +968,7 @@ export const GamePage: React.FC = () => {
                 binnedIds={binnedClueIds}
                 onClueDoubleTap={setExplainedClue}
                 scrollToClueId={scrollToClueId}
+                onMoveClue={() => playInteractionSound('moveclue')}
               />
             )}
           </div>
