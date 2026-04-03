@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 interface DifficultyMenuProps {
-  onSelect: (level: number) => void;
+  onSelect: (level: number, mode: 'daily' | 'random') => void;
   onClose?: () => void;
 }
 
@@ -27,6 +27,12 @@ const GridIcon: React.FC<{ size: number }> = ({ size }) => {
 };
 
 export const DifficultyMenu: React.FC<DifficultyMenuProps> = ({ onSelect, onClose }) => {
+  const [mode, setMode] = useState<'daily'|'random'>(() => {
+    // Attempt to read current mode from URL if possible to ensure consistency
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('random') === 'true' ? 'random' : 'daily';
+  });
+
   return (
     <div 
       className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/80 backdrop-blur-md transition-all duration-500"
@@ -49,10 +55,27 @@ export const DifficultyMenu: React.FC<DifficultyMenuProps> = ({ onSelect, onClos
         )}
 
         <h2 className="text-3xl sm:text-5xl font-black bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent mb-2 tracking-tighter text-center">
-          SELECT DIFFICULTY
+          PUZZLE SELECT
         </h2>
-        <p className="text-slate-500 dark:text-slate-400 font-medium tracking-widest uppercase text-xs text-center mb-8">
-          Choose a grid size to begin
+
+        {/* Toggle Switch */}
+        <div className="flex bg-slate-200/50 dark:bg-slate-800/50 p-1 rounded-xl mb-4 shadow-inner w-full max-w-[280px]">
+          <button 
+            onClick={() => setMode('daily')}
+            className={`flex-1 py-2 px-4 rounded-lg text-sm font-bold uppercase tracking-wider transition-all ${mode === 'daily' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
+          >
+            Daily
+          </button>
+          <button 
+            onClick={() => setMode('random')}
+             className={`flex-1 py-2 px-4 rounded-lg text-sm font-bold uppercase tracking-wider transition-all ${mode === 'random' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
+          >
+            Random
+          </button>
+        </div>
+
+        <p className="text-slate-500 dark:text-slate-400 font-medium tracking-widest uppercase text-xs text-center mb-8 h-4">
+          {mode === 'daily' ? "Play today's curated grid" : 'Generate an endless random grid'}
         </p>
         
         {/* Mobile optimized: flex wrap to center, or a grid */}
@@ -62,7 +85,7 @@ export const DifficultyMenu: React.FC<DifficultyMenuProps> = ({ onSelect, onClos
             return (
               <button
                 key={level}
-                onClick={() => onSelect(level)}
+                onClick={() => onSelect(level, mode)}
                 className={`flex-1 min-w-[140px] max-w-[180px] p-6 rounded-2xl bg-gradient-to-br ${LEVEL_BGS[index]} 
                   text-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 
                   transition-all duration-300 border border-white/20 flex flex-col items-center group relative overflow-hidden`}

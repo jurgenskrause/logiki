@@ -453,7 +453,19 @@ export const GamePage: React.FC = () => {
       {/* Difficulty menu */}
       {isMenuOpen && (
         <DifficultyMenu
-          onSelect={level => { setSelectedDifficulty(level); setIsMenuOpen(false); }}
+          onSelect={(level, mode) => { 
+            const url = new URL(window.location.href);
+            if (mode === 'random') {
+              url.searchParams.set('random', 'true');
+            } else {
+              url.searchParams.delete('random');
+              url.searchParams.delete('seed');
+            }
+            window.history.pushState({}, '', url.toString());
+
+            setSelectedDifficulty(level); 
+            setIsMenuOpen(false); 
+          }}
           onClose={() => setIsMenuOpen(false)}
         />
       )}
