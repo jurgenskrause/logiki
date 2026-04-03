@@ -875,7 +875,7 @@ export const GamePage: React.FC = () => {
               >
                 <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
                 <span className="relative z-10">Start Puzzle</span>
-                <span className="relative z-10 text-xs font-bold text-white mt-3 uppercase tracking-[0.2em] drop-shadow-md">
+                <span className="relative z-10 text-sm font-bold text-white mt-3 uppercase tracking-[0.2em]">
                   Level {selectedDifficulty} // {puzzle?.rows}x{puzzle?.cols}
                 </span>
                 <div className="mt-4 flex gap-1 items-center opacity-60 group-hover:opacity-100 transition-opacity">
