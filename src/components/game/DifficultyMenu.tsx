@@ -59,20 +59,21 @@ export const DifficultyMenu: React.FC<DifficultyMenuProps> = ({ onSelect, onClos
         </h2>
 
         {/* Toggle Switch */}
-        <div className="flex bg-slate-200/50 dark:bg-slate-800/50 p-1 rounded-xl mb-4 shadow-inner w-full max-w-[280px]">
-          <button 
-            onClick={() => setMode('daily')}
-            className={`flex-1 py-2 px-4 rounded-lg text-sm font-bold uppercase tracking-wider transition-all ${mode === 'daily' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
+        <button 
+          onClick={() => setMode(prev => prev === 'daily' ? 'random' : 'daily')}
+          className="flex bg-slate-200/50 dark:bg-slate-800/50 p-1 rounded-xl mb-4 shadow-inner w-full max-w-[280px] cursor-pointer"
+        >
+          <div 
+            className={`flex-1 py-1.5 px-4 rounded-lg text-sm font-bold uppercase tracking-wider transition-all duration-300 ${mode === 'daily' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-sm' : 'text-slate-500 dark:text-slate-400 opacity-60'}`}
           >
             Daily
-          </button>
-          <button 
-            onClick={() => setMode('random')}
-             className={`flex-1 py-2 px-4 rounded-lg text-sm font-bold uppercase tracking-wider transition-all ${mode === 'random' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
+          </div>
+          <div 
+            className={`flex-1 py-1.5 px-4 rounded-lg text-sm font-bold uppercase tracking-wider transition-all duration-300 ${mode === 'random' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-sm' : 'text-slate-500 dark:text-slate-400 opacity-60'}`}
           >
             Random
-          </button>
-        </div>
+          </div>
+        </button>
 
         <p className="text-slate-500 dark:text-slate-400 font-medium tracking-widest uppercase text-xs text-center mb-8 h-4">
           {mode === 'daily' ? "Play today's curated grid" : 'Generate an endless random grid'}
