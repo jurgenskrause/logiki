@@ -209,6 +209,10 @@ export class GameState {
     return false;
   }
 
+  public getRawGridValue(row: CategoryIndex, col: ColumnIndex): number {
+    return this._grid[this._getIndex(row, col)];
+  }
+
   public getPossibleCount(row: CategoryIndex, col: ColumnIndex): number {
     if (!this._isValid(row, col)) return 0;
     let mask = this._grid[this._getIndex(row, col)];

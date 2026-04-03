@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import confetti from 'canvas-confetti';
 import { DifficultyMenu } from './DifficultyMenu';
 import { SideMenu } from './SideMenu';
 import { HelpModal } from './HelpModal';
@@ -17,6 +18,7 @@ import eliminateSfx from '../../assets/sounds/eliminate.wav';
 import solveSfx from '../../assets/sounds/solve.wav';
 import mistakeSfx from '../../assets/sounds/mistake.wav';
 import moveClueSfx from '../../assets/sounds/moveclue.wav';
+import winSfx from '../../assets/sounds/win.wav';
 
 function seedRNG(seed: string) {
   let h = 0;
@@ -66,6 +68,7 @@ export const GamePage: React.FC = () => {
   const solveAudioRef = useRef<HTMLAudioElement | null>(null);
   const mistakeAudioRef = useRef<HTMLAudioElement | null>(null);
   const moveClueAudioRef = useRef<HTMLAudioElement | null>(null);
+  const winAudioRef = useRef<HTMLAudioElement | null>(null);
   const pendingSoundRef = useRef<'solve' | 'eliminate' | null>(null);
 
   useEffect(() => {
@@ -73,11 +76,20 @@ export const GamePage: React.FC = () => {
     solveAudioRef.current = new Audio(solveSfx);
     mistakeAudioRef.current = new Audio(mistakeSfx);
     moveClueAudioRef.current = new Audio(moveClueSfx);
+    winAudioRef.current = new Audio(winSfx);
   }, []);
 
   const playInteractionSound = useCallback((action?: string) => {
     dismissHint();
     if (!isSoundEnabled) return;
+
+    if (action === 'win') {
+      if (winAudioRef.current) {
+        winAudioRef.current.currentTime = 0;
+        winAudioRef.current.play().catch(() => {});
+      }
+      return;
+    }
 
     if (action === 'mistake') {
       if (mistakeAudioRef.current) {
@@ -108,6 +120,8 @@ export const GamePage: React.FC = () => {
     }
   }, [isSoundEnabled]);
 
+  const [isGameWon, setIsGameWon] = useState(false);
+
   useEffect(() => {
     if (puzzle) {
       setIsGameStarted(false);
@@ -115,8 +129,35 @@ export const GamePage: React.FC = () => {
       setBinnedClueIds(new Set());
       setShowBin(false);
       setHintCount(0);
+      setIsGameWon(false);
     }
   }, [puzzle]);
+
+  // Victory Celebration: Fireworks
+  useEffect(() => {
+    if (isGameWon) {
+      const duration = 5 * 1000;
+      const animationEnd = Date.now() + duration;
+      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 110 };
+
+      const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+
+      const interval: any = setInterval(function() {
+        const timeLeft = animationEnd - Date.now();
+
+        if (timeLeft <= 0) {
+          return clearInterval(interval);
+        }
+
+        const particleCount = 50 * (timeLeft / duration);
+        // since particles fall down, start a bit higher than random
+        confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.1 } });
+        confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.1 } });
+      }, 250);
+      
+      return () => clearInterval(interval);
+    }
+  }, [isGameWon]);
 
   // Hint & Cascade system
   const [activeHint, setActiveHint] = useState<HintResult | null>(null);
@@ -345,6 +386,30 @@ export const GamePage: React.FC = () => {
 
   // ─── Cascade Handler ────────────────────────────────────────────────────────
   
+  const checkWin = useCallback(async () => {
+    if (!gameState || !puzzle || isGameWon) return;
+
+    for (let r = 0; r < puzzle.rows; r++) {
+      for (let c = 0; c < puzzle.cols; c++) {
+        if (!gameState.isConfirmed(r, c)) return;
+      }
+    }
+
+    const sol = new Uint8Array(puzzle.rows * puzzle.cols);
+    for (let r = 0; r < puzzle.rows; r++) {
+      for (let c = 0; c < puzzle.cols; c++) {
+        const mask = gameState.getRawGridValue(r, c);
+        sol[r * puzzle.cols + c] = Math.log2(mask);
+      }
+    }
+
+    const isWin = await loader.verifyWin(sol, puzzle.integrityHash);
+    if (isWin) {
+      setIsGameWon(true);
+      playInteractionSound('win');
+    }
+  }, [gameState, puzzle, isGameWon, playInteractionSound]);
+
   const runCascade = useCallback(() => {
     if (!gameState) return;
     
@@ -365,19 +430,20 @@ export const GamePage: React.FC = () => {
       setIsCascading(false);
       // Cascade complete — save this equilibrium state to history
       gameState.pushHistory();
+      checkWin(); // Final check for win
       // Then run a deep analysis for the next hint
       setTimeout(runAnalysis, 50);
     }
-  }, [gameState, runAnalysis, playInteractionSound]);
+  }, [gameState, runAnalysis, playInteractionSound, checkWin]);
 
   // Timer Ticker
   useEffect(() => {
-    if (!isGameStarted || (gameState && gameState.isPuzzleComplete())) return;
+    if (!isGameStarted || isGameWon) return; 
     const interval = setInterval(() => {
       setElapsedSeconds(s => s + 1);
     }, 1000);
     return () => clearInterval(interval);
-  }, [isGameStarted, gameState]);
+  }, [isGameStarted, isGameWon]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -975,6 +1041,29 @@ export const GamePage: React.FC = () => {
         </div>
 
       </main>
+
+        {/* Win Celebration */}
+        {isGameWon && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-500 p-4">
+             <div className="text-center p-8 bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border-4 border-emerald-500 animate-in zoom-in-95 duration-300 max-w-sm w-full">
+                <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/50 rounded-full flex items-center justify-center mx-auto mb-6 text-emerald-500 shadow-lg shadow-emerald-500/20">
+                  <span className="material-icons text-5xl">emoji_events</span>
+                </div>
+                <h2 className="text-3xl font-black mb-2 bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent uppercase tracking-tighter">
+                  Logic Mastered
+                </h2>
+                <p className="text-slate-500 dark:text-slate-400 font-bold mb-8">
+                  Puzzle completed in {formatTime(elapsedSeconds)}
+                </p>
+                <button 
+                  onClick={() => window.location.reload()}
+                  className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-black shadow-lg shadow-emerald-500/30 transition-all active:scale-95 uppercase tracking-widest text-xs"
+                >
+                  Next Puzzle
+                </button>
+             </div>
+          </div>
+        )}
 
         {/* Unified Start Puzzle Overlay - Stays Sharp above the blurred main grid */}
         {!isGameStarted && (
