@@ -115,6 +115,7 @@ export const GamePage: React.FC = () => {
   }, [puzzle]);
 
   const handleToggleBin = useCallback((clueId: string) => {
+    dismissHint();
     setBinnedClueIds(prev => {
       const isBinning = !prev.has(clueId);
 
@@ -385,6 +386,13 @@ export const GamePage: React.FC = () => {
     }
   };
 
+  const dismissHint = useCallback(() => {
+    if (hintShowing) {
+      setHintShowing(false);
+      setScrollToClueId(null);
+    }
+  }, [hintShowing]);
+
 
   // ─── Derived hint highlight data ─────────────────────────────────────────────
 
@@ -521,7 +529,7 @@ export const GamePage: React.FC = () => {
         </div>
 
         {/* IMMERSIVE LEFT-ALIGNED TEXT AREA (Mobile) */}
-        <div className="flex-1 min-w-0 h-full flex items-center justify-start z-50 pointer-events-none select-none" style={{ containerType: 'inline-size' }}>
+        <div className="flex-1 min-w-0 h-full flex items-center justify-start z-30 pointer-events-none select-none" style={{ containerType: 'inline-size' }}>
           {hintShowing && activeHint ? (
             <p className="font-bold text-slate-800 dark:text-slate-100 leading-tight line-clamp-2 pr-2 bg-slate-50/95 dark:bg-slate-900/95 rounded shadow-[5px_0_10px_rgba(248,250,252,0.95)] dark:shadow-[5px_0_10px_rgba(15,23,42,0.95)] animate-in fade-in duration-200 pointer-events-auto" style={{ fontSize: 'clamp(10px, 4.5cqw, 14px)' }}>
               {activeHint.text.split('<nl>').map((line, i) => (
@@ -534,7 +542,7 @@ export const GamePage: React.FC = () => {
         </div>
 
         {/* INTERACTIVE CONTROLS (Z-Indexed Overlay) */}
-        <div className="absolute right-2 top-0 bottom-0 flex items-center gap-1.5 z-10">
+        <div className="absolute right-2 top-0 bottom-0 flex items-center gap-1.5 z-50">
             {hintShowing && activeHint ? (
                <button
                  onClick={handleHintClick}
@@ -623,7 +631,7 @@ export const GamePage: React.FC = () => {
         </div>
 
         {/* IMMERSIVE LEFT-ALIGNED TEXT AREA */}
-        <div className="flex-1 min-w-0 h-full flex items-center justify-start z-50 pointer-events-none select-none" style={{ containerType: 'inline-size' }}>
+        <div className="flex-1 min-w-0 h-full flex items-center justify-start z-30 pointer-events-none select-none" style={{ containerType: 'inline-size' }}>
           {hoveredClueText ? (
             <p className="font-bold text-slate-800 dark:text-slate-100 leading-tight line-clamp-2 pr-4 bg-slate-50/95 dark:bg-slate-900/95 rounded-r shadow-[10px_0_10px_rgba(248,250,252,0.95)] dark:shadow-[10px_0_10px_rgba(15,23,42,0.95)] animate-in fade-in duration-150 pointer-events-auto" style={{ fontSize: 'clamp(12px, 3cqw, 24px)' }}>
               {hoveredClueText.split('<nl>').map((line, i) => (
@@ -642,7 +650,7 @@ export const GamePage: React.FC = () => {
         </div>
 
         {/* RIGHT BUTTON OVERLAY */}
-        <div className="absolute right-4 top-0 bottom-0 flex items-center gap-2 z-10">
+        <div className="absolute right-4 top-0 bottom-0 flex items-center gap-2 z-50">
           <div className="flex items-center justify-center bg-slate-100/80 dark:bg-slate-800/80 rounded-xl px-2 h-10 text-sm font-bold text-slate-500 shadow-sm" title="Hints & Warnings Used">
             ★ {hintCount}
           </div>
@@ -749,7 +757,11 @@ export const GamePage: React.FC = () => {
                 subColumns={subColumns}
                 clues={puzzle.clues}
                 gameState={gameState}
-                onStateChange={handleStateChange}
+                onInteraction={dismissHint}
+                onStateChange={() => {
+                  dismissHint();
+                  handleStateChange();
+                }}
                 hintHighlights={hintHighlights}
                 isLocked={isCascading}
                 flashRed={flashRed}
@@ -763,7 +775,10 @@ export const GamePage: React.FC = () => {
         <div className="shrink-0 md:col-start-1 md:row-start-2 md:hidden flex items-center justify-between px-4 py-2 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 shadow-sm z-20 gap-2">
           
           <button
-            onClick={() => setShowBin(!showBin)}
+            onClick={() => {
+              dismissHint();
+              setShowBin(!showBin);
+            }}
             className={`relative p-2 h-full rounded-lg flex items-center justify-center transition-colors shadow-sm ${
               showBin 
                 ? 'bg-amber-500 text-white shadow-inner ring-2 ring-amber-300' 
@@ -786,7 +801,10 @@ export const GamePage: React.FC = () => {
 
           <div className="flex bg-slate-200 dark:bg-slate-800 rounded-lg p-1 w-full gap-1 shadow-inner">
             <button 
-              onClick={() => setActiveMobileTab('horizontal')}
+              onClick={() => {
+                dismissHint();
+                setActiveMobileTab('horizontal');
+              }}
               className={`flex-1 py-1.5 px-3 rounded-md text-xs font-bold uppercase tracking-wider transition-all ${
                 activeMobileTab === 'horizontal' 
                   ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-300 shadow-sm'
@@ -796,7 +814,10 @@ export const GamePage: React.FC = () => {
               Horizontal
             </button>
             <button 
-              onClick={() => setActiveMobileTab('vertical')}
+              onClick={() => {
+                dismissHint();
+                setActiveMobileTab('vertical');
+              }}
               className={`flex-1 py-1.5 px-3 rounded-md text-xs font-bold uppercase tracking-wider transition-all ${
                 activeMobileTab === 'vertical' 
                   ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-300 shadow-sm'

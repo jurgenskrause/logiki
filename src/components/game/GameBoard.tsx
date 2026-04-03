@@ -32,9 +32,10 @@ interface GameBoardProps {
   isLocked?: boolean;
   flashRed?: boolean;
   zoomEnabled?: boolean;
+  onInteraction?: () => void;
 }
 
-export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns, clues = [], gameState, onStateChange, hintHighlights = [], isLocked = false, flashRed = false, zoomEnabled = true }) => {
+export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns, clues = [], gameState, onStateChange, onInteraction, hintHighlights = [], isLocked = false, flashRed = false, zoomEnabled = true }) => {
   const cells: Cell[] = [];
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
@@ -107,6 +108,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns, cl
   };
 
   const handleInteract = (cellId: string, possibilityId: number, action: 'eliminate' | 'solve' | 'zoom_trigger') => {
+    onInteraction?.();
     if (isLocked) return;
 
     // 1. MUST parse coordinates first as they are needed for BOTH zoom and actual interaction
