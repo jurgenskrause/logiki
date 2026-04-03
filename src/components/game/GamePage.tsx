@@ -212,10 +212,10 @@ export const GamePage: React.FC = () => {
 
     // Immediately hide the board when starting a load or change
     setIsGameStarted(false);
+    setIsLoading(true);
 
-    // We keep track of individual puzzle loads
+    // Give React 150ms to paint the 'Generating...' state to the DOM
     const t = setTimeout(async () => {
-      setIsLoading(true);
       const difficulty = selectedDifficulty === 0 ? 1 : selectedDifficulty;
 
       const urlParams = new URLSearchParams(window.location.search);
@@ -272,7 +272,7 @@ export const GamePage: React.FC = () => {
       } finally {
         setIsLoading(false);
       }
-    }, 50);
+    }, 150);
 
     return () => clearTimeout(t);
   }, [selectedDifficulty, isManifestLoaded]);
@@ -871,18 +871,34 @@ export const GamePage: React.FC = () => {
              <div className="relative animate-form-enter">
               <button 
                 onClick={() => setIsGameStarted(true)}
-                className="px-10 py-5 bg-gradient-to-br from-blue-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 text-white rounded-3xl font-black text-3xl uppercase tracking-widest shadow-[0_20px_50px_rgba(79,70,229,0.4)] hover:shadow-indigo-500/60 transition-all transform hover:scale-105 active:scale-95 border border-white/20 flex flex-col items-center group overflow-hidden"
+                disabled={isLoading}
+                className={`px-10 py-5 rounded-3xl font-black text-3xl uppercase tracking-widest border border-white/20 flex flex-col items-center group overflow-hidden transition-all duration-500 bg-gradient-to-br
+                  ${isLoading 
+                    ? 'from-blue-600/60 to-indigo-700/60 text-white/60 cursor-not-allowed shadow-none backdrop-blur-sm' 
+                    : 'from-blue-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 text-white shadow-[0_20px_50px_rgba(79,70,229,0.4)] hover:shadow-indigo-500/60 transform hover:scale-105 active:scale-95'
+                  }`}
               >
-                <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-                <span className="relative z-10">Start Puzzle</span>
-                <span className="relative z-10 text-sm font-bold text-white mt-3 uppercase tracking-[0.2em]">
-                  Level {selectedDifficulty} // {puzzle?.rows}x{puzzle?.cols}
-                </span>
-                <div className="mt-4 flex gap-1 items-center opacity-60 group-hover:opacity-100 transition-opacity">
-                   {[...Array(3)].map((_, i) => (
-                     <div key={i} className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" style={{ animationDelay: `${i * 0.15}s` }} />
-                   ))}
-                </div>
+                {!isLoading && <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />}
+                <span className="relative z-10">{isLoading ? 'Generating...' : 'Start Puzzle'}</span>
+                
+                {!isLoading && (
+                   <>
+                     <span className="relative z-10 text-sm font-bold text-white mt-3 uppercase tracking-[0.2em]">
+                       Level {selectedDifficulty} // {puzzle?.rows}x{puzzle?.cols}
+                     </span>
+                     <div className="mt-4 flex gap-1 items-center opacity-60 group-hover:opacity-100 transition-opacity">
+                       {[...Array(3)].map((_, i) => (
+                         <div key={i} className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" style={{ animationDelay: `${i * 0.15}s` }} />
+                       ))}
+                     </div>
+                   </>
+                )}
+                
+                {isLoading && (
+                  <div className="mt-6 mb-2 flex gap-2 items-center opacity-80">
+                    <span className="material-icons animate-spin text-white/50 text-2xl">sync</span>
+                  </div>
+                )}
               </button>
              </div>
           </div>
