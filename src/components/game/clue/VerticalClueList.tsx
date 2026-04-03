@@ -5,6 +5,7 @@ import {
   DndContext,
   closestCenter,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors
 } from '@dnd-kit/core';
@@ -60,10 +61,16 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
   const [isDragging, setIsDragging] = useState(false);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(PointerSensor, { // For mouse re-order
       activationConstraint: {
-        distance: 5,
+        distance: 8,
       },
+    }),
+    useSensor(TouchSensor, { // For touch: require long press to re-order, allowing quick swipes to scroll
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      }
     })
   );
 
@@ -237,16 +244,16 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
                 })}
               </div>
               {Math.ceil(orderedClues.length / itemsPerPage) > 1 && (
-                  <div className="absolute bottom-1 left-0 right-0 flex justify-center gap-12 pointer-events-none z-20">
+                  <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-between px-1 pointer-events-none z-20">
                       <button 
                          onClick={handlePrevPage}
-                         className="pointer-events-auto w-10 h-10 rounded-full bg-slate-800/90 dark:bg-slate-700/90 text-white flex items-center justify-center hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors shadow-lg active:scale-95 border border-white/10"
+                         className="pointer-events-auto w-10 min-w-[40px] h-10 rounded-full bg-slate-800/90 dark:bg-slate-700/80 text-white flex items-center justify-center hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors shadow-lg active:scale-95 border border-white/10"
                       >
                           <span className="material-icons text-lg">arrow_back_ios_new</span>
                       </button>
                       <button 
                          onClick={handleNextPage}
-                         className="pointer-events-auto w-10 h-10 rounded-full bg-slate-800/90 dark:bg-slate-700/90 text-white flex items-center justify-center hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors shadow-lg active:scale-95 border border-white/10"
+                         className="pointer-events-auto w-10 min-w-[40px] h-10 rounded-full bg-slate-800/90 dark:bg-slate-700/80 text-white flex items-center justify-center hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors shadow-lg active:scale-95 border border-white/10"
                       >
                           <span className="material-icons text-lg">arrow_forward_ios</span>
                       </button>

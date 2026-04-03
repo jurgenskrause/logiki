@@ -237,12 +237,12 @@ export const GamePage: React.FC = () => {
   const initialMobileDrawerHeight = useMemo(() => {
     if (!puzzle) return 0;
     
-    // Horizontal calculation: Max 3 rows, h-14 (56px) + gap-1.5 (6px)
+    // Horizontal calculation: Max 4 rows, h-14 (56px) + gap-1.5 (6px)
     // Padding/Arrows estimated at 56px total (pb-12 + pt-2)
     const horizontalCount = puzzle.clues.filter(c => 
       ['LEFT_OF', 'ADJACENT', 'SEQUENCE_THREE', 'GAPPED_NOT_MIDDLE', 'GAPPED_EXCLUSION'].includes(c.type)
     ).length;
-    const hRows = Math.min(3, Math.ceil(horizontalCount / 3));
+    const hRows = Math.min(4, Math.ceil(horizontalCount / 3));
     const hNeeded = hRows > 0 ? (hRows * 56 + (hRows - 1) * 6 + 56) : 0;
 
     // Vertical calculation: Max 2 rows, 120px height + gap-1.5 (6px)
@@ -253,7 +253,7 @@ export const GamePage: React.FC = () => {
     const vNeeded = vRows > 0 ? (vRows * 120 + (vRows - 1) * 6 + 56) : 0;
     
     const finalHeight = Math.max(hNeeded, vNeeded);
-    return finalHeight > 0 ? Math.min(310, finalHeight) : 0;
+    return finalHeight > 0 ? Math.min(360, finalHeight) : 0;
   }, [puzzle]);
 
   // ─── Analysis ───────────────────────────────────────────────────────────────
