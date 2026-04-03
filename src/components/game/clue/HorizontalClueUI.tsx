@@ -1,5 +1,17 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { getFallbackEmoji } from '../../../utils/themeRegistry';
+
+function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(false);
+  useEffect(() => {
+    const matchQueryList = window.matchMedia(query);
+    setMatches(matchQueryList.matches);
+    const handler = (e: MediaQueryListEvent) => setMatches(e.matches);
+    matchQueryList.addEventListener('change', handler);
+    return () => matchQueryList.removeEventListener('change', handler);
+  }, [query]);
+  return matches;
+}
 import type { ActiveClue } from '../../../engine/Solver';
 
 interface HorizontalClueProps {
@@ -69,77 +81,18 @@ export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover,
     }
   };
 
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const initialPosRef = useRef<{ x: number; y: number } | null>(null);
-  const isTouchRef = useRef(false);
   const lastTapRef = useRef<number>(0);
-  const hasDraggedRef = useRef(false);
-
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-        timerRef.current = null;
-      }
-    };
-  }, []);
+  const isDesktop = useMediaQuery('(min-width: 768px)');
 
   const handlePointerDown = (e: React.PointerEvent) => {
-    // Ignore right mouse button to prevent starting timer when context menu handles it
     if (e.button === 2) return;
-
     const now = Date.now();
-    
-    // Check for Double Tap (within 300ms of last pointer down)
     if (now - lastTapRef.current < 300) {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-        timerRef.current = null;
-      }
       lastTapRef.current = 0;
       onDoubleTap?.(clue);
       return;
     }
     lastTapRef.current = now;
-
-    isTouchRef.current = e.pointerType !== 'mouse';
-    hasDraggedRef.current = false;
-    initialPosRef.current = { x: e.clientX, y: e.clientY };
-
-    // START Long Press timer - discard instantly when period elapses
-    timerRef.current = setTimeout(() => {
-       if (!hasDraggedRef.current) {
-         onDiscard?.(clue.id);
-         // Visual/Tactile feedback
-         if (isTouchRef.current && 'vibrate' in navigator) {
-           navigator.vibrate(10);
-         }
-       }
-       timerRef.current = null;
-    }, 600);
-  };
-
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (initialPosRef.current) {
-      const dx = e.clientX - initialPosRef.current.x;
-      const dy = e.clientY - initialPosRef.current.y;
-      if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
-        hasDraggedRef.current = true;
-        if (timerRef.current) {
-          clearTimeout(timerRef.current);
-          timerRef.current = null;
-        }
-      }
-    }
-  };
-
-  const handlePointerUp = () => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-    initialPosRef.current = null;
-    hasDraggedRef.current = false;
   };
 
   return (
@@ -155,13 +108,10 @@ export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover,
       }}
       onContextMenu={(e) => {
         e.preventDefault();
-        if (isTouchRef.current) return;
         onDiscard?.(clue.id);
       }}
       onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerUp}
+      {...(isDesktop && dragHandleProps ? dragHandleProps : {})}
     >
       <div className="text-slate-700 dark:text-slate-200 w-full h-full pointer-events-none">
          {renderContent()}
@@ -169,8 +119,8 @@ export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover,
 
       {/* Drag Handle (Full Height Right Column) */}
       <div 
-        {...dragHandleProps}
-        className="absolute right-0 inset-y-0 w-8 flex flex-col items-center justify-center gap-1.5 cursor-grab active:cursor-grabbing hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-r-lg transition-colors group/handle touch-none"
+        {...(!isDesktop && dragHandleProps ? dragHandleProps : {})}
+        className="absolute right-0 inset-y-0 w-8 md:hidden flex flex-col items-center justify-center gap-1.5 cursor-grab active:cursor-grabbing hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-r-lg transition-colors group/handle touch-none"
       >
         <div className="flex gap-1">
           <div className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full" />

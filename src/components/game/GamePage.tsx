@@ -55,35 +55,7 @@ function useMediaQuery(query: string) {
   return matches;
 }
 
-const DroppableDesktopBin = ({ showBin, binnedCount, onToggle }: { showBin: boolean; binnedCount: number; onToggle: () => void }) => {
-  const { setNodeRef, isOver } = useDroppable({ id: 'bin-drop-desktop' });
-  return (
-    <button
-      ref={setNodeRef}
-      onClick={onToggle}
-      className={`relative hidden md:flex p-2.5 rounded-xl items-center justify-center transition-all shadow-sm ${
-        isOver 
-          ? 'bg-amber-400 text-white ring-4 ring-amber-300 scale-110 shadow-xl'
-          : showBin 
-            ? 'bg-amber-500 text-white shadow-inner ring-2 ring-amber-300' 
-            : binnedCount > 0
-              ? 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-300'
-              : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600'
-      }`}
-      title={showBin ? "Show Active Clues" : "Show Binned Clues"}
-    >
-      <span className="material-icons text-base text-inherit">{showBin ? 'visibility' : 'delete_outline'}</span>
-      {binnedCount > 0 && !showBin && (
-         <span className="absolute -top-1 -right-1 flex h-4 w-4 z-20">
-           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-           <span className="relative inline-flex rounded-full h-4 w-4 bg-amber-500 text-[10px] items-center justify-center text-white font-bold leading-none">
-             {binnedCount}
-           </span>
-         </span>
-      )}
-    </button>
-  );
-};
+
 
 const DroppableMobileBin = ({ showBin, binnedCount, onToggle }: { showBin: boolean; binnedCount: number; onToggle: () => void }) => {
   const { setNodeRef, isOver } = useDroppable({ id: 'bin-drop-mobile' });
@@ -932,11 +904,27 @@ export const GamePage: React.FC = () => {
             {hintShowing ? 'Apply' : 'Hint'}
           </button>
           
-          <DroppableDesktopBin 
-            showBin={showBin} 
-            binnedCount={binnedClueIds.size} 
-            onToggle={() => setShowBin(!showBin)} 
-          />
+          <button
+            onClick={() => setShowBin(!showBin)}
+            className={`relative hidden md:flex p-2.5 rounded-xl items-center justify-center transition-colors shadow-sm ${
+              showBin 
+                ? 'bg-amber-500 text-white shadow-inner ring-2 ring-amber-300' 
+                : binnedClueIds.size > 0
+                  ? 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-300'
+                  : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600'
+            }`}
+            title={showBin ? "Show Active Clues" : "Show Binned Clues"}
+          >
+            <span className="material-icons text-base text-inherit">{showBin ? 'visibility' : 'delete_outline'}</span>
+            {binnedClueIds.size > 0 && !showBin && (
+              <span className="absolute -top-1 -right-1 flex h-4 w-4 z-20">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-4 w-4 bg-amber-500 text-[10px] items-center justify-center text-white font-bold leading-none">
+                  {binnedClueIds.size}
+                </span>
+              </span>
+            )}
+          </button>
           
           <button
             onClick={() => {
