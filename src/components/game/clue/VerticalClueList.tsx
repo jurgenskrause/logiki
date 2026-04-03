@@ -51,7 +51,7 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const itemWidth = isDesktop ? 96 : 72; // w-24 vs w-[72px]
   const itemHeight = isDesktop ? 168 : 120; // h-[168px] vs h-[120px]
-  const gap = isDesktop ? 8 : 4; // gap-2 vs gap-1
+  const gap = isDesktop ? 2 : 4; // gap-0.5 vs gap-1
   const CLUE_MAX_WIDTH = itemWidth + gap;
   const CLUE_HEIGHT = itemHeight + gap;
   
@@ -155,8 +155,8 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
   return (
     <div 
       ref={containerRef}
-      className={`flex-1 w-full ${isDesktop ? 'h-full p-4' : 'h-full p-0'} overflow-hidden relative flex items-center justify-center`}
-      style={isDesktop ? { height: `${actualRows * CLUE_HEIGHT + 32}px` } : {}}
+      className={`flex-1 w-full ${isDesktop ? 'h-full px-1 py-1' : 'h-full p-0'} overflow-hidden relative flex items-center justify-center`}
+      style={isDesktop ? { height: `${actualRows * CLUE_HEIGHT + 4}px` } : {}}
     >
       <DndContext 
         sensors={sensors}
@@ -171,11 +171,11 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
         >
           {isDesktop ? (
             <div 
-              className="grid gap-2 w-full justify-center"
+              className="grid gap-0.5 w-full justify-center"
               style={{
                 gridTemplateColumns: `repeat(${maxCluesPerRow}, minmax(0, 1fr))`,
                 gridAutoFlow: 'row',
-                gridAutoRows: `minmax(${CLUE_HEIGHT - 8}px, 1fr)`,
+                gridAutoRows: `minmax(${CLUE_HEIGHT - 2}px, 1fr)`,
                 maxWidth: `${maxCluesPerRow * CLUE_MAX_WIDTH}px`
               }}
             >

@@ -38,8 +38,8 @@ interface HorizontalClueListProps {
   scrollToClueId?: string | null;
 }
 
-const CLUE_MAX_HEIGHT = 84 + 12; // h-[84px] + gap-3
-const CLUE_WIDTH = 192 + 12; // w-48 + gap-3
+const CLUE_MAX_HEIGHT = 84 + 2; // h-[84px] + gap-0.5
+const CLUE_WIDTH = 192 + 2; // w-48 + gap-0.5
 
 interface SortableClue {
   id: string;
@@ -156,10 +156,10 @@ export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, o
   return (
     <div 
       ref={containerRef}
-      className={`flex-1 w-full ${isDesktop ? 'h-full p-2 md:p-4' : 'h-full p-0'} overflow-hidden relative flex items-center justify-center`}
+      className={`flex-1 w-full ${isDesktop ? 'h-full p-1' : 'h-full p-0'} overflow-hidden relative flex items-center justify-center`}
       style={isDesktop ? {
-        width: `${actualCols * CLUE_WIDTH + 32}px`,
-        maxWidth: `${actualCols * CLUE_WIDTH + 32}px`
+        width: `${actualCols * CLUE_WIDTH + 4}px`,
+        maxWidth: `${actualCols * CLUE_WIDTH + 4}px`
       } : {}}
     >
       <DndContext 
@@ -175,7 +175,7 @@ export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, o
         >
           {isDesktop ? (
               <div 
-                className="w-full h-full grid gap-3 overflow-hidden"
+                className="w-full h-full grid gap-0.5 overflow-hidden"
                 style={{
                   gridTemplateRows: `repeat(${maxCluesPerColumn}, minmax(0, 1fr))`,
                   gridTemplateColumns: `repeat(${actualCols}, minmax(0, 1fr))`,
