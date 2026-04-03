@@ -21,7 +21,7 @@ export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover,
     switch (type) {
       case 'LEFT_OF':
         return (
-          <div className="flex items-center justify-center w-full h-full gap-4 md:gap-7">
+          <div className="flex items-center justify-center w-full h-full gap-4 md:gap-5">
             <span className="text-2xl md:text-3xl drop-shadow-sm">{icons[0]}</span>
             <span className="material-icons text-slate-400 dark:text-slate-300 text-xl md:text-2xl">east</span>
             <span className="text-2xl md:text-3xl drop-shadow-sm">{icons[1]}</span>
@@ -29,7 +29,7 @@ export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover,
         );
       case 'ADJACENT':
         return (
-          <div className="flex items-center justify-center w-full h-full gap-3 md:gap-5">
+          <div className="flex items-center justify-center w-full h-full gap-3 md:gap-3">
             <span className="text-xl md:text-2xl drop-shadow-sm opacity-50 grayscale scale-[0.8] md:scale-90">{icons[1]}</span>
             <div className="flex flex-col items-center">
                <span className="text-2xl md:text-3xl drop-shadow-sm z-10">{icons[0]}</span>
@@ -40,7 +40,7 @@ export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover,
         );
       case 'SEQUENCE_THREE':
         return (
-          <div className="flex items-center justify-center w-full h-full gap-2 md:gap-4">
+          <div className="flex items-center justify-center w-full h-full gap-2 md:gap-2">
             <span className="text-2xl md:text-3xl drop-shadow-sm">{icons[0]}</span>
             <span className="material-icons text-slate-400 dark:text-slate-300 transform scale-[0.6] md:scale-75 -mx-3 md:-mx-2">swap_horiz</span>
             <span className="text-2xl md:text-3xl drop-shadow-sm">{icons[1]}</span>
@@ -51,7 +51,7 @@ export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover,
       case 'GAPPED_NOT_MIDDLE':
       case 'GAPPED_EXCLUSION':
         return (
-          <div className="flex items-center justify-center w-full h-full gap-3 md:gap-5">
+          <div className="flex items-center justify-center w-full h-full gap-3 md:gap-3">
             <span className="text-2xl md:text-3xl drop-shadow-sm">{icons[0]}</span>
             <div className="relative mx-0.5 md:mx-2 flex items-center justify-center">
                <span className="text-2xl md:text-3xl">{icons[2]}</span>
