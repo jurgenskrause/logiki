@@ -66,13 +66,19 @@ export const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => {
                 <li className="flex items-start gap-2">
                   <span className="material-icons text-blue-400 text-lg shrink-0">info</span>
                   <div>
-                    <strong>Explain Clue:</strong> Hover over a clue to read its rule in the top bar.
+                    <strong>Explain Clue:</strong> Hover over a clue to read its rule in the top bar, or double-click it for an expanded explanation.
                   </div>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="material-icons text-amber-400 text-lg shrink-0">delete_sweep</span>
+                  <span className="material-icons text-amber-400 text-lg shrink-0">drag_indicator</span>
                   <div>
-                    <strong>Bin Clue:</strong> Right-click a clue when you're done with it to move it out of the way. Double tap to see an expanded explanation.
+                    <strong>Organize Clues:</strong> Click and drag a clue to reorder it on the board.
+                  </div>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="material-icons text-amber-500 text-lg shrink-0">delete_sweep</span>
+                  <div>
+                    <strong>Bin Clue:</strong> Right-click a clue to quickly remove it from the board.
                   </div>
                 </li>
               </ul>
@@ -95,15 +101,21 @@ export const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => {
                   </div>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="material-icons text-amber-400 text-lg shrink-0">delete_sweep</span>
-                  <div>
-                    <strong>Bin Clue:</strong> Long press a clue to discard it to the bin.
-                  </div>
-                </li>
-                <li className="flex items-start gap-2">
                   <span className="material-icons text-blue-400 text-lg shrink-0">info</span>
                   <div>
                     <strong>Explain Clue:</strong> Double tap a clue to see an expanded explanation of the rule.
+                  </div>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="material-icons text-amber-400 text-lg shrink-0">drag_indicator</span>
+                  <div>
+                    <strong>Organize Clues:</strong> Drag a clue by its handle (the edge dots) to reorder it on the board.
+                  </div>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="material-icons text-amber-500 text-lg shrink-0">delete_sweep</span>
+                  <div>
+                    <strong>Bin Clue:</strong> Drag a clue to the main bin icon to discard it.
                   </div>
                 </li>
               </ul>
