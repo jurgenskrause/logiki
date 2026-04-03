@@ -9,39 +9,40 @@ interface VerticalClueProps {
   onDiscard?: (clueId: string) => void;
   isBinned?: boolean;
   onDoubleTap?: (clue: ActiveClue) => void;
+  dragHandleProps?: any;
 }
 
-export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue, onHover, isHighlighted, onDiscard, isBinned, onDoubleTap }) => {
+export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue, onHover, isHighlighted, onDiscard, isBinned, onDoubleTap, dragHandleProps }) => {
   const { type, params } = clue;
 
   // Render icons for each param
   const icons = params.map(p => getFallbackEmoji(p.row, p.item));
 
   const renderContent = () => {
-    const iconClass = "text-2xl md:text-3xl drop-shadow-sm leading-none flex items-center justify-center";
+    const iconClass = "text-xl md:text-3xl drop-shadow-sm leading-none flex items-center justify-center";
     
     switch (type) {
       case 'VERTICAL':
       case 'VERTICAL_PAIR':
         return (
-          <div className="flex flex-col items-center justify-around w-full h-full py-2">
+          <div className="flex flex-col items-center justify-around w-full h-full pt-1 pb-4 md:py-2">
             <span className={iconClass}>{icons[0]}</span>
-            <span className="material-icons text-slate-400 dark:text-slate-300 text-xl md:text-2xl leading-none">link</span>
+            <span className="material-icons text-slate-400 dark:text-slate-300 text-lg md:text-2xl leading-none">link</span>
             <span className={iconClass}>{icons[1]}</span>
           </div>
         );
       case 'VERTICAL_NOT':
       case 'VERTICAL_NOT_PAIR':
         return (
-          <div className="flex flex-col items-center justify-around w-full h-full py-2">
+          <div className="flex flex-col items-center justify-around w-full h-full pt-1 pb-4 md:py-2">
             <span className={iconClass}>{icons[0]}</span>
-            <span className="material-icons text-red-500 text-xl md:text-2xl leading-none">link_off</span>
+            <span className="material-icons text-red-500 text-lg md:text-2xl leading-none">link_off</span>
             <span className={iconClass}>{icons[1]}</span>
           </div>
         );
       case 'VERTICAL_TRIO':
         return (
-          <div className="flex flex-col items-center justify-around w-full h-full py-2">
+          <div className="flex flex-col items-center justify-around w-full h-full pt-1 pb-4 md:py-2">
             <span className={iconClass}>{icons[0]}</span>
             <span className={iconClass}>{icons[1]}</span>
             <span className={iconClass}>{icons[2]}</span>
@@ -49,12 +50,12 @@ export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue, onHover, isH
         );
       case 'VERTICAL_NOT_TRIO':
         return (
-          <div className="flex flex-col items-center justify-around w-full h-full py-2">
+          <div className="flex flex-col items-center justify-around w-full h-full pt-1 pb-4 md:py-2">
             <span className={iconClass}>{icons[0]}</span>
             <div className="relative flex items-center justify-center">
                <span className={iconClass}>{icons[2]}</span>
-               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 md:w-[42px] md:h-[42px] border-[3px] md:border-[4px] border-red-500/90 rounded-full z-10 pointer-events-none drop-shadow-md">
-                  <div className="absolute top-1/2 left-[-10%] w-[120%] h-[3px] md:h-[4px] bg-red-500/90 transform -translate-y-1/2 rotate-45"></div>
+               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-7 h-7 md:w-[42px] md:h-[42px] border-[2px] md:border-[4px] border-red-500/90 rounded-full z-10 pointer-events-none drop-shadow-md">
+                  <div className="absolute top-1/2 left-[-10%] w-[120%] h-[2px] md:h-[4px] bg-red-500/90 transform -translate-y-1/2 rotate-45"></div>
                </div>
             </div>
             <span className={iconClass}>{icons[1]}</span>
@@ -63,13 +64,13 @@ export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue, onHover, isH
       case 'DISJUNCTIVE_XOR':
       case 'VERTICAL_DISJUNCTIVE_EXCLUSION':
         return (
-          <div className="flex flex-col items-center justify-around w-full h-full py-2">
+          <div className="flex flex-col items-center justify-around w-full h-full pt-1 pb-4 md:py-2">
             <span className={iconClass}>{icons[0]}</span>
             
-            <div className="relative flex flex-col items-center justify-center gap-2 md:gap-4">
+            <div className="relative flex flex-col items-center justify-center gap-1 md:gap-4">
                <span className={iconClass}>{icons[1]}</span>
                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-                  <span className="material-icons text-blue-500 text-[10px] md:text-[14px] bg-white/90 dark:bg-slate-900/90 rounded-full p-0.5 shadow-xs border border-slate-200 dark:border-slate-700">sync</span>
+                  <span className="material-icons text-blue-500 text-[8px] md:text-[14px] bg-white/90 dark:bg-slate-900/90 rounded-full p-0.5 shadow-xs border border-slate-200 dark:border-slate-700">sync</span>
                </div>
                <span className={iconClass}>{icons[2]}</span>
             </div>
@@ -159,7 +160,7 @@ export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue, onHover, isH
 
   return (
     <div 
-      className={`w-[72px] h-[120px] md:w-24 md:h-[168px] bg-white dark:bg-slate-800 rounded-lg shadow-md hover:border-indigo-500 group flex items-center justify-center shrink-0 select-none touch-none ${
+      className={`w-20 md:w-24 h-[120px] md:h-[168px] bg-white dark:bg-slate-800 rounded-lg shadow-md hover:border-indigo-500 group flex items-center justify-center shrink-0 select-none ${
         isHighlighted
           ? 'animate-hard-flash z-10'
           : 'border-2 border-slate-200 dark:border-slate-700'
@@ -180,6 +181,25 @@ export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue, onHover, isH
     >
       <div className="text-slate-700 dark:text-slate-200 w-full h-full pointer-events-none">
          {renderContent()}
+      </div>
+
+      {/* Drag Handle (Full Width Bottom Row) */}
+      <div 
+        {...dragHandleProps}
+        className="absolute bottom-0 inset-x-0 h-6 flex items-center justify-center gap-2 cursor-grab active:cursor-grabbing hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-b-lg transition-colors group/handle touch-none"
+      >
+        <div className="flex flex-col gap-1">
+          <div className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full" />
+          <div className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full" />
+        </div>
+        <div className="flex flex-col gap-1">
+          <div className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full" />
+          <div className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full" />
+        </div>
+        <div className="flex flex-col gap-1">
+          <div className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full" />
+          <div className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full" />
+        </div>
       </div>
     </div>
   );

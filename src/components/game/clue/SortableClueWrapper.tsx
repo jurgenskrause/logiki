@@ -29,11 +29,11 @@ export const SortableClueWrapper: React.FC<SortableClueWrapperProps> = ({ id, ch
     <div
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      {...listeners}
-      className={`cursor-grab active:cursor-grabbing touch-none ${isDragging ? 'shadow-2xl ring-2 ring-indigo-500 rounded-lg scale-[1.02]' : ''}`}
+      className={`${isDragging ? 'shadow-2xl ring-2 ring-indigo-500 rounded-xl scale-[1.05] z-50' : ''}`}
     >
-      {children}
+      {React.cloneElement(children as React.ReactElement<any>, {
+        dragHandleProps: { ...attributes, ...listeners }
+      })}
     </div>
   );
 };
