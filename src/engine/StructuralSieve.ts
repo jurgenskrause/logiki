@@ -73,7 +73,8 @@ export class StructuralSieve {
       entry?: TopologyEntry
     ) => Promise<void>,
     rng: () => number = Math.random,
-    onSolutionReady?: (solution: SolutionGrid) => void
+    onSolutionReady?: (solution: SolutionGrid) => void,
+    targetVerticalRatio: number = 0.33
   ): Promise<GenerationTelemetry> {
     const startTime = performance.now();
     this.totalSolves = 0;
@@ -84,13 +85,19 @@ export class StructuralSieve {
     const solution = new SolutionGrid(space, rng);
     onSolutionReady?.(solution);
 
-    let masterPool = [
-      ...tieringService.simpleStack,
-      ...tieringService.moderateStack,
-      ...tieringService.complexStack
+    let vPool = [
+      ...tieringService.vSimpleStack,
+      ...tieringService.vModerateStack,
+      ...tieringService.vComplexStack
     ];
 
-    const initialVolume = masterPool.length;
+    let hPool = [
+      ...tieringService.hSimpleStack,
+      ...tieringService.hModerateStack,
+      ...tieringService.hComplexStack
+    ];
+
+    const initialVolume = vPool.length + hPool.length;
     const targetClues = Math.floor((N * M) * 1.5);
 
     const activeClues: TopologyEntry[] = [];
@@ -108,15 +115,15 @@ export class StructuralSieve {
     // ----------------------------------------------------------------------
     const maxAnchors = Math.floor((N * M) / 16);
     const numAnchors = Math.floor(rng() * (maxAnchors + 1));
-    
+
     // Get all potential slots and shuffle them to pick random anchors
-    const allSlots: {r: number, c: number}[] = [];
+    const allSlots: { r: number, c: number }[] = [];
     for (let r = 0; r < N; r++) {
       for (let c = 0; c < M; c++) {
-        allSlots.push({r, c});
+        allSlots.push({ r, c });
       }
     }
-    
+
     // Shuffle slots
     for (let i = allSlots.length - 1; i > 0; i--) {
       const j = Math.floor(rng() * (i + 1));
@@ -125,7 +132,7 @@ export class StructuralSieve {
 
     let anchorsPlaced = 0;
     for (let i = 0; i < allSlots.length && anchorsPlaced < numAnchors; i++) {
-      const {r, c} = allSlots[i];
+      const { r, c } = allSlots[i];
       if (!canvas.isSolved(r, c)) {
         const itemIndex = solution.getItemIndexAtSlot(new Slot(r, c));
         const anchor: TopologyEntry = {
@@ -155,20 +162,21 @@ export class StructuralSieve {
 
     while (!canvas.isFullySolved()) {
       // 1. Pool Maintenance: Filter out clues that are already logically satisfied
-      masterPool = masterPool.filter(entry => !this.isEntrySolved(entry, canvas, solution));
+      vPool = vPool.filter(entry => !this.isEntrySolved(entry, canvas, solution));
+      hPool = hPool.filter(entry => !this.isEntrySolved(entry, canvas, solution));
 
-      if (masterPool.length === 0) {
+      if (vPool.length === 0 && hPool.length === 0) {
         // No more ordinary clues left, try a symmetry breaker (Anchor)
         const anchor = this.findSymmetryBreaker(canvas, solution, rng);
         if (anchor) {
           activeClues.push(anchor);
           const activeAnchor = this.toActiveClue(anchor, solution);
           activeList.push(activeAnchor);
-          
+
           this.totalSolves++;
           const result = this.logicSolver.solve(activeList, canvas);
           if (result === 'CONTRADICTION') {
-             throw new ContradictionError(anchor, canvas.getInvalidCells());
+            throw new ContradictionError(anchor, canvas.getInvalidCells());
           }
           canvas.rowSweep();
           await yieldState(canvas, `⚓ Stalemate broken via Anchor.`, anchor);
@@ -182,12 +190,22 @@ export class StructuralSieve {
       // 2. Adaptive Sample
       const currentEntropy = canvas.countTotalBits();
       const entropyRatio = currentEntropy / maxEntropy;
-      
+
       let K = 20;
       if (entropyRatio < 0.20) K = 150;
       else if (entropyRatio < 0.60) K = 50;
-      
-      const sample = this.pickRandomSample(masterPool, K, rng);
+
+      const isV = (c: TopologyEntry) => c.type.includes('VERTICAL');
+      const vCount = activeClues.filter(isV).length;
+      const totalCount = activeClues.filter(c => c.type !== 'ANCHOR').length;
+      const currentVRatio = totalCount > 0 ? vCount / totalCount : 0.5;
+
+      const prioritizeV = currentVRatio < targetVerticalRatio;
+
+      let sample = prioritizeV ? this.pickRandomSample(vPool, K, rng) : this.pickRandomSample(hPool, K, rng);
+      if (sample.length === 0) {
+        sample = prioritizeV ? this.pickRandomSample(hPool, K, rng) : this.pickRandomSample(vPool, K, rng);
+      }
 
       // 3. Dry Run & Score
       const initialBits = currentEntropy;
@@ -201,7 +219,7 @@ export class StructuralSieve {
         this.totalSolves++;
 
         if (this.totalTestedClues % 20 === 0) {
-          await yieldState(canvas, `⚡ Scanning... (${sampleIdx}/${K} in batch, pool: ${masterPool.length})`);
+          await yieldState(canvas, `⚡ Scanning... (${sampleIdx}/${K} in batch, pool: ${vPool.length + hPool.length})`);
         }
 
         const testCanvas = canvas.clone();
@@ -222,15 +240,16 @@ export class StructuralSieve {
         activeClues.push(best.entry);
         const activeClue = this.toActiveClue(best.entry, solution);
         activeList.push(activeClue);
-        
+
         this.totalSolves++;
         const result = this.logicSolver.solve(activeList, canvas);
         if (result === 'CONTRADICTION') {
-           throw new ContradictionError(best.entry, canvas.getInvalidCells());
+          throw new ContradictionError(best.entry, canvas.getInvalidCells());
         }
 
         canvas.rowSweep();
-        masterPool = masterPool.filter(e => e.topologyID !== best.entry.topologyID);
+        vPool = vPool.filter(e => e.topologyID !== best.entry.topologyID);
+        hPool = hPool.filter(e => e.topologyID !== best.entry.topologyID);
         await yieldState(canvas, `🔍 Committed ${best.entry.type} [Power: ${best.score}]`, best.entry);
         iterationsWithoutCommit = 0;
       } else {
@@ -239,17 +258,17 @@ export class StructuralSieve {
         if (iterationsWithoutCommit > 20 || (K === 150 && (!best || best.score <= 0))) {
           const emergency = this.findSymmetryBreaker(canvas, solution, rng);
           if (!emergency) {
-              throw new StalemateError(canvas, activeClues);
+            throw new StalemateError(canvas, activeClues);
           }
           activeClues.push(emergency);
           activeList.push(this.toActiveClue(emergency, solution));
-          
+
           this.totalSolves++;
           const result = this.logicSolver.solve(activeList, canvas);
           if (result === 'CONTRADICTION') {
-              throw new ContradictionError(emergency, canvas.getInvalidCells());
+            throw new ContradictionError(emergency, canvas.getInvalidCells());
           }
-          
+
           canvas.rowSweep();
           await yieldState(canvas, `⚓ Stalemate broken via Emergency Anchor.`, emergency);
           iterationsWithoutCommit = 0;
@@ -261,36 +280,46 @@ export class StructuralSieve {
     // Phase 2: Minimization (Pruning redundant clues)
     // ----------------------------------------------------------------------
     await yieldState(canvas, `🏁 UNPRUNED RECIPE SECURED: Puzzle solved via logic with ${activeClues.length} clues. Starting Minimization...`);
-    
+
     const finalClues = [...activeClues];
-    for (let i = finalClues.length - 1; i >= 0; i--) {
-      const candidateClue = finalClues[i];
-      finalClues.splice(i, 1);
-      
-      const testList = finalClues.map(c => this.toActiveClue(c, solution));
+    const permanentlyEssential: TopologyEntry[] = [];
+    const isVFn = (c: TopologyEntry) => c.type.includes('VERTICAL');
+
+    while (finalClues.length > 0) {
+      const currentVCount = finalClues.filter(isVFn).length + permanentlyEssential.filter(isVFn).length;
+      const totalCurrent = finalClues.filter(c => c.type !== 'ANCHOR').length + permanentlyEssential.filter(c => c.type !== 'ANCHOR').length;
+      const currentVRatio = totalCurrent > 0 ? currentVCount / totalCurrent : 0.5;
+
+      const overRepsV = currentVRatio > targetVerticalRatio;
+
+      let candidateIdx = finalClues.findIndex(c => c.type !== 'ANCHOR' && (overRepsV ? isVFn(c) : !isVFn(c)));
+      if (candidateIdx === -1) candidateIdx = finalClues.length - 1; // Fallback to last element
+
+      const candidateClue = finalClues.splice(candidateIdx, 1)[0];
+
+      const testList = [...permanentlyEssential, ...finalClues].map(c => this.toActiveClue(c, solution));
       const testCanvas = new LogicCanvas(N, M);
-      
+
       this.totalSolves++;
       const result = this.logicSolver.solve(testList, testCanvas);
 
       if (result === 'SOLVED') {
         await yieldState(canvas, `✂️ Pruned redundant ${candidateClue.type}.`, candidateClue);
       } else {
-        // Essential clue, put it back
-        finalClues.splice(i, 0, candidateClue);
+        permanentlyEssential.push(candidateClue);
       }
     }
 
     return {
-      clues: finalClues,
+      clues: permanentlyEssential,
       initialClues: initialVolume,
-      finalClues: finalClues.length,
+      finalClues: permanentlyEssential.length,
       timeMs: performance.now() - startTime,
       targetClues,
       manifestVolume: initialVolume,
       idealCounts: { simple: 0, moderate: 0, complex: 0 },
       actualCounts: { simple: 0, moderate: 0, complex: 0 },
-      prunedCount: activeClues.length - finalClues.length,
+      prunedCount: activeClues.length - permanentlyEssential.length,
       finalCanvas: canvas,
       unprunedClues: [...activeClues],
       solution: solution,
@@ -317,11 +346,11 @@ export class StructuralSieve {
   }
 
   private findSymmetryBreaker(canvas: LogicCanvas, solution: SolutionGrid, rng: () => number = Math.random): TopologyEntry | null {
-    const unsolved: {r: number, c: number}[] = [];
+    const unsolved: { r: number, c: number }[] = [];
     for (let r = 0; r < canvas.height; r++) {
       for (let c = 0; c < canvas.width; c++) {
         if (!canvas.isSolved(r, c)) {
-          unsolved.push({r, c});
+          unsolved.push({ r, c });
         }
       }
     }
@@ -329,7 +358,7 @@ export class StructuralSieve {
     if (unsolved.length === 0) return null;
 
     // Pick one at random
-    const {r, c} = unsolved[Math.floor(rng() * unsolved.length)];
+    const { r, c } = unsolved[Math.floor(rng() * unsolved.length)];
     const itemIndex = solution.getItemIndexAtSlot(new Slot(r, c));
     return {
       topologyID: `ANCHOR_R${r}I${itemIndex}C${c}`,

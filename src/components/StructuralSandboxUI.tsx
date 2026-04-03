@@ -94,9 +94,9 @@ export function StructuralSandboxUI() {
         { msg: `Manifest completed in ${manifestTime.toFixed(1)}ms` },
       ]);
       setStats({ 
-        simple: tiering.simpleStack.length, 
-        moderate: tiering.moderateStack.length, 
-        complex: tiering.complexStack.length 
+        simple: tiering.vSimpleStack.length + tiering.hSimpleStack.length, 
+        moderate: tiering.vModerateStack.length + tiering.hModerateStack.length, 
+        complex: tiering.vComplexStack.length + tiering.hComplexStack.length 
       });
 
       const sieve = new StructuralSieve();
