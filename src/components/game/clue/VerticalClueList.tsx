@@ -23,6 +23,7 @@ interface VerticalClueListProps {
   onClueToggleBin?: (clueId: string) => void;
   binnedIds?: Set<string>;
   onClueDoubleTap?: (clue: ActiveClue) => void;
+  scrollToClueId?: string | null;
 }
 
 function useMediaQuery(query: string) {
@@ -42,7 +43,7 @@ interface SortableClue {
   clue: ActiveClue;
 }
 
-export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClueHover, highlightedClue, onClueToggleBin, binnedIds, onClueDoubleTap }) => {
+export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClueHover, highlightedClue, onClueToggleBin, binnedIds, onClueDoubleTap, scrollToClueId }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -132,6 +133,16 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
   
   const maxRowsPerPage = 2;
   const itemsPerPage = maxCluesPerRow * maxRowsPerPage;
+
+  useEffect(() => {
+    if (scrollToClueId && scrollRef.current && itemsPerPage > 0) {
+      const idx = orderedClues.findIndex(c => c.id === scrollToClueId);
+      if (idx !== -1) {
+        const pageIdx = Math.floor(idx / itemsPerPage);
+        scrollRef.current.scrollTo({ left: pageIdx * scrollRef.current.clientWidth, behavior: 'smooth' });
+      }
+    }
+  }, [scrollToClueId, orderedClues, itemsPerPage]);
 
   const handlePrevPage = () => {
     if (scrollRef.current) scrollRef.current.scrollBy({ left: -scrollRef.current.clientWidth, behavior: 'smooth' });

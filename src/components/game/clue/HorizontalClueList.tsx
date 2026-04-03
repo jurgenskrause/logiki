@@ -35,6 +35,7 @@ interface HorizontalClueListProps {
   onClueToggleBin?: (clueId: string) => void;
   binnedIds?: Set<string>;
   onClueDoubleTap?: (clue: ActiveClue) => void;
+  scrollToClueId?: string | null;
 }
 
 const CLUE_MAX_HEIGHT = 84 + 12; // h-[84px] + gap-3
@@ -45,7 +46,7 @@ interface SortableClue {
   clue: ActiveClue;
 }
 
-export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, onClueHover, highlightedClue, onClueToggleBin, binnedIds, onClueDoubleTap }) => {
+export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, onClueHover, highlightedClue, onClueToggleBin, binnedIds, onClueDoubleTap, scrollToClueId }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [containerHeight, setContainerHeight] = useState(0);
@@ -133,6 +134,16 @@ export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, o
   const maxColsPerPage = 3;
   const maxRowsPerPage = 3;
   const itemsPerPage = maxColsPerPage * maxRowsPerPage;
+
+  useEffect(() => {
+    if (scrollToClueId && scrollRef.current && itemsPerPage > 0) {
+      const idx = orderedClues.findIndex(c => c.id === scrollToClueId);
+      if (idx !== -1) {
+        const pageIdx = Math.floor(idx / itemsPerPage);
+        scrollRef.current.scrollTo({ left: pageIdx * scrollRef.current.clientWidth, behavior: 'smooth' });
+      }
+    }
+  }, [scrollToClueId, orderedClues, itemsPerPage]);
 
   const handlePrevPage = () => {
     if (scrollRef.current) scrollRef.current.scrollBy({ left: -scrollRef.current.clientWidth, behavior: 'smooth' });

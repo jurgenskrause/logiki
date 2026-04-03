@@ -91,6 +91,7 @@ export const GamePage: React.FC = () => {
 
   // Mobile Drawer Tab Navigation
   const [activeMobileTab, setActiveMobileTab] = useState<'horizontal' | 'vertical'>('horizontal');
+  const [scrollToClueId, setScrollToClueId] = useState<string | null>(null);
   const isDesktop = useMediaQuery('(min-width: 768px)');
 
 
@@ -356,6 +357,18 @@ export const GamePage: React.FC = () => {
       // First click: show banner + highlight
       setHintShowing(true);
       setHintCount(c => c + 1);
+
+      // Auto-focus logic for mobile drawer
+      if (activeHint.clue && activeHint.clue.type !== 'error') {
+        const isBinned = binnedClueIds.has(activeHint.clue.id);
+        if (showBin !== isBinned) setShowBin(isBinned);
+
+        const isHorizontal = ['LEFT_OF', 'ADJACENT', 'SEQUENCE_THREE', 'GAPPED_NOT_MIDDLE', 'GAPPED_EXCLUSION'].includes(activeHint.clue.type);
+        const wantedTab = isHorizontal ? 'horizontal' : 'vertical';
+        if (activeMobileTab !== wantedTab) setActiveMobileTab(wantedTab);
+
+        setScrollToClueId(activeHint.clue.id);
+      }
     } else {
       // Second click: apply the hint
       if (gameState) {
@@ -368,6 +381,7 @@ export const GamePage: React.FC = () => {
         handleStateChange();
       }
       setHintShowing(false);
+      setScrollToClueId(null);
     }
   };
 
@@ -815,6 +829,7 @@ export const GamePage: React.FC = () => {
                 onClueToggleBin={handleToggleBin}
                 binnedIds={binnedClueIds}
                 onClueDoubleTap={setExplainedClue}
+                scrollToClueId={scrollToClueId}
               />
             )}
           </div>
@@ -841,6 +856,7 @@ export const GamePage: React.FC = () => {
                 onClueToggleBin={handleToggleBin}
                 binnedIds={binnedClueIds}
                 onClueDoubleTap={setExplainedClue}
+                scrollToClueId={scrollToClueId}
               />
             )}
           </div>
