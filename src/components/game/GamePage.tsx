@@ -74,7 +74,7 @@ const DroppableMobileBin = ({ showBin, binnedCount, onToggle }: { showBin: boole
       }`}
       title={showBin ? "Show Active Clues" : "Show Binned Clues"}
     >
-      <span className="material-icons text-base text-inherit">{showBin ? 'visibility' : 'delete_outline'}</span>
+      <span className="material-icons text-base text-inherit">{showBin ? 'delete_sweep' : 'delete_outline'}</span>
       {binnedCount > 0 && !showBin && (
          <span className="absolute -top-1 -right-1 flex h-4 w-4 z-20">
            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
@@ -300,6 +300,8 @@ export const GamePage: React.FC = () => {
 
 
   // ─── Analysis ───────────────────────────────────────────────────────────────
+
+
 
   const runAnalysis = useCallback(() => {
     if (!gameState || !puzzle) return;
@@ -566,13 +568,19 @@ export const GamePage: React.FC = () => {
       setScrollToClueId(null);
     }
   };
-
   const dismissHint = useCallback(() => {
     if (hintShowing) {
       setHintShowing(false);
       setScrollToClueId(null);
     }
   }, [hintShowing]);
+
+  const handleResetBin = useCallback(() => {
+    dismissHint();
+    setBinnedClueIds(new Set());
+    setShowBin(false);
+    playInteractionSound('moveclue');
+  }, [dismissHint, playInteractionSound]);
 
 
   // ─── Derived hint highlight data ─────────────────────────────────────────────
@@ -879,7 +887,7 @@ export const GamePage: React.FC = () => {
           
           <button
             onClick={() => setShowBin(!showBin)}
-            className={`relative hidden md:flex p-2.5 rounded-xl items-center justify-center transition-colors shadow-sm ${
+            className={`relative hidden md:flex h-10 w-10 p-2.5 rounded-xl items-center justify-center transition-colors shadow-sm ${
               showBin 
                 ? 'bg-amber-500 text-white shadow-inner ring-2 ring-amber-300' 
                 : binnedClueIds.size > 0
@@ -888,7 +896,7 @@ export const GamePage: React.FC = () => {
             }`}
             title={showBin ? "Show Active Clues" : "Show Binned Clues"}
           >
-            <span className="material-icons text-base text-inherit">{showBin ? 'visibility' : 'delete_outline'}</span>
+            <span className="material-icons text-base text-inherit">{showBin ? 'delete_sweep' : 'delete_outline'}</span>
             {binnedClueIds.size > 0 && !showBin && (
               <span className="absolute -top-1 -right-1 flex h-4 w-4 z-20">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
@@ -898,6 +906,17 @@ export const GamePage: React.FC = () => {
               </span>
             )}
           </button>
+
+          {showBin && binnedClueIds.size > 0 && (
+            <button
+              onClick={handleResetBin}
+              className="hidden md:flex h-10 w-10 p-2.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-xl items-center justify-center transition-colors shadow-sm animate-in fade-in zoom-in duration-200"
+              title="Reset Binned Clues"
+            >
+              <span className="material-icons text-base">restart_alt</span>
+            </button>
+          )}
+
           
           <button
             onClick={() => {
@@ -988,11 +1007,22 @@ export const GamePage: React.FC = () => {
         {/* Row 2 (Mobile Only): Swappable Drawer Tabs */}
         <div className="shrink-0 md:col-start-1 md:row-start-2 md:hidden flex items-center justify-between px-4 py-2 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 shadow-sm z-20 gap-2">
           
-          <DroppableMobileBin 
-            showBin={showBin} 
-            binnedCount={binnedClueIds.size} 
-            onToggle={() => { dismissHint(); setShowBin(!showBin); }} 
-          />
+          <div className="flex gap-2 items-center">
+            <DroppableMobileBin 
+              showBin={showBin} 
+              binnedCount={binnedClueIds.size} 
+              onToggle={() => { dismissHint(); setShowBin(!showBin); }} 
+            />
+            {showBin && binnedClueIds.size > 0 && (
+              <button
+                onClick={handleResetBin}
+                className="p-2 h-full aspect-square flex items-center justify-center bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg hover:bg-slate-300 transition-colors shadow-sm animate-in fade-in zoom-in duration-200"
+                title="Reset Binned Clues"
+              >
+                <span className="material-icons text-base">restart_alt</span>
+              </button>
+            )}
+          </div>
 
           <div className="flex bg-slate-200 dark:bg-slate-800 rounded-lg p-1 w-full gap-1 shadow-inner">
             <button 
@@ -1034,11 +1064,7 @@ export const GamePage: React.FC = () => {
             title="GamePage: Horizontal Drawer Inner Frame"
             className="flex-1 min-h-[0px] flex flex-col overflow-hidden relative md:overflow-x-auto md:overflow-y-hidden"
           >
-            {showBin && (
-                <div className="absolute top-2 left-2 z-20 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-[10px] font-black uppercase tracking-tighter text-amber-600 dark:text-amber-400 pointer-events-none">
-                  Binned
-                </div>
-              )}
+
             {puzzle && (
               <HorizontalClueList 
                 clues={puzzle.clues.filter(c => 
@@ -1067,11 +1093,7 @@ export const GamePage: React.FC = () => {
             title="GamePage: Vertical Drawer Inner Frame"
             className="flex-1 min-h-[0px] flex flex-col overflow-hidden relative md:overflow-y-auto md:overflow-x-hidden md:custom-scrollbar"
           >
-            {showBin && (
-              <div className="absolute top-2 left-2 z-20 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-[10px] font-black uppercase tracking-tighter text-amber-600 dark:text-amber-400 pointer-events-none hidden md:block">
-                Binned Clues
-              </div>
-            )}
+
             {puzzle && (
               <VerticalClueList 
                 clues={puzzle.clues.filter(c => 
