@@ -56,6 +56,7 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
   const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
+    if (!isDesktop) return;
     if (!containerRef.current) return;
     const obs = new ResizeObserver((entries) => {
         for (const entry of entries) {
@@ -64,7 +65,7 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
     });
     obs.observe(containerRef.current);
     return () => obs.disconnect();
-  }, []);
+  }, [isDesktop]);
 
   const cluesHash = JSON.stringify(clues);
 
@@ -126,8 +127,6 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
   const maxCluesPerRow = Math.floor(containerWidth / CLUE_MAX_WIDTH) || 1;
   const numRows = Math.ceil(orderedClues.length / maxCluesPerRow) || 1;
   const actualRows = Math.min(numRows, 3);
-  
-  const maxRowsPerPage = Math.min(2, Math.ceil(orderedClues.length / 3)) || 1;
 
   useEffect(() => {
     if (scrollToClueId && scrollRef.current) {
@@ -142,7 +141,8 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
   return (
     <div 
       ref={containerRef}
-      className={`flex-1 w-full ${isDesktop ? 'h-full px-1 py-1' : 'h-full p-0'} overflow-hidden relative flex items-center justify-center`}
+      title="VerticalClueList: outer containerRef"
+      className={`flex-1 w-full min-h-[0px] flex ${isDesktop ? 'px-1 py-1 items-center justify-center' : 'p-0 flex-col'} overflow-hidden relative`}
       style={isDesktop ? { height: `${actualRows * CLUE_HEIGHT + 4}px` } : {}}
     >
         <SortableContext 
@@ -182,16 +182,13 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
               )}
               <div 
                 ref={scrollRef} 
-                className={`flex w-full ${isDesktop ? 'h-full' : 'pb-10 pt-2'} overflow-x-auto scroll-smooth [&::-webkit-scrollbar]:hidden relative z-10 px-4`} 
+                title="VerticalClueList: mobile scrollRef container"
+                className={`flex flex-col min-h-[0px] w-full ${isDesktop ? 'flex-1' : 'flex-1 py-2'} overflow-x-auto overflow-y-hidden scroll-smooth [&::-webkit-scrollbar]:hidden relative z-10 px-4`} 
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
                 <div 
-                   className="grid gap-2 min-w-max h-full"
-                   style={{
-                      gridTemplateRows: `repeat(${maxRowsPerPage}, minmax(0, 1fr))`,
-                      gridAutoFlow: 'column',
-                      gridAutoColumns: 'max-content'
-                   }}
+                   title="VerticalClueList: wrapping columns inner container"
+                   className="flex w-max flex-1 flex-col flex-wrap gap-2 content-start items-center justify-start mx-auto min-h-[0px]"
                 >
                    {orderedClues.map(item => (
                      <SortableClueWrapper key={item.id} id={item.id}>

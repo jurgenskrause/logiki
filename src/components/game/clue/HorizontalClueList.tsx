@@ -56,7 +56,7 @@ export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, o
   const cluesHash = JSON.stringify(clues);
 
   useEffect(() => {
-    if (!isDesktop) return; // Only measure if desktop
+    if (!isDesktop) return;
     if (!containerRef.current) return;
     const obs = new ResizeObserver((entries) => {
         for (const entry of entries) {
@@ -125,9 +125,6 @@ export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, o
   const maxCluesPerColumn = Math.floor(containerHeight / CLUE_MAX_HEIGHT) || 1;
   const numColumns = Math.ceil(orderedClues.length / maxCluesPerColumn) || 1;
   const actualCols = Math.min(numColumns, 4);
-  
-  // Aim for 3x3: if screen < 420px use 2 columns, otherwise 3 columns.
-  const maxRowsPerPage = Math.min(4, Math.ceil(orderedClues.length / 2)) || 1;
 
   useEffect(() => {
     if (scrollToClueId && scrollRef.current) {
@@ -142,7 +139,8 @@ export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, o
   return (
     <div 
       ref={containerRef}
-      className={`flex-1 w-full ${isDesktop ? 'h-full p-1' : 'h-full p-0'} overflow-hidden relative flex items-center justify-center`}
+      title="HorizontalClueList: outer containerRef"
+      className={`flex-1 w-full min-h-[0px] flex ${isDesktop ? 'px-1 py-1 items-center justify-center' : 'p-0 flex-col'} overflow-hidden relative`}
       style={isDesktop ? {
         width: `${actualCols * CLUE_WIDTH + 4}px`,
         maxWidth: `${actualCols * CLUE_WIDTH + 4}px`
@@ -184,16 +182,13 @@ export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, o
                  )}
                  <div 
                     ref={scrollRef} 
-                    className={`flex w-full ${isDesktop ? 'h-full' : 'pb-10 pt-2'} overflow-x-auto scroll-smooth [&::-webkit-scrollbar]:hidden relative z-10 px-4`} 
+                    title="HorizontalClueList: mobile scrollRef container"
+                    className={`flex flex-col min-h-[0px] w-full ${isDesktop ? 'flex-1' : 'flex-1 py-2'} overflow-x-auto overflow-y-hidden scroll-smooth [&::-webkit-scrollbar]:hidden relative z-10 px-4`} 
                     style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                  >
                    <div 
-                      className="grid gap-2 min-w-max h-full"
-                      style={{
-                         gridTemplateRows: `repeat(${maxRowsPerPage}, minmax(0, 1fr))`,
-                         gridAutoFlow: 'column',
-                         gridAutoColumns: 'max-content'
-                      }}
+                      title="HorizontalClueList: wrapping columns inner container"
+                      className="flex w-max flex-1 flex-col flex-wrap gap-2 content-start items-center justify-start mx-auto min-h-[0px]"
                    >
                       {orderedClues.map(item => (
                         <SortableClueWrapper key={item.id} id={item.id}>
