@@ -241,11 +241,12 @@ export const GamePage: React.FC = () => {
   }, []);
 
   const MIN_BOARD_ICON_SIZE = 12;
-  const { isDesktop, clueIconSize, hasMouse } = useMemo(() => {
+  const { isDesktop, clueIconSize, hasMouse, requiredDrawerHeight } = useMemo(() => {
     const hasMouse = typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches;
     const isDesk = (!puzzle ? viewport.width >= 768 : (puzzle.rows <= 5 && viewport.width >= 500) || viewport.width >= 768);
     
     let optimalIconSize = 24;
+    let finalDrawerHeight = 0;
     if (puzzle) {
        const N = puzzle.rows;
        const itemsPerRow = Math.ceil(Math.sqrt(N));
@@ -273,7 +274,7 @@ export const GamePage: React.FC = () => {
                 const availCol1Width = viewport.width - P_w - 32;
                 if (V_w <= availCol1Width) {
                    const maxB_geo = Math.min(availCol1Width, Math.max(0, viewport.height - V_h - 40));
-                   const maxB_scale = candidateIc / (2 * C1);
+                   const maxB_scale = candidateIc / (1.6 * C1);
                    const B = Math.min(maxB_geo, maxB_scale);
                    
                    if (B >= MIN_BOARD_SIZE) {
@@ -303,16 +304,19 @@ export const GamePage: React.FC = () => {
              const vH = 4.0 * candidateIc + gap;
              const colsV = Math.max(1, Math.floor((viewport.width - 32) / vW));
              const rowsV = Math.max(1, Math.ceil(numV / colsV));
-             const panelVH = rowsV * vH;
+             const panelVH = Math.min(rowsV, 1) * vH;
+             const panelHH_capped = Math.min(rowsH, 3) * hH;
              
-             const requiredDrawerHeight = Math.max(panelHH, panelVH) + 60;
+             const requiredDrawerHeight = Math.max(panelHH_capped, panelVH) + 16;
              const maxB_geo = viewport.height - requiredDrawerHeight - 40;
              const maxB_width = viewport.width - 32;
-             const maxB_scale = candidateIc / (2 * C1);
+             const maxB_scale = candidateIc / (1.5 * C1);
              const B = Math.min(maxB_width, Math.min(maxB_geo, maxB_scale));
              
+             finalDrawerHeight = requiredDrawerHeight; // Fallback preservation if loop exhausts natively
              if (B >= MIN_BOARD_SIZE) {
                 validIc = candidateIc;
+                finalDrawerHeight = requiredDrawerHeight;
                 break;
              }
              candidateIc -= 0.5;
@@ -320,8 +324,8 @@ export const GamePage: React.FC = () => {
           optimalIconSize = validIc;
        }
     }
-    return { isDesktop: isDesk, clueIconSize: optimalIconSize, hasMouse };
-  }, [viewport.width, viewport.height, puzzle]);
+    return { isDesktop: isDesk, clueIconSize: optimalIconSize, hasMouse, requiredDrawerHeight: finalDrawerHeight };
+  }, [viewport.width, viewport.height, puzzle, activeMobileTab]);
   
   // DND Kit states
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
@@ -1170,8 +1174,10 @@ export const GamePage: React.FC = () => {
           title="GamePage: Horizontal Drawer Wrapper"
           className={`min-h-[0px] bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-inner flex-col ${
           isDesktop ? 'flex-1 col-start-2 row-start-1 row-span-2 min-h-0 h-full border-t-0 border-l w-auto visible flex pointer-events-auto relative z-10' 
-                    : (activeMobileTab === 'horizontal' ? 'border-t w-full flex flex-1 z-10 relative visible pointer-events-auto' : 'hidden')
-        }`}>
+                    : (activeMobileTab === 'horizontal' ? 'border-t w-full flex shrink-0 z-10 relative visible pointer-events-auto' : 'hidden')
+        }`}
+          style={!isDesktop ? { height: `${requiredDrawerHeight}px`, maxHeight: `${requiredDrawerHeight}px` } : {}}
+        >
           <div 
             title="GamePage: Horizontal Drawer Inner Frame"
             className={`flex-1 min-h-[0px] flex flex-col relative ${isDesktop ? 'overflow-x-auto overflow-y-hidden' : 'overflow-hidden'}`}
@@ -1200,8 +1206,10 @@ export const GamePage: React.FC = () => {
           title="GamePage: Vertical Drawer Wrapper"
           className={`min-h-[0px] bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-inner flex-col ${
           isDesktop ? 'flex-1 col-start-1 row-start-2 min-h-0 h-full border-t w-full visible flex pointer-events-auto relative z-10' 
-                    : (activeMobileTab === 'vertical' ? 'border-t w-full flex flex-1 z-10 relative visible pointer-events-auto' : 'hidden')
-        }`}>
+                    : (activeMobileTab === 'vertical' ? 'border-t w-full flex shrink-0 z-10 relative visible pointer-events-auto' : 'hidden')
+        }`}
+          style={!isDesktop ? { height: `${requiredDrawerHeight}px`, maxHeight: `${requiredDrawerHeight}px` } : {}}
+        >
           <div 
             title="GamePage: Vertical Drawer Inner Frame"
             className={`flex-1 min-h-[0px] flex flex-col relative ${isDesktop ? 'overflow-y-auto overflow-x-hidden custom-scrollbar' : 'overflow-hidden'}`}
