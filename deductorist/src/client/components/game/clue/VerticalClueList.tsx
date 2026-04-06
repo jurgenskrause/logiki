@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { VerticalClueUI } from './VerticalClueUI';
 import type { ActiveClue } from '../../../../shared/engine/Solver';
 import {
@@ -117,6 +117,17 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
 
 
 
+  // Derive equivalent Mobile Grid parameters ensuring top-to-bottom column fills
+  const { mobileRowsV } = useMemo(() => {
+     if (isDesktop) return { mobileRowsV: 1 };
+     const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 400;
+     const gapMobile = clueIconSize * 0.2;
+     const vW = 1.5 * clueIconSize + gapMobile;
+     const mobileColsV = Math.max(1, Math.floor((viewportWidth - 32) / vW));
+     const mobileRowsV = Math.max(1, Math.ceil(orderedClues.length / mobileColsV));
+     return { mobileRowsV };
+  }, [isDesktop, orderedClues.length, clueIconSize]);
+
   useEffect(() => {
     if (scrollToClueId && scrollRef.current) {
       const idx = orderedClues.findIndex(c => c.id === scrollToClueId);
@@ -170,8 +181,12 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
               >
                 <div 
                    title="VerticalClueList: wrapping columns inner container"
-                   className="flex flex-row flex-wrap content-start items-center justify-center mx-auto min-h-[0px] w-full"
-                   style={{ gap: `calc(${clueIconSize}px * 0.2)` }}
+                   className="grid content-start justify-center mx-auto min-h-[0px] w-full"
+                   style={{ 
+                      gap: `calc(${clueIconSize}px * 0.2)`,
+                      gridTemplateRows: `repeat(${mobileRowsV}, minmax(0, max-content))`,
+                      gridAutoFlow: 'column'
+                   }}
                 >
                    {orderedClues.map(item => (
                      <SortableClueWrapper key={item.id} id={item.id}>

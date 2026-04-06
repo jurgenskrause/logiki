@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { HorizontalClueUI } from './HorizontalClueUI';
 import type { ActiveClue } from '../../../../shared/engine/Solver';
 import {
@@ -130,6 +130,17 @@ export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, o
   const numColumns = Math.ceil(orderedClues.length / maxCluesPerColumn) || 1;
   const actualCols = Math.min(numColumns, 4);
 
+  // Derive equivalent Mobile Grid parameters ensuring top-to-bottom column fills
+  const { mobileRowsH } = useMemo(() => {
+     if (isDesktop) return { mobileRowsH: 1 };
+     const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 400;
+     const gapMobile = clueIconSize * 0.2;
+     const hW = 4.0 * clueIconSize + gapMobile;
+     const mobileColsH = Math.max(1, Math.floor((viewportWidth - 32) / hW));
+     const mobileRowsH = Math.max(1, Math.ceil(orderedClues.length / mobileColsH));
+     return { mobileRowsH };
+  }, [isDesktop, orderedClues.length, clueIconSize]);
+
   useEffect(() => {
     if (scrollToClueId && scrollRef.current) {
       const idx = orderedClues.findIndex(c => c.id === scrollToClueId);
@@ -192,8 +203,12 @@ export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, o
                  >
                    <div 
                       title="HorizontalClueList: wrapping columns inner container"
-                      className="flex flex-row flex-wrap content-start items-center justify-center mx-auto min-h-[0px] w-full"
-                      style={{ gap: `calc(${clueIconSize}px * 0.2)` }}
+                      className="grid content-start justify-center mx-auto min-h-[0px] w-full"
+                      style={{ 
+                         gap: `calc(${clueIconSize}px * 0.2)`,
+                         gridTemplateRows: `repeat(${mobileRowsH}, minmax(0, max-content))`,
+                         gridAutoFlow: 'column'
+                      }}
                    >
                       {orderedClues.map(item => (
                         <SortableClueWrapper key={item.id} id={item.id}>
