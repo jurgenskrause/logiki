@@ -259,14 +259,14 @@ export const GamePage: React.FC = () => {
           let candidateIc = 50;
           let validIc = 16;
           const numH = hClues.length;
-          const C_h = Math.min(numH, 3);
-          const R_h = Math.ceil(numH / C_h) || 1;
+          const C_h = Math.max(1, Math.min(numH, 3));
+          const R_h = Math.max(1, Math.ceil(numH / C_h));
           const numV = vClues.length;
 
           while (candidateIc >= 12) {
              const P_w = C_h * (4.0 * candidateIc + candidateIc * 0.3);
              const P_h = R_h * (1.5 * candidateIc + candidateIc * 0.3) + 32;
-             const V_w = numV * (1.5 * candidateIc + candidateIc * 0.3);
+             const V_w = Math.max(1, numV) * (1.5 * candidateIc + candidateIc * 0.3);
              const V_h = 4.0 * candidateIc;
              
              if (P_h <= viewport.height && P_w < viewport.width) {
@@ -296,13 +296,13 @@ export const GamePage: React.FC = () => {
              const hW = 4.0 * candidateIc + gap;
              const hH = 1.5 * candidateIc + gap;
              const colsH = Math.max(1, Math.floor((viewport.width - 32) / hW));
-             const rowsH = Math.ceil(numH / colsH);
+             const rowsH = Math.max(1, Math.ceil(numH / colsH));
              const panelHH = rowsH * hH;
              
              const vW = 1.5 * candidateIc + gap;
              const vH = 4.0 * candidateIc + gap;
              const colsV = Math.max(1, Math.floor((viewport.width - 32) / vW));
-             const rowsV = Math.ceil(numV / colsV);
+             const rowsV = Math.max(1, Math.ceil(numV / colsV));
              const panelVH = rowsV * vH;
              
              const requiredDrawerHeight = Math.max(panelHH, panelVH) + 60;
