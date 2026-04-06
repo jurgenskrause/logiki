@@ -1,5 +1,5 @@
-import { getFallbackEmoji } from '../utils/themeRegistry';
-import type { TopologyLibrary } from '../engine/PermutationGenerator';
+import { getFallbackEmoji } from '../../shared/utils/themeRegistry';
+import type { TopologyLibrary } from '../../shared/engine/PermutationGenerator';
 
 /**
  * Phase 3.2.4: Clue Typography & Symbology

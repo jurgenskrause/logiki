@@ -1,4 +1,4 @@
-# Logiki on Devvit: Developer Implementation Guide
+# Deductorist on Devvit: Developer Implementation Guide
 
 This guide breaks down the `devvit.md` strategic plan into an actionable, phase-by-phase implementation manual for developers. It ensures strict adherence to Devvit platform capabilities, optimal usage of the built-in Redis KV store, and strict enforcement of the Anti-Cheat Silent Validation Pipeline.
 
@@ -9,8 +9,8 @@ This guide breaks down the `devvit.md` strategic plan into an actionable, phase-
 ### Sub-phase 1.1: Environment & Authentication
 Before touching any code, establish the Devvit environment.
 1. **Install CLI**: Ensure Node.js (v18+) is installed, then run `npm install -g @devvit/cli`.
-2. **Authenticate**: Run `devvit login` and authorize via the browser using a Reddit account with proper permissions.
-3. **Initialize App**: Run `devvit new` to create a fresh Devvit block/webview structure, or transition the existing Logiki directory into a Devvit-compatible workspace.
+2. **Authenticate**: Run `npx devvit login` and authorize via the browser using a Reddit account with proper permissions.
+3. **Initialize App**: Run `npx devvit new` to create a fresh Devvit block/webview structure, or transition the existing Deductorist directory into a Devvit-compatible workspace.
 
 ### Sub-phase 1.2: Capability Configuration
 Devvit requires explicit declaration of capabilities.
@@ -25,9 +25,9 @@ Devvit requires explicit declaration of capabilities.
    ```
 
 ### Sub-phase 1.3: Webview Wrapper Creation
-Logiki is an existing web game. The Devvit implementation will utilize a Webview.
+Deductorist is an existing web game. The Devvit implementation will utilize a Webview.
 1. Create a Custom Post block using `Devvit.addCustomPostType`.
-2. The block renders a "Play Daily Puzzle" UI, which upon interaction, launches the Logiki UI inside a Devvit Webview using `context.ui.webView`.
+2. The block renders a "Play Daily Puzzle" UI, which upon interaction, launches the Deductorist UI inside a Devvit Webview using `context.ui.webView`.
 3. Set up two-way messaging (`postMessage` from web app, `onMessage` in Devvit `blocks` code) to pass data like puzzle configuration and finish events back to the secure Reddit server environment.
 
 ---

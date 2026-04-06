@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
-import { buildTopologyLibrary } from '../engine/PermutationGenerator';
-import { SelectionDeck } from '../engine/SelectionDeck';
-import { SolutionGrid } from '../engine/SolutionGrid';
-import { CoordinateSpace } from '../engine/CoordinateSpace';
-import { getFallbackEmoji } from '../utils/themeRegistry';
+import { buildTopologyLibrary } from '../../shared/engine/PermutationGenerator';
+import { SelectionDeck } from '../../shared/engine/SelectionDeck';
+import { SolutionGrid } from '../../shared/engine/SolutionGrid';
+import { CoordinateSpace } from '../../shared/engine/CoordinateSpace';
+import { getFallbackEmoji } from '../../shared/utils/themeRegistry';
 import { ClueShowcase } from './ClueShowcase';
 
 export function TopologyAuditUI() {

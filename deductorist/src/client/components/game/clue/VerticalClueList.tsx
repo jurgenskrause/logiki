@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { VerticalClueUI } from './VerticalClueUI';
-import type { ActiveClue } from '../../../engine/Solver';
+import type { ActiveClue } from '../../../../shared/engine/Solver';
 import {
   useDndMonitor
 } from '@dnd-kit/core';

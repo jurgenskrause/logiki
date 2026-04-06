@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { getFallbackEmoji } from '../../../utils/themeRegistry';
+import { getFallbackEmoji } from '../../../../shared/utils/themeRegistry';
 
 function useMediaQuery(query: string) {
   const [matches, setMatches] = useState(false);
@@ -12,7 +12,7 @@ function useMediaQuery(query: string) {
   }, [query]);
   return matches;
 }
-import type { ActiveClue } from '../../../engine/Solver';
+import type { ActiveClue } from '../../../../shared/engine/Solver';
 
 interface VerticalClueProps {
   clue: ActiveClue;

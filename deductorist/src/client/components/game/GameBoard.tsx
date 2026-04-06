@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import type { ActiveClue } from '../../engine/Solver';
+import type { ActiveClue } from '../../../shared/engine/Solver';
 import { BoardCell } from './BoardCell';
 import { ZoomOverlay } from './ZoomOverlay';
-import { GameState } from '../../engine/GameState';
-import { getFallbackEmoji } from '../../utils/themeRegistry';
+import { GameState } from '../../../shared/engine/GameState';
+import { getFallbackEmoji } from '../../../shared/utils/themeRegistry';
 
 interface Option {
   id: number;

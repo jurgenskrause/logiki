@@ -4,13 +4,13 @@ import { DifficultyMenu } from './DifficultyMenu';
 import { SideMenu } from './SideMenu';
 import { HelpModal } from './HelpModal';
 import { GameBoard } from './GameBoard';
-import { ManifestLoader, type PuzzleManifest } from '../../engine/ManifestLoader';
-import { GameState } from '../../engine/GameState';
+import { ManifestLoader, type PuzzleManifest } from '../../../shared/engine/ManifestLoader';
+import { GameState } from '../../../shared/engine/GameState';
 import { HorizontalClueList } from './clue/HorizontalClueList';
 import { VerticalClueList } from './clue/VerticalClueList';
-import { analyzeState, applyHint, type HintResult } from '../../engine/HintService';
-import { describeRule } from '../../engine/ClueDescriber';
-import type { ActiveClue } from '../../engine/Solver';
+import { analyzeState, applyHint, type HintResult } from '../../../shared/engine/HintService';
+import { describeRule } from '../../../shared/engine/ClueDescriber';
+import type { ActiveClue } from '../../../shared/engine/Solver';
 import {
   DndContext,
   closestCenter,
@@ -23,9 +23,9 @@ import {
 } from '@dnd-kit/core';
 import { HorizontalClueUI } from './clue/HorizontalClueUI';
 import { VerticalClueUI } from './clue/VerticalClueUI';
-import { buildTopologyLibrary } from '../../engine/PermutationGenerator';
-import { TieringService } from '../../engine/TieringService';
-import { StructuralSieve } from '../../engine/StructuralSieve';
+import { buildTopologyLibrary } from '../../../shared/engine/PermutationGenerator';
+import { TieringService } from '../../../shared/engine/TieringService';
+import { StructuralSieve } from '../../../shared/engine/StructuralSieve';
 import eliminateSfx from '../../assets/sounds/eliminate.wav';
 import solveSfx from '../../assets/sounds/solve.wav';
 import mistakeSfx from '../../assets/sounds/mistake.wav';
@@ -115,6 +115,9 @@ export const GamePage: React.FC = () => {
   const winAudioRef = useRef<HTMLAudioElement | null>(null);
   const pendingSoundRef = useRef<'solve' | 'eliminate' | null>(null);
 
+  // Anti-Cheat Telemetry
+  const moveLogRef = useRef<{ cellIndex: number; timeOffsetMs: number }[]>([]);
+
   useEffect(() => {
     eliminateAudioRef.current = new Audio(eliminateSfx);
     solveAudioRef.current = new Audio(solveSfx);
@@ -174,6 +177,7 @@ export const GamePage: React.FC = () => {
       setShowBin(false);
       setHintCount(0);
       setIsGameWon(false);
+      moveLogRef.current = [];
     }
   }, [puzzle]);
 
@@ -336,7 +340,7 @@ export const GamePage: React.FC = () => {
   // ─── Loaders ────────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    loader.loadFromUrl(`${import.meta.env.BASE_URL}daily.bin`)
+    loader.loadFromUrl(`daily.bin`)
       .then(() => {
         setIsManifestLoaded(true);
         setIsLoading(false);
@@ -452,6 +456,17 @@ export const GamePage: React.FC = () => {
     if (isWin) {
       setIsGameWon(true);
       playInteractionSound('win');
+      
+      // Submit to Sieve
+      fetch('/api/game/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          puzzleId: `${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}`,
+          boardState: Array.from(gameState.grid),
+          moveLog: moveLogRef.current
+        })
+      }).catch(console.error);
     }
   }, [gameState, puzzle, isGameWon, playInteractionSound]);
 
@@ -494,6 +509,12 @@ export const GamePage: React.FC = () => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  const handleStartGame = async () => {
+    setIsGameStarted(true);
+    moveLogRef.current = [];
+    fetch('/api/game/start', { method: 'POST' }).catch(console.error);
   };
 
   const handleStateChange = useCallback(() => {
@@ -990,6 +1011,7 @@ export const GamePage: React.FC = () => {
                 onInteraction={(action) => {
                   if (action === 'zoom_trigger') return;
                   pendingSoundRef.current = action === 'solve' ? 'solve' : 'eliminate';
+                  moveLogRef.current.push({ cellIndex: 0, timeOffsetMs: Date.now() });
                 }}
                 onStateChange={() => {
                   dismissHint();
@@ -1143,7 +1165,7 @@ export const GamePage: React.FC = () => {
              <div className="absolute inset-0 bg-slate-900/10 backdrop-blur-[2px] pointer-events-none" />
              <div className="relative animate-form-enter">
               <button 
-                onClick={() => setIsGameStarted(true)}
+                onClick={handleStartGame}
                 disabled={isLoading}
                 className={`px-10 py-5 rounded-3xl font-black text-3xl uppercase tracking-widest border border-white/20 flex flex-col items-center group overflow-hidden transition-all duration-500 bg-gradient-to-br
                   ${isLoading 

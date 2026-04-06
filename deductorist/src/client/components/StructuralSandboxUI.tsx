@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
-import { TieringService } from '../engine/TieringService';
-import { StructuralSieve, ContradictionError, type GenerationTelemetry } from '../engine/StructuralSieve';
-import { buildTopologyLibrary, getWeight, type TopologyEntry } from '../engine/PermutationGenerator';
-import { LogicCanvas } from '../engine/LogicCanvas';
-import { getFallbackEmoji } from '../utils/themeRegistry';
-import { SolutionGrid } from '../engine/SolutionGrid';
-import { Slot } from '../engine/CoordinateSpace';
+import { TieringService } from '../../shared/engine/TieringService';
+import { StructuralSieve, ContradictionError, type GenerationTelemetry } from '../../shared/engine/StructuralSieve';
+import { buildTopologyLibrary, getWeight, type TopologyEntry } from '../../shared/engine/PermutationGenerator';
+import { LogicCanvas } from '../../shared/engine/LogicCanvas';
+import { getFallbackEmoji } from '../../shared/utils/themeRegistry';
+import { SolutionGrid } from '../../shared/engine/SolutionGrid';
+import { Slot } from '../../shared/engine/CoordinateSpace';
 
 /** A structured log event: the text message plus the optional accepted clue. */
 type LogEvent = { msg: string; entry?: TopologyEntry; isContradiction?: boolean; deadCells?: { row: number; col: number }[] };

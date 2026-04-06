@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ManifestLoader, type PuzzleManifest } from '../../engine/ManifestLoader';
+import { ManifestLoader, type PuzzleManifest } from '../../../shared/engine/ManifestLoader';
 
 export const BinLoaderPage: React.FC = () => {
   const [fileInfo, setFileInfo] = useState<{ name: string; size: number } | null>(null);

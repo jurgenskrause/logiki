@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { seedHash, seededRandom } from './utils/random';
-import { getAsset } from './utils/themeRegistry';
-import { GameState } from './engine/GameState';
+import { seedHash, seededRandom } from '../shared/utils/random';
+import { getAsset } from '../shared/utils/themeRegistry';
+import { GameState } from '../shared/engine/GameState';
 import { TopologyAuditUI } from './components/TopologyAuditUI';
 import { StructuralSandboxUI } from './components/StructuralSandboxUI';
 import { Link } from 'react-router-dom';

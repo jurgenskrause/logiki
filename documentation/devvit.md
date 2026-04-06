@@ -1,6 +1,6 @@
-# Logiki Devvit Conversion Plan
+# Deductorist Devvit Conversion Plan
 
-This document outlines the detailed plan to convert the Logiki game to run on Devvit (Reddit's Developer Platform). The Devvit version of Logiki will serve primarily as a daily competitive puzzle environment.
+This document outlines the detailed plan to convert the Deductorist game to run on Devvit (Reddit's Developer Platform). The Devvit version of Deductorist will serve primarily as a daily competitive puzzle environment.
 
 ## 1. Core Experience & Constraints
 - **Daily Focus**: The default game mode will strictly be the "Daily Puzzle", prioritizing the 4x4 grid as the main daily challenge.
@@ -22,7 +22,7 @@ Devvit relies on its built-in Redis KV store for persistent data. This will be a
 - Only one active game per player is allowed.
 - **Key Format**: `active_game:{userId}` (where `{userId}` obtained via `context.reddit.getCurrentUser()`)
 - **Data**: JSON string of the current playing state (elapsed time, grid markings, binned clues).
-- **Behavior**: Upon launching Logiki, if an active game state exists for the user, it will load immediately. Once the puzzle is completed or abandoned, this key gets cleared.
+- **Behavior**: Upon launching Deductorist, if an active game state exists for the user, it will load immediately. Once the puzzle is completed or abandoned, this key gets cleared.
 
 ## 3. Leaderboards
 - Leaderboards will track verified completion times, structured by grid size for the current daily puzzle.
@@ -81,7 +81,7 @@ To ensure the app isn't throttled or cancelled by Reddit for excessive resource 
 
 ## 6. Devvit Account Setup & Publishing Guidelines
 
-To publish Logiki on Devvit, follow these steps:
+To publish Deductorist on Devvit, follow these steps:
 
 ### Prerequisites
 1. Ensure you have Node.js (v18+) installed.
