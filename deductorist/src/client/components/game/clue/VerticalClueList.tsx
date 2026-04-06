@@ -139,7 +139,8 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
         >
           {isDesktop ? (
             <div 
-              className="flex flex-row flex-wrap content-start justify-start gap-0.5 w-full h-max mx-auto px-2 py-4"
+              className="flex flex-row flex-wrap content-start justify-start w-full h-max mx-auto px-2 py-4"
+              style={{ gap: `calc(${clueIconSize}px * 0.2)` }}
             >
               {orderedClues.map((item) => (
                 <SortableClueWrapper key={item.id} id={item.id}>
@@ -165,12 +166,12 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
               <div 
                 ref={scrollRef} 
                 title="VerticalClueList: mobile scrollRef container"
-                className={`flex flex-col min-h-[0px] w-full ${isDesktop ? 'flex-1' : 'flex-1 py-2'} overflow-x-auto overflow-y-hidden scroll-smooth [&::-webkit-scrollbar]:hidden relative z-10 px-4`} 
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                className="flex-1 min-h-[0px] w-full py-2 overflow-y-auto overflow-x-hidden relative z-10 px-1" 
               >
                 <div 
                    title="VerticalClueList: wrapping columns inner container"
-                   className="flex w-max flex-1 flex-col flex-wrap gap-2 content-start items-center justify-start mx-auto min-h-[0px]"
+                   className="flex flex-row flex-wrap content-start items-center justify-center mx-auto min-h-[0px] w-full"
+                   style={{ gap: `calc(${clueIconSize}px * 0.2)` }}
                 >
                    {orderedClues.map(item => (
                      <SortableClueWrapper key={item.id} id={item.id}>

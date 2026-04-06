@@ -286,9 +286,38 @@ export const GamePage: React.FC = () => {
           }
           optimalIconSize = validIc;
        } else {
-          const estBoardSize = Math.min(viewport.width - 32, viewport.height * 0.55);
-          optimalIconSize = Math.max((estBoardSize * C1) * 2, 16);
-          optimalIconSize = Math.min(optimalIconSize, 28);
+          let candidateIc = 40;
+          let validIc = 20; // Increased Mobile Floor limit
+          const numH = hClues.length;
+          const numV = vClues.length;
+          
+          while (candidateIc >= 18) {
+             const gap = candidateIc * 0.2; 
+             const hW = 4.0 * candidateIc + gap;
+             const hH = 1.5 * candidateIc + gap;
+             const colsH = Math.max(1, Math.floor((viewport.width - 32) / hW));
+             const rowsH = Math.ceil(numH / colsH);
+             const panelHH = rowsH * hH;
+             
+             const vW = 1.5 * candidateIc + gap;
+             const vH = 4.0 * candidateIc + gap;
+             const colsV = Math.max(1, Math.floor((viewport.width - 32) / vW));
+             const rowsV = Math.ceil(numV / colsV);
+             const panelVH = rowsV * vH;
+             
+             const requiredDrawerHeight = Math.max(panelHH, panelVH) + 60;
+             const maxB_geo = viewport.height - requiredDrawerHeight - 40;
+             const maxB_width = viewport.width - 32;
+             const maxB_scale = candidateIc / (2 * C1);
+             const B = Math.min(maxB_width, Math.min(maxB_geo, maxB_scale));
+             
+             if (B >= MIN_BOARD_SIZE) {
+                validIc = candidateIc;
+                break;
+             }
+             candidateIc -= 0.5;
+          }
+          optimalIconSize = validIc;
        }
     }
     return { isDesktop: isDesk, clueIconSize: optimalIconSize, hasMouse };

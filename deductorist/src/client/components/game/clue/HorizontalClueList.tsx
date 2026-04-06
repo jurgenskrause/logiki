@@ -156,8 +156,9 @@ export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, o
         >
           {isDesktop ? (
               <div 
-                className="w-full h-full grid gap-0.5 overflow-hidden"
+                className="w-full h-full grid overflow-hidden"
                 style={{
+                  gap: `calc(${clueIconSize}px * 0.2)`,
                   gridTemplateRows: `repeat(${maxCluesPerColumn}, minmax(0, 1fr))`,
                   gridTemplateColumns: `repeat(${actualCols}, minmax(0, 1fr))`,
                   gridAutoFlow: 'column'
@@ -187,12 +188,12 @@ export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, o
                  <div 
                     ref={scrollRef} 
                     title="HorizontalClueList: mobile scrollRef container"
-                    className={`flex flex-col min-h-[0px] w-full ${isDesktop ? 'flex-1' : 'flex-1 py-2'} overflow-x-auto overflow-y-hidden scroll-smooth [&::-webkit-scrollbar]:hidden relative z-10 px-4`} 
-                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                    className="flex-1 min-h-[0px] w-full py-2 overflow-y-auto overflow-x-hidden relative z-10 px-1" 
                  >
                    <div 
                       title="HorizontalClueList: wrapping columns inner container"
-                      className="flex w-max flex-1 flex-col flex-wrap gap-2 content-start items-center justify-start mx-auto min-h-[0px]"
+                      className="flex flex-row flex-wrap content-start items-center justify-center mx-auto min-h-[0px] w-full"
+                      style={{ gap: `calc(${clueIconSize}px * 0.2)` }}
                    >
                       {orderedClues.map(item => (
                         <SortableClueWrapper key={item.id} id={item.id}>
