@@ -233,19 +233,66 @@ export const GamePage: React.FC = () => {
   // Mobile Drawer Tab Navigation
   const [activeMobileTab, setActiveMobileTab] = useState<'horizontal' | 'vertical'>('horizontal');
   const [scrollToClueId, setScrollToClueId] = useState<string | null>(null);
-  const [containerWidth, setContainerWidth] = useState(window.innerWidth);
+  const [viewport, setViewport] = useState({ width: window.innerWidth, height: window.innerHeight });
   useEffect(() => {
-    const handleResize = () => setContainerWidth(window.innerWidth);
+    const handleResize = () => setViewport({ width: window.innerWidth, height: window.innerHeight });
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const isDesktop = useMemo(() => {
-    if (!puzzle) return containerWidth >= 768;
-    // Prefer desktop mode seamlessly if we have minimal reasonable space and a simple puzzle
-    if (puzzle.rows <= 5 && containerWidth >= 500) return true;
-    return containerWidth >= 768;
-  }, [containerWidth, puzzle]);
+  const MIN_BOARD_ICON_SIZE = 12;
+  const { isDesktop, clueIconSize, hasMouse } = useMemo(() => {
+    const hasMouse = typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches;
+    const isDesk = (!puzzle ? viewport.width >= 768 : (puzzle.rows <= 5 && viewport.width >= 500) || viewport.width >= 768);
+    
+    let optimalIconSize = 24;
+    if (puzzle) {
+       const N = puzzle.rows;
+       const itemsPerRow = Math.ceil(Math.sqrt(N));
+       const C1 = 0.6 / (N * itemsPerRow);
+       const MIN_BOARD_SIZE = MIN_BOARD_ICON_SIZE / C1;
+       
+       const hClues = puzzle.clues.filter(c => ['LEFT_OF', 'ADJACENT', 'SEQUENCE_THREE', 'GAPPED_NOT_MIDDLE', 'GAPPED_EXCLUSION'].includes(c.type));
+       const vClues = puzzle.clues.filter(c => ['VERTICAL', 'VERTICAL_NOT', 'VERTICAL_TRIO', 'VERTICAL_NOT_TRIO', 'DISJUNCTIVE_XOR', 'VERTICAL_DISJUNCTIVE_EXCLUSION'].includes(c.type));
+       
+       if (isDesk) {
+          let candidateIc = 50;
+          let validIc = 16;
+          const numH = hClues.length;
+          const C_h = Math.min(numH, 3);
+          const R_h = Math.ceil(numH / C_h) || 1;
+          const numV = vClues.length;
+
+          while (candidateIc >= 12) {
+             const P_w = C_h * (4.0 * candidateIc + candidateIc * 0.3);
+             const P_h = R_h * (1.5 * candidateIc + candidateIc * 0.3) + 32;
+             const V_w = numV * (1.5 * candidateIc + candidateIc * 0.3);
+             const V_h = 4.0 * candidateIc;
+             
+             if (P_h <= viewport.height && P_w < viewport.width) {
+                const availCol1Width = viewport.width - P_w - 32;
+                if (V_w <= availCol1Width) {
+                   const maxB_geo = Math.min(availCol1Width, Math.max(0, viewport.height - V_h - 40));
+                   const maxB_scale = candidateIc / (2 * C1);
+                   const B = Math.min(maxB_geo, maxB_scale);
+                   
+                   if (B >= MIN_BOARD_SIZE) {
+                      validIc = candidateIc;
+                      break;
+                   }
+                }
+             }
+             candidateIc -= 0.5;
+          }
+          optimalIconSize = validIc;
+       } else {
+          const estBoardSize = Math.min(viewport.width - 32, viewport.height * 0.55);
+          optimalIconSize = Math.max((estBoardSize * C1) * 2, 16);
+          optimalIconSize = Math.min(optimalIconSize, 28);
+       }
+    }
+    return { isDesktop: isDesk, clueIconSize: optimalIconSize, hasMouse };
+  }, [viewport.width, viewport.height, puzzle]);
   
   // DND Kit states
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
@@ -1102,7 +1149,7 @@ export const GamePage: React.FC = () => {
           >
 
             {puzzle && (
-              <HorizontalClueList isDesktop={isDesktop} 
+              <HorizontalClueList isDesktop={isDesktop} clueIconSize={clueIconSize} hasMouse={hasMouse} 
                 clues={puzzle.clues.filter(c => 
                   c.type !== 'ANCHOR' && 
                   (showBin ? binnedClueIds.has(c.id) : !binnedClueIds.has(c.id))
@@ -1132,7 +1179,7 @@ export const GamePage: React.FC = () => {
           >
 
             {puzzle && (
-              <VerticalClueList isDesktop={isDesktop} 
+              <VerticalClueList isDesktop={isDesktop} clueIconSize={clueIconSize} hasMouse={hasMouse} 
                 clues={puzzle.clues.filter(c => 
                   c.type !== 'ANCHOR' && 
                   (showBin ? binnedClueIds.has(c.id) : !binnedClueIds.has(c.id))

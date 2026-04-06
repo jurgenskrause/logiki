@@ -14,6 +14,8 @@ import { SortableClueWrapper } from './SortableClueWrapper';
 
 interface VerticalClueListProps {
   isDesktop?: boolean;
+  clueIconSize?: number;
+  hasMouse?: boolean;
   clues: ActiveClue[];
   onClueHover?: (clue: ActiveClue | null) => void;
   highlightedClue?: ActiveClue | null;
@@ -41,7 +43,7 @@ interface SortableClue {
   clue: ActiveClue;
 }
 
-export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClueHover, highlightedClue, onClueToggleBin, binnedIds, onClueDoubleTap, scrollToClueId, onMoveClue, isDesktop = false }) => {
+export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClueHover, highlightedClue, onClueToggleBin, binnedIds, onClueDoubleTap, scrollToClueId, onMoveClue, isDesktop = false, clueIconSize = 24, hasMouse = false }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -137,11 +139,11 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
         >
           {isDesktop ? (
             <div 
-              className="flex flex-row flex-wrap content-start justify-center gap-1 w-full h-max mx-auto px-2 py-4"
+              className="flex flex-row flex-wrap content-start justify-start gap-0.5 w-full h-max mx-auto px-2 py-4"
             >
               {orderedClues.map((item) => (
                 <SortableClueWrapper key={item.id} id={item.id}>
-                  <VerticalClueUI isDesktop={isDesktop} 
+                  <VerticalClueUI isDesktop={isDesktop} clueIconSize={clueIconSize} hasMouse={hasMouse} 
                      clue={item.clue} 
                      onHover={isDragging ? undefined : onClueHover} 
                      isHighlighted={highlightedClue === item.clue} 
@@ -172,7 +174,7 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
                 >
                    {orderedClues.map(item => (
                      <SortableClueWrapper key={item.id} id={item.id}>
-                       <VerticalClueUI isDesktop={isDesktop} 
+                       <VerticalClueUI isDesktop={isDesktop} clueIconSize={clueIconSize} hasMouse={hasMouse} 
                           clue={item.clue} 
                           onHover={isDragging ? undefined : onClueHover} 
                           isHighlighted={highlightedClue === item.clue} 

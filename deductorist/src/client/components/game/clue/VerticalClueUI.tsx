@@ -16,6 +16,8 @@ import type { ActiveClue } from '../../../../shared/engine/Solver';
 
 interface VerticalClueProps {
   isDesktop?: boolean;
+  clueIconSize?: number;
+  hasMouse?: boolean;
   clue: ActiveClue;
   onHover?: (clue: ActiveClue | null) => void;
   isHighlighted?: boolean;
@@ -25,74 +27,83 @@ interface VerticalClueProps {
   dragHandleProps?: any;
 }
 
-export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue, onHover, isHighlighted, onDiscard, isBinned, onDoubleTap, dragHandleProps, isDesktop = false }) => {
+export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue, onHover, isHighlighted, onDiscard, isBinned, onDoubleTap, dragHandleProps, isDesktop = false, clueIconSize = 24, hasMouse = false }) => {
   const { type, params } = clue;
 
   // Render icons for each param
   const icons = params.map(p => getFallbackEmoji(p.row, p.item));
 
+  const drawSize = clueIconSize * 0.75;
+
+  const IconRender = ({ children, left = '50%', top, scale = 1, isSymbol = false }: any) => (
+    <div 
+      className={`absolute transform -translate-x-1/2 -translate-y-1/2 leading-none flex items-center justify-center ${isSymbol ? 'text-slate-400 dark:text-slate-300 material-icons' : 'drop-shadow-sm'}`}
+      style={{ left, top, fontSize: isSymbol ? `${drawSize * 0.75 * scale}px` : `${drawSize * scale}px` }}
+    >
+      {children}
+    </div>
+  );
+
   const renderContent = () => {
-    const iconClass = `drop-shadow-sm leading-none flex items-center justify-center ${isDesktop ? "text-3xl" : "text-xl"}`;
-    
     switch (type) {
       case 'VERTICAL':
       case 'VERTICAL_PAIR':
         return (
-          <div className="flex flex-col items-center justify-around w-full h-full ${isDesktop ? 'py-2' : 'pt-1 pb-4'}">
-            <span className={iconClass}>{icons[0]}</span>
-            <span className="material-icons text-slate-400 dark:text-slate-300 ${isDesktop ? 'text-2xl' : 'text-lg'} leading-none">link</span>
-            <span className={iconClass}>{icons[1]}</span>
+          <div className="relative w-full h-full">
+            <IconRender top="20%">{icons[0]}</IconRender>
+            <IconRender top="50%" isSymbol>link</IconRender>
+            <IconRender top="80%">{icons[1]}</IconRender>
           </div>
         );
       case 'VERTICAL_NOT':
       case 'VERTICAL_NOT_PAIR':
         return (
-          <div className="flex flex-col items-center justify-around w-full h-full ${isDesktop ? 'py-2' : 'pt-1 pb-4'}">
-            <span className={iconClass}>{icons[0]}</span>
-            <span className="material-icons text-red-500 ${isDesktop ? 'text-2xl' : 'text-lg'} leading-none">link_off</span>
-            <span className={iconClass}>{icons[1]}</span>
+          <div className="relative w-full h-full">
+            <IconRender top="20%">{icons[0]}</IconRender>
+            <IconRender top="50%" isSymbol scale={1.2}>link_off</IconRender>
+            <IconRender top="80%">{icons[1]}</IconRender>
           </div>
         );
       case 'VERTICAL_TRIO':
         return (
-          <div className="flex flex-col items-center justify-around w-full h-full ${isDesktop ? 'py-2' : 'pt-1 pb-4'}">
-            <span className={iconClass}>{icons[0]}</span>
-            <span className={iconClass}>{icons[1]}</span>
-            <span className={iconClass}>{icons[2]}</span>
+          <div className="relative w-full h-full">
+            <IconRender top="15%">{icons[0]}</IconRender>
+            <IconRender top="50%">{icons[1]}</IconRender>
+            <IconRender top="85%">{icons[2]}</IconRender>
           </div>
         );
       case 'VERTICAL_NOT_TRIO':
         return (
-          <div className="flex flex-col items-center justify-around w-full h-full ${isDesktop ? 'py-2' : 'pt-1 pb-4'}">
-            <span className={iconClass}>{icons[0]}</span>
-            <div className="relative flex items-center justify-center">
-               <span className={iconClass}>{icons[2]}</span>
-               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 ${isDesktop ? 'w-[42px] h-[42px] border-[4px]' : 'w-7 h-7 border-[2px]'} border-red-500/90 rounded-full z-10 pointer-events-none drop-shadow-md">
-                  <div className="absolute top-1/2 left-[-10%] w-[120%] ${isDesktop ? 'h-[4px]' : 'h-[2px]'} bg-red-500/90 transform -translate-y-1/2 rotate-45"></div>
+          <div className="relative w-full h-full">
+            <IconRender top="15%">{icons[0]}</IconRender>
+            <div className="absolute top-[50%] left-[50%] transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
+               <span className="drop-shadow-sm leading-none flex items-center" style={{ fontSize: `${drawSize}px` }}>{icons[2]}</span>
+               <div style={{ width: `${drawSize * 1.5}px`, height: `${drawSize * 1.5}px`, borderWidth: `${drawSize * 0.15}px` }} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border-red-500/90 rounded-full z-10 pointer-events-none drop-shadow-md">
+                  <div style={{ height: `${drawSize * 0.15}px` }} className="absolute top-1/2 left-[-10%] w-[120%] bg-red-500/90 transform -translate-y-1/2 rotate-45"></div>
                </div>
             </div>
-            <span className={iconClass}>{icons[1]}</span>
+            <IconRender top="85%">{icons[1]}</IconRender>
           </div>
         );
       case 'DISJUNCTIVE_XOR':
       case 'VERTICAL_DISJUNCTIVE_EXCLUSION':
         return (
-          <div className="flex flex-col items-center justify-around w-full h-full ${isDesktop ? 'py-2' : 'pt-1 pb-4'}">
-            <span className={iconClass}>{icons[0]}</span>
-            
-            <div className="relative flex flex-col items-center justify-center ${isDesktop ? 'gap-4' : 'gap-1'}">
-               <span className={iconClass}>{icons[1]}</span>
-               <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-                  <span className="material-icons text-blue-500 ${isDesktop ? 'text-[14px]' : 'text-[8px]'} bg-white/90 dark:bg-slate-900/90 rounded-full p-0.5 shadow-xs border border-slate-200 dark:border-slate-700">sync</span>
-               </div>
-               <span className={iconClass}>{icons[2]}</span>
+          <div className="relative w-full h-full">
+            <IconRender top="15%">{icons[0]}</IconRender>
+            <IconRender top="50%">{icons[1]}</IconRender>
+            <div className="absolute top-[67.5%] left-[50%] transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center z-20 pointer-events-none">
+               <span style={{ fontSize: `${drawSize * 0.5}px` }} className="material-icons text-blue-500 bg-white/90 dark:bg-slate-900/90 rounded-full p-0.5 shadow-xs border border-slate-200 dark:border-slate-700">sync</span>
             </div>
+            <IconRender top="85%">{icons[2]}</IconRender>
           </div>
         );
       default:
+        // Generic dynamic fallback
         return (
-          <div className="flex flex-col items-center gap-1 justify-center w-full h-full opacity-50">
-            {icons.map((ic, i) => <span key={i} className="${isDesktop ? 'text-2xl' : 'text-xl'}">{ic}</span>)}
+          <div className="relative w-full h-full opacity-50">
+            {icons.map((ic, i) => (
+               <IconRender key={i} top={`${15 + (i * (70 / (icons.length - 1 || 1)))}%`}>{ic}</IconRender>
+            ))}
           </div>
         );
     }
@@ -114,7 +125,8 @@ export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue, onHover, isH
 
   return (
     <div 
-      className={`${isDesktop ? 'w-24 h-[168px]' : 'w-20 h-[120px]'} bg-white dark:bg-slate-800 rounded-lg shadow-md hover:border-indigo-500 group flex items-center justify-center shrink-0 select-none ${
+      style={{ width: `calc(${clueIconSize}px * 1.5)`, height: `calc(${clueIconSize}px * 4.0)`, fontSize: `${clueIconSize}px` }}
+      className={`bg-white dark:bg-slate-800 rounded-lg shadow-md hover:border-indigo-500 group flex items-center justify-center shrink-0 select-none ${
         isHighlighted
           ? 'animate-hard-flash z-10'
           : 'border-2 border-slate-200 dark:border-slate-700'
@@ -128,7 +140,7 @@ export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue, onHover, isH
         onDiscard?.(clue.id);
       }}
       onPointerDown={handlePointerDown}
-      {...(isDesktop && dragHandleProps ? dragHandleProps : {})}
+      {...(hasMouse && dragHandleProps ? dragHandleProps : {})}
     >
       <div className="text-slate-700 dark:text-slate-200 w-full h-full pointer-events-none">
          {renderContent()}
@@ -136,8 +148,8 @@ export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue, onHover, isH
 
       {/* Drag Handle (Full Width Bottom Row) */}
       <div 
-        {...(!isDesktop && dragHandleProps ? dragHandleProps : {})}
-        className={`absolute bottom-0 inset-x-0 h-6 items-center justify-center gap-2 cursor-grab active:cursor-grabbing hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-b-lg transition-colors group/handle touch-none ${isDesktop ? "hidden" : "flex"}`}
+        {...(!hasMouse && dragHandleProps ? dragHandleProps : {})}
+        className={`absolute bottom-0 inset-x-0 h-6 items-center justify-center gap-2 cursor-grab active:cursor-grabbing hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-b-lg transition-colors group/handle touch-none ${hasMouse ? "hidden" : "flex"}`}
       >
         <div className="flex flex-col gap-1">
           <div className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full" />
