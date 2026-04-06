@@ -233,7 +233,19 @@ export const GamePage: React.FC = () => {
   // Mobile Drawer Tab Navigation
   const [activeMobileTab, setActiveMobileTab] = useState<'horizontal' | 'vertical'>('horizontal');
   const [scrollToClueId, setScrollToClueId] = useState<string | null>(null);
-  const isDesktop = useMediaQuery('(min-width: 768px)');
+  const [containerWidth, setContainerWidth] = useState(window.innerWidth);
+  useEffect(() => {
+    const handleResize = () => setContainerWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const isDesktop = useMemo(() => {
+    if (!puzzle) return containerWidth >= 768;
+    // Prefer desktop mode seamlessly if we have minimal reasonable space and a simple puzzle
+    if (puzzle.rows <= 5 && containerWidth >= 500) return true;
+    return containerWidth >= 768;
+  }, [containerWidth, puzzle]);
   
   // DND Kit states
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
@@ -756,7 +768,7 @@ export const GamePage: React.FC = () => {
       )}
 
       {/* ====== MOBILE HEADER (Immersive) ====== */}
-      <header className="md:hidden relative flex items-center px-2 h-16 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm z-40 shrink-0 overflow-hidden text-left">
+      <header className={`relative items-center px-2 h-16 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm z-40 shrink-0 overflow-hidden text-left ${isDesktop ? 'hidden' : 'flex'}`}>
         
         {/* LEFT MENU BUTTON */}
         <div className="flex items-center z-10 shrink-0 mr-2">
@@ -842,7 +854,7 @@ export const GamePage: React.FC = () => {
           </div>
       </header>
       {/* ====== DESKTOP HEADER ====== */}
-      <header className="hidden md:flex relative items-center justify-between px-4 h-16 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm z-40 shrink-0 overflow-hidden">
+      <header className={`relative items-center justify-between px-4 h-16 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm z-40 shrink-0 overflow-hidden ${isDesktop ? 'flex' : 'hidden'}`}>
         
         {/* LEFT BUTTON OVERLAY */}
         <div className="flex items-center gap-2 z-10 shrink-0 mr-4">
@@ -908,7 +920,7 @@ export const GamePage: React.FC = () => {
           
           <button
             onClick={() => setShowBin(!showBin)}
-            className={`relative hidden md:flex h-10 w-10 p-2.5 rounded-xl items-center justify-center transition-colors shadow-sm ${
+            className={`relative h-10 w-10 p-2.5 rounded-xl items-center justify-center transition-colors shadow-sm ${isDesktop ? 'flex' : 'hidden'} ${
               showBin 
                 ? 'bg-amber-500 text-white shadow-inner ring-2 ring-amber-300' 
                 : binnedClueIds.size > 0
@@ -931,7 +943,7 @@ export const GamePage: React.FC = () => {
           {showBin && binnedClueIds.size > 0 && (
             <button
               onClick={handleResetBin}
-              className="hidden md:flex h-10 w-10 p-2.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-xl items-center justify-center transition-colors shadow-sm animate-in fade-in zoom-in duration-200"
+              className={`h-10 w-10 p-2.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-xl items-center justify-center transition-colors shadow-sm animate-in fade-in zoom-in duration-200 ${isDesktop ? 'flex' : 'hidden'}`}
               title="Reset Binned Clues"
             >
               <span className="material-icons text-base">restart_alt</span>
@@ -991,16 +1003,17 @@ export const GamePage: React.FC = () => {
             1. NO ANIMATION ON START (Must NOT use transition-all or scale here to avoid 'pop-in' or sluggishness)
             2. Fully hidden (opacity-0) until user clicks 'Start' to ensure a smooth, empty initial load.
         */}
-        <main className={`w-full h-full flex flex-col md:grid md:grid-cols-[minmax(0,1fr)_auto] md:grid-rows-[minmax(0,1fr)_auto] overflow-hidden ${
+        <main className={`w-full h-full overflow-hidden ${isDesktop ? 'grid grid-cols-[minmax(0,1fr)_auto] grid-rows-[minmax(0,1fr)_auto]' : 'flex flex-col'} ${
           !isGameStarted ? 'blur-[12px] opacity-0 pointer-events-none' : 'blur-0 opacity-100'
         }`}>
 
         {/* Row 1 (Mobile) / Col 1 Row 1 (Desktop): Board */}
         <div 
-          className="w-full flex-none shrink-0 md:flex-1 md:col-start-1 md:row-start-1 md:min-h-0 md:min-w-0 items-start md:items-center justify-center flex p-0 md:p-4 mb-2 md:mb-0 relative overflow-hidden md:w-auto" 
+          className={`w-full shrink min-h-0 min-w-0 flex items-center justify-center relative overflow-hidden ${isDesktop ? 'p-4 mb-0 w-auto col-start-1 row-start-1' : 'flex-1 p-0 mb-2'}`} 
+          style={{ containerType: 'size' }}
         >
           {puzzle && gameState && (
-            <div className="relative flex items-center justify-center max-w-full max-h-full" style={{ aspectRatio: isDesktop ? 'auto' : String(boardAspectRatio), height: isDesktop ? '100%' : 'auto', width: '100%', containerType: 'size' }}>
+            <div className="relative flex items-center justify-center" style={{ aspectRatio: String(boardAspectRatio), height: `min(100cqh, 100cqw / ${boardAspectRatio})`, containerType: 'size' }}>
               <GameBoard
                 key={gameKey}
                 rows={puzzle.rows}
@@ -1027,7 +1040,7 @@ export const GamePage: React.FC = () => {
         </div>
 
         {/* Row 2 (Mobile Only): Swappable Drawer Tabs */}
-        <div className="shrink-0 md:col-start-1 md:row-start-2 md:hidden flex items-center justify-between px-4 py-2 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 shadow-sm z-20 gap-2">
+        <div className={`shrink-0 items-center justify-between px-4 py-2 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 shadow-sm z-20 gap-2 ${isDesktop ? 'hidden col-start-1 row-start-2' : 'flex'}`}>
           
           <div className="flex gap-2 items-center">
             <DroppableMobileBin 
@@ -1079,16 +1092,17 @@ export const GamePage: React.FC = () => {
         {/* Row 3 (Mobile) / Col 2 Row 1-span-2 (Desktop): Horizontal Clues */}
         <div 
           title="GamePage: Horizontal Drawer Wrapper"
-          className={`min-h-[0px] md:flex-1 md:col-start-2 md:row-start-1 md:row-span-2 md:min-h-0 md:h-full bg-slate-100 dark:bg-slate-900 border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800 shadow-inner w-full md:w-auto flex-col ${
-          activeMobileTab === 'horizontal' ? `flex flex-1 z-10 relative visible pointer-events-auto md:h-auto` : 'hidden md:visible md:flex md:pointer-events-auto md:relative md:z-10 md:h-auto'
+          className={`min-h-[0px] bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-inner flex-col ${
+          isDesktop ? 'flex-1 col-start-2 row-start-1 row-span-2 min-h-0 h-full border-t-0 border-l w-auto visible flex pointer-events-auto relative z-10' 
+                    : (activeMobileTab === 'horizontal' ? 'border-t w-full flex flex-1 z-10 relative visible pointer-events-auto' : 'hidden')
         }`}>
           <div 
             title="GamePage: Horizontal Drawer Inner Frame"
-            className="flex-1 min-h-[0px] flex flex-col overflow-hidden relative md:overflow-x-auto md:overflow-y-hidden"
+            className={`flex-1 min-h-[0px] flex flex-col relative ${isDesktop ? 'overflow-x-auto overflow-y-hidden' : 'overflow-hidden'}`}
           >
 
             {puzzle && (
-              <HorizontalClueList 
+              <HorizontalClueList isDesktop={isDesktop} 
                 clues={puzzle.clues.filter(c => 
                   c.type !== 'ANCHOR' && 
                   (showBin ? binnedClueIds.has(c.id) : !binnedClueIds.has(c.id))
@@ -1108,16 +1122,17 @@ export const GamePage: React.FC = () => {
         {/* Row 3 (Mobile) / Col 1 Row 2 (Desktop): Vertical Clues */}
         <div 
           title="GamePage: Vertical Drawer Wrapper"
-          className={`min-h-[0px] md:flex-1 md:col-start-1 md:row-start-2 md:min-h-0 md:h-full bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shadow-inner w-full flex-col ${
-          activeMobileTab === 'vertical' ? `flex flex-1 z-10 relative visible pointer-events-auto md:h-auto` : 'hidden md:visible md:flex md:pointer-events-auto md:relative md:z-10 md:h-auto'
+          className={`min-h-[0px] bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-inner flex-col ${
+          isDesktop ? 'flex-1 col-start-1 row-start-2 min-h-0 h-full border-t w-full visible flex pointer-events-auto relative z-10' 
+                    : (activeMobileTab === 'vertical' ? 'border-t w-full flex flex-1 z-10 relative visible pointer-events-auto' : 'hidden')
         }`}>
           <div 
             title="GamePage: Vertical Drawer Inner Frame"
-            className="flex-1 min-h-[0px] flex flex-col overflow-hidden relative md:overflow-y-auto md:overflow-x-hidden md:custom-scrollbar"
+            className={`flex-1 min-h-[0px] flex flex-col relative ${isDesktop ? 'overflow-y-auto overflow-x-hidden custom-scrollbar' : 'overflow-hidden'}`}
           >
 
             {puzzle && (
-              <VerticalClueList 
+              <VerticalClueList isDesktop={isDesktop} 
                 clues={puzzle.clues.filter(c => 
                   c.type !== 'ANCHOR' && 
                   (showBin ? binnedClueIds.has(c.id) : !binnedClueIds.has(c.id))

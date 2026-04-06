@@ -25,6 +25,7 @@ function useMediaQuery(query: string) {
 }
 
 interface HorizontalClueListProps {
+  isDesktop?: boolean;
   clues: ActiveClue[];
   onClueHover?: (clue: ActiveClue | null) => void;
   highlightedClue?: ActiveClue | null;
@@ -35,15 +36,15 @@ interface HorizontalClueListProps {
   onMoveClue?: () => void;
 }
 
-const CLUE_MAX_HEIGHT = 84 + 2; // h-[84px] + gap-0.5
-const CLUE_WIDTH = 192 + 2; // w-48 + gap-0.5
+const CLUE_MAX_HEIGHT = 84 + 4; // h-[84px] + gap-1
+const CLUE_WIDTH = 192 + 4; // w-48 + gap-1
 
 interface SortableClue {
   id: string;
   clue: ActiveClue;
 }
 
-export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, onClueHover, highlightedClue, onClueToggleBin, binnedIds, onClueDoubleTap, scrollToClueId, onMoveClue }) => {
+export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, onClueHover, highlightedClue, onClueToggleBin, binnedIds, onClueDoubleTap, scrollToClueId, onMoveClue, isDesktop = false }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [containerHeight, setContainerHeight] = useState(0);
@@ -51,7 +52,7 @@ export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, o
   const [orderedClues, setOrderedClues] = useState<SortableClue[]>([]);
   const [isDragging, setIsDragging] = useState(false);
 
-  const isDesktop = useMediaQuery('(min-width: 768px)');
+  
 
   const cluesHash = JSON.stringify(clues);
 
@@ -152,7 +153,7 @@ export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, o
         >
           {isDesktop ? (
               <div 
-                className="w-full h-full grid gap-0.5 overflow-hidden"
+                className="w-full h-full grid gap-1 overflow-hidden"
                 style={{
                   gridTemplateRows: `repeat(${maxCluesPerColumn}, minmax(0, 1fr))`,
                   gridTemplateColumns: `repeat(${actualCols}, minmax(0, 1fr))`,
@@ -161,7 +162,7 @@ export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, o
               >
                 {orderedClues.map((item) => (
                   <SortableClueWrapper key={item.id} id={item.id}>
-                    <HorizontalClueUI 
+                    <HorizontalClueUI isDesktop={isDesktop} 
                        clue={item.clue} 
                        onHover={isDragging ? undefined : onClueHover} 
                        isHighlighted={highlightedClue === item.clue} 
@@ -192,7 +193,7 @@ export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, o
                    >
                       {orderedClues.map(item => (
                         <SortableClueWrapper key={item.id} id={item.id}>
-                          <HorizontalClueUI 
+                          <HorizontalClueUI isDesktop={isDesktop} 
                              clue={item.clue} 
                              onHover={isDragging ? undefined : onClueHover} 
                              isHighlighted={highlightedClue === item.clue} 

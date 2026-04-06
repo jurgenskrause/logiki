@@ -13,6 +13,7 @@ import {
 import { SortableClueWrapper } from './SortableClueWrapper';
 
 interface VerticalClueListProps {
+  isDesktop?: boolean;
   clues: ActiveClue[];
   onClueHover?: (clue: ActiveClue | null) => void;
   highlightedClue?: ActiveClue | null;
@@ -40,12 +41,12 @@ interface SortableClue {
   clue: ActiveClue;
 }
 
-export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClueHover, highlightedClue, onClueToggleBin, binnedIds, onClueDoubleTap, scrollToClueId, onMoveClue }) => {
+export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClueHover, highlightedClue, onClueToggleBin, binnedIds, onClueDoubleTap, scrollToClueId, onMoveClue, isDesktop = false }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
 
-  const isDesktop = useMediaQuery('(min-width: 768px)');
+  
   const itemWidth = isDesktop ? 96 : 72; // w-24 vs w-[72px]
   const itemHeight = isDesktop ? 168 : 120; // h-[168px] vs h-[120px]
   const gap = isDesktop ? 2 : 4; // gap-0.5 vs gap-1
@@ -54,18 +55,6 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
   
   const [orderedClues, setOrderedClues] = useState<SortableClue[]>([]);
   const [isDragging, setIsDragging] = useState(false);
-
-  useEffect(() => {
-    if (!isDesktop) return;
-    if (!containerRef.current) return;
-    const obs = new ResizeObserver((entries) => {
-        for (const entry of entries) {
-            setContainerWidth(entry.contentRect.width);
-        }
-    });
-    obs.observe(containerRef.current);
-    return () => obs.disconnect();
-  }, [isDesktop]);
 
   const cluesHash = JSON.stringify(clues);
 
@@ -124,9 +113,7 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
     }
   });
 
-  const maxCluesPerRow = Math.floor(containerWidth / CLUE_MAX_WIDTH) || 1;
-  const numRows = Math.ceil(orderedClues.length / maxCluesPerRow) || 1;
-  const actualRows = Math.min(numRows, 3);
+
 
   useEffect(() => {
     if (scrollToClueId && scrollRef.current) {
@@ -142,8 +129,7 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
     <div 
       ref={containerRef}
       title="VerticalClueList: outer containerRef"
-      className={`flex-1 w-full min-h-[0px] flex ${isDesktop ? 'px-1 py-1 items-center justify-center' : 'p-0 flex-col'} overflow-hidden relative`}
-      style={isDesktop ? { height: `${actualRows * CLUE_HEIGHT + 4}px` } : {}}
+      className={`flex-1 w-full min-h-[0px] flex ${isDesktop ? 'px-1 py-1 overflow-y-auto overflow-x-hidden custom-scrollbar' : 'p-0 flex-col overflow-hidden'} relative`}
     >
         <SortableContext 
           items={orderedClues.map(c => c.id)}
@@ -151,17 +137,11 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
         >
           {isDesktop ? (
             <div 
-              className="grid gap-0.5 w-full justify-center"
-              style={{
-                gridTemplateColumns: `repeat(${maxCluesPerRow}, minmax(0, 1fr))`,
-                gridAutoFlow: 'row',
-                gridAutoRows: `minmax(${CLUE_HEIGHT - 2}px, 1fr)`,
-                maxWidth: `${maxCluesPerRow * CLUE_MAX_WIDTH}px`
-              }}
+              className="flex flex-row flex-wrap content-start justify-center gap-1 w-full h-max mx-auto px-2 py-4"
             >
               {orderedClues.map((item) => (
                 <SortableClueWrapper key={item.id} id={item.id}>
-                  <VerticalClueUI 
+                  <VerticalClueUI isDesktop={isDesktop} 
                      clue={item.clue} 
                      onHover={isDragging ? undefined : onClueHover} 
                      isHighlighted={highlightedClue === item.clue} 
@@ -192,7 +172,7 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
                 >
                    {orderedClues.map(item => (
                      <SortableClueWrapper key={item.id} id={item.id}>
-                       <VerticalClueUI 
+                       <VerticalClueUI isDesktop={isDesktop} 
                           clue={item.clue} 
                           onHover={isDragging ? undefined : onClueHover} 
                           isHighlighted={highlightedClue === item.clue} 
