@@ -90,7 +90,6 @@ const DroppableMobileBin = ({ showBin, binnedCount, onToggle }: { showBin: boole
 const loader = new ManifestLoader();
 
 export const GamePage: React.FC = () => {
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [selectedDifficulty, setSelectedDifficulty] = useState<number>(1);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
@@ -520,11 +519,6 @@ export const GamePage: React.FC = () => {
     return () => clearTimeout(t);
   }, [gameState, puzzle]);
 
-  // Dark mode sync
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', isDarkMode);
-  }, [isDarkMode]);
-
   // ─── Cascade Handler ────────────────────────────────────────────────────────
   
   const checkWin = useCallback(async () => {
@@ -762,8 +756,7 @@ export const GamePage: React.FC = () => {
       }}
       onDragCancel={() => setActiveDragId(null)}
     >
-    <div className={`flex flex-col h-[100dvh] w-screen overflow-hidden transition-colors duration-300
-      ${isDarkMode ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
+    <div className="flex flex-col h-[100dvh] w-screen overflow-hidden transition-colors duration-300 bg-slate-50 text-slate-900">
 
       {/* Difficulty menu */}
       {isMenuOpen && (
@@ -798,8 +791,6 @@ export const GamePage: React.FC = () => {
           onToggleWarnings={setWarningsEnabled}
           zoomEnabled={zoomEnabled}
           onToggleZoom={setZoomEnabled}
-          isDarkMode={isDarkMode}
-          onToggleDarkMode={() => setIsDarkMode(prev => !prev)}
           isSoundEnabled={isSoundEnabled}
           onToggleSound={setIsSoundEnabled}
         />
@@ -848,7 +839,7 @@ export const GamePage: React.FC = () => {
       )}
 
       {/* ====== MOBILE HEADER (Immersive) ====== */}
-      <header className={`relative items-center px-2 h-16 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm z-40 shrink-0 overflow-hidden text-left ${isDesktop ? 'hidden' : 'flex'}`}>
+      <header className="relative flex items-center px-2 h-16 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm z-40 shrink-0 overflow-hidden text-left">
         
         {/* LEFT MENU BUTTON */}
         <div className="flex items-center z-10 shrink-0 mr-2">
@@ -866,7 +857,7 @@ export const GamePage: React.FC = () => {
               ))}
             </p>
           ) : (
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30">Logiki</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30">Deductorist</span>
           )}
         </div>
 
@@ -884,9 +875,16 @@ export const GamePage: React.FC = () => {
                  <button
                    onClick={handleHintClick}
                    disabled={!activeHint}
-                   className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all shadow-sm ${hintBtnClass}`}
+                   className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-all shadow-sm ${hintBtnClass}`}
                  >
                    <span className="material-icons text-base">lightbulb</span>
+                   {hintCount > 0 && (
+                     <span className="absolute -top-1 -right-1 flex h-4 w-4 z-20">
+                       <span className="relative inline-flex rounded-full h-4 w-4 bg-indigo-500 text-[10px] items-center justify-center text-white font-bold leading-none shadow-sm">
+                         {hintCount}
+                       </span>
+                     </span>
+                   )}
                  </button>
                  <button
                    onClick={() => {
@@ -933,146 +931,7 @@ export const GamePage: React.FC = () => {
             )}
           </div>
       </header>
-      {/* ====== DESKTOP HEADER ====== */}
-      <header className={`relative items-center justify-between px-4 h-16 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm z-40 shrink-0 overflow-hidden ${isDesktop ? 'flex' : 'hidden'}`}>
-        
-        {/* LEFT BUTTON OVERLAY */}
-        <div className="flex items-center gap-2 z-10 shrink-0 mr-4">
-          <button onClick={() => setIsSideMenuOpen(true)}
-            className="p-2.5 rounded-xl bg-slate-200/80 dark:bg-slate-800/80 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors shadow-sm flex items-center justify-center">
-            <span className="material-icons text-sm">menu</span>
-          </button>
-          <button onClick={() => setIsMenuOpen(true)}
-            className="px-3 py-2 rounded-xl bg-indigo-100/80 text-indigo-700 dark:bg-indigo-900/80 dark:text-indigo-300 hover:bg-indigo-200 transition-colors text-sm font-bold shadow-sm flex items-center gap-1">
-            <span className="material-icons text-sm">tune</span>
-            {selectedDifficulty > 0 ? `Level ${selectedDifficulty}` : 'Daily'}
-          </button>
-          <button onClick={() => setIsDarkMode(!isDarkMode)}
-            className="p-2.5 rounded-xl bg-slate-200/80 dark:bg-slate-800/80 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors shadow-sm flex items-center justify-center"
-            title="Toggle Theme">
-            <span className="material-icons text-sm">{isDarkMode ? 'light_mode' : 'dark_mode'}</span>
-          </button>
-          <button onClick={() => setIsHelpOpen(true)}
-            className="p-2.5 rounded-xl bg-slate-200/80 dark:bg-slate-800/80 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors shadow-sm flex items-center justify-center"
-            title="How to Play">
-            <span className="material-icons text-sm">help_outline</span>
-          </button>
-        </div>
-
-        {/* IMMERSIVE LEFT-ALIGNED TEXT AREA */}
-        <div className="flex-1 min-w-0 h-full flex items-center justify-start z-30 pointer-events-none select-none" style={{ containerType: 'inline-size' }}>
-          {hoveredClueText ? (
-            <p className="font-bold text-slate-800 dark:text-slate-100 leading-tight line-clamp-2 pr-4 bg-slate-50/95 dark:bg-slate-900/95 rounded-r shadow-[10px_0_10px_rgba(248,250,252,0.95)] dark:shadow-[10px_0_10px_rgba(15,23,42,0.95)] animate-in fade-in duration-150 pointer-events-auto" style={{ fontSize: 'clamp(12px, 3cqw, 24px)' }}>
-              {hoveredClueText.split('<nl>').map((line, i) => (
-                <span key={i} className="block">{line.trim()}</span>
-              ))}
-            </p>
-          ) : hintShowing && activeHint ? (
-            <p className="font-bold text-slate-800 dark:text-slate-100 leading-tight line-clamp-2 pr-4 bg-slate-50/95 dark:bg-slate-900/95 rounded-r shadow-[10px_0_10px_rgba(248,250,252,0.95)] dark:shadow-[10px_0_10px_rgba(15,23,42,0.95)] animate-in fade-in slide-in-from-top-1 duration-200 pointer-events-auto" style={{ fontSize: 'clamp(12px, 3cqw, 24px)' }}>
-              {activeHint.text.split('<nl>').map((line, i) => (
-                <span key={i} className="block">{line.trim()}</span>
-              ))}
-            </p>
-          ) : (
-            <span className="text-xs font-bold uppercase tracking-[0.4em] opacity-20 dark:opacity-30">Logiki</span>
-          )}
-        </div>
-
-        {/* RIGHT BUTTON OVERLAY */}
-        <div className="absolute right-4 top-0 bottom-0 flex items-center gap-2 z-50">
-          <div className="flex items-center justify-center bg-slate-100/80 dark:bg-slate-800/80 rounded-xl px-2 h-10 text-sm font-bold text-slate-500 shadow-sm" title="Hints & Warnings Used">
-            ★ {hintCount}
-          </div>
-          
-          <div className="flex items-center justify-center bg-slate-100/80 dark:bg-slate-800/80 rounded-xl px-3 h-10 font-mono text-sm font-bold text-slate-600 dark:text-slate-300 shadow-sm">
-            {isGameStarted ? formatTime(elapsedSeconds) : '00:00'}
-          </div>
-
-          <button
-            onClick={handleHintClick}
-            disabled={!activeHint}
-            className={`px-4 h-10 rounded-xl flex items-center gap-2 font-bold text-sm transition-all shadow-sm ${hintBtnClass}`}>
-            <span className="material-icons text-base">
-              {hintShowing ? 'check' : 'lightbulb'}
-            </span>
-            {hintShowing ? 'Apply' : 'Hint'}
-          </button>
-          
-          <button
-            onClick={() => setShowBin(!showBin)}
-            className={`relative h-10 w-10 p-2.5 rounded-xl items-center justify-center transition-colors shadow-sm ${isDesktop ? 'flex' : 'hidden'} ${
-              showBin 
-                ? 'bg-amber-500 text-white shadow-inner ring-2 ring-amber-300' 
-                : binnedClueIds.size > 0
-                  ? 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-300'
-                  : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600'
-            }`}
-            title={showBin ? "Show Active Clues" : "Show Binned Clues"}
-          >
-            <span className="material-icons text-base text-inherit">{showBin ? 'delete_sweep' : 'delete_outline'}</span>
-            {binnedClueIds.size > 0 && !showBin && (
-              <span className="absolute -top-1 -right-1 flex h-4 w-4 z-20">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-4 w-4 bg-amber-500 text-[10px] items-center justify-center text-white font-bold leading-none">
-                  {binnedClueIds.size}
-                </span>
-              </span>
-            )}
-          </button>
-
-          {showBin && binnedClueIds.size > 0 && (
-            <button
-              onClick={handleResetBin}
-              className={`h-10 w-10 p-2.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-xl items-center justify-center transition-colors shadow-sm animate-in fade-in zoom-in duration-200 ${isDesktop ? 'flex' : 'hidden'}`}
-              title="Reset Binned Clues"
-            >
-              <span className="material-icons text-base">restart_alt</span>
-            </button>
-          )}
-
-          
-          <button
-            onClick={() => {
-              if (gameState && gameState.canUndo) {
-                gameState.undo();
-                setHintShowing(false);
-                setTick(t => t + 1);
-                setTimeout(runAnalysis, 50);
-              }
-            }}
-            disabled={!gameState || !gameState.canUndo}
-            className={`px-4 h-10 rounded-xl flex items-center gap-2 font-bold text-sm transition-all shadow-sm ${
-              gameState && gameState.canUndo
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 hover:bg-blue-200'
-                : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600 cursor-not-allowed opacity-50'
-            }`}
-            title="Undo"
-          >
-            <span className="material-icons text-base">undo</span>
-            Undo
-          </button>
-          <button
-            onClick={() => {
-              if (gameState && gameState.canRedo) {
-                gameState.redo();
-                setHintShowing(false);
-                setTick(t => t + 1);
-                setTimeout(runAnalysis, 50);
-              }
-            }}
-            disabled={!gameState || !gameState.canRedo}
-            className={`px-4 h-10 rounded-xl flex items-center gap-2 font-bold text-sm transition-all shadow-sm ${
-              gameState && gameState.canRedo
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 hover:bg-blue-200'
-                : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600 cursor-not-allowed opacity-50'
-            }`}
-            title="Redo"
-          >
-            <span className="material-icons text-base">redo</span>
-            Redo
-          </button>
-        </div>
-      </header>
+      {/* Main Game Area Wrapper */}
 
 
 

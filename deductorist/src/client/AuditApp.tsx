@@ -233,7 +233,7 @@ function App() {
       </div>
 
       <footer className="text-slate-600 text-[10px] font-mono tracking-tighter mt-12">
-        LOGIKI_V1_CORE_FINAL_PROOF // BUILD_SUCCESS
+        DEDUCTORIST_V1_CORE_FINAL_PROOF // BUILD_SUCCESS
       </footer>
     </div>
   );

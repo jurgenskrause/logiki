@@ -37,7 +37,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => {
               Objective
             </h4>
             <p className="text-sm leading-relaxed">
-              Logiki is a deductive logic puzzle. Your goal is to figure out the exact position of every item on the grid using the provided logical clues. Every column represents a single "house" or space, and items in the same column belong together.
+              Deductorist is a deductive logic puzzle. Your goal is to figure out the exact position of every item on the grid using the provided logical clues. Every column represents a single "house" or space, and items in the same column belong together.
             </p>
           </section>
 

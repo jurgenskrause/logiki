@@ -53,7 +53,7 @@ export const BinLoaderPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 p-8 flex flex-col items-center">
       <header className="flex items-center gap-4 mb-8 bg-slate-900 border border-slate-800 p-4 rounded-3xl shrink-0 w-full sticky top-0 z-10">
-        <h1 className="text-2xl font-black text-blue-400 uppercase tracking-tighter">LGK Binary Inspector</h1>
+        <h1 className="text-2xl font-black text-blue-400 uppercase tracking-tighter">DEDUCTORIST Binary Inspector</h1>
       </header>
 
       <main className="w-full max-w-4xl space-y-8">
@@ -63,7 +63,7 @@ export const BinLoaderPage: React.FC = () => {
             <span className="material-icons text-3xl">upload_file</span>
           </div>
           <div className="text-center">
-            <p className="text-lg font-bold mb-1">Upload Logiki Manifest</p>
+            <p className="text-lg font-bold mb-1">Upload Deductorist Manifest</p>
             <p className="text-sm text-slate-500">Select a .bin file to inspect its contents</p>
           </div>
           <label className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl cursor-pointer shadow-lg shadow-blue-900/20 transition-all active:scale-95">

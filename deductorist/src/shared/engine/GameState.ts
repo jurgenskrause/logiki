@@ -8,6 +8,7 @@ interface GameSnapshot {
   grid: Uint16Array;
   confirmed: Uint8Array;
   noAutoSolve: Uint8Array;
+  previousMask: Uint16Array;
 }
 
 /**
@@ -28,6 +29,7 @@ export class GameState {
   private _confirmed: Uint8Array;
   private _solution: Uint8Array;
   private _noAutoSolve: Uint8Array;
+  private _previousMask: Uint16Array;
 
   // Linear history
   private _history: GameSnapshot[] = [];
@@ -44,8 +46,10 @@ export class GameState {
     this._confirmed = new Uint8Array(rows * cols);
     this._solution = new Uint8Array(rows * cols);
     this._noAutoSolve = new Uint8Array(rows * cols);
+    this._previousMask = new Uint16Array(rows * cols);
     const initialMask: Bitmask = (1 << cols) - 1;
     this._grid.fill(initialMask);
+    this._previousMask.fill(initialMask);
     this._confirmed.fill(0);
     this._noAutoSolve.fill(0);
   }
@@ -74,7 +78,8 @@ export class GameState {
     return {
       grid: new Uint16Array(this._grid),
       confirmed: new Uint8Array(this._confirmed),
-      noAutoSolve: new Uint8Array(this._noAutoSolve)
+      noAutoSolve: new Uint8Array(this._noAutoSolve),
+      previousMask: new Uint16Array(this._previousMask)
     };
   }
 
@@ -82,6 +87,7 @@ export class GameState {
     this._grid = new Uint16Array(snapshot.grid);
     this._confirmed = new Uint8Array(snapshot.confirmed);
     this._noAutoSolve = new Uint8Array(snapshot.noAutoSolve);
+    this._previousMask = new Uint16Array(snapshot.previousMask);
   }
 
   // ─── History System ────────────────────────────────────────────────────────
@@ -264,6 +270,7 @@ export class GameState {
     const index = this._getIndex(row, col);
     if (this._confirmed[index] && this._grid[index] === (1 << itemIndex)) return;
 
+    this._previousMask[index] = this._grid[index];
     this._grid[index] = (1 << itemIndex);
     this._confirmed[index] = 1;
     this._noAutoSolve[index] = 0;
@@ -347,9 +354,27 @@ export class GameState {
     if (!this._isValid(row, col)) return 0;
     const index = this._getIndex(row, col);
     this._confirmed[index] = 0;
-    this._noAutoSolve[index] = 0;
-    // Restore to all possible
-    this._grid[index] = (1 << this._cols) - 1;
+    
+    // Restore the mask state from immediately before it was solved
+    this._grid[index] = this._previousMask[index];
+    
+    // Apply basic row cascade: if any other cell in the row is already confirmed, prune it.
+    for (let c = 0; c < this._cols; c++) {
+      if (c === col) continue;
+      const otherIndex = this._getIndex(row, c as ColumnIndex);
+      if (this._confirmed[otherIndex]) {
+        // Find which item is confirmed there
+        let mask = this._grid[otherIndex];
+        // Ensure it's a clean power of two
+        if (mask !== 0 && (mask & (mask - 1)) === 0) {
+           this._grid[index] &= ~mask;
+        }
+      }
+    }
+    
+    // Suppress auto-solve to prevent an instant re-solve infinite loop (especially from Hidden Singles)
+    this._noAutoSolve[index] = 1;
+    
     return this._grid[index];
   }
 }

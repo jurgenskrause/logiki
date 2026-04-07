@@ -8,8 +8,6 @@ interface SideMenuProps {
   onToggleWarnings: (enabled: boolean) => void;
   zoomEnabled: boolean;
   onToggleZoom: (enabled: boolean) => void;
-  isDarkMode: boolean;
-  onToggleDarkMode: () => void;
   isSoundEnabled: boolean;
   onToggleSound: (enabled: boolean) => void;
 }
@@ -22,8 +20,6 @@ export const SideMenu: React.FC<SideMenuProps> = ({
   onToggleWarnings,
   zoomEnabled,
   onToggleZoom,
-  isDarkMode,
-  onToggleDarkMode,
   isSoundEnabled,
   onToggleSound
 }) => {
@@ -38,7 +34,7 @@ export const SideMenu: React.FC<SideMenuProps> = ({
         {/* Header */}
         <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <h2 className="text-xl font-black tracking-tighter uppercase text-slate-800 dark:text-slate-200">
-            Logiki
+            Deductorist
           </h2>
           <button 
             onClick={onClose}
@@ -80,19 +76,6 @@ export const SideMenu: React.FC<SideMenuProps> = ({
             <div>
               <div className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">How to Play</div>
               <div className="text-xs font-medium text-slate-500">Game rules and controls</div>
-            </div>
-          </button>
-
-          <button 
-            onClick={onToggleDarkMode}
-            className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left group"
-          >
-            <div className="w-10 h-10 rounded-lg bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400">
-              <span className="material-icons">{isDarkMode ? 'light_mode' : 'dark_mode'}</span>
-            </div>
-            <div>
-              <div className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">{isDarkMode ? 'Light Mode' : 'Dark Mode'}</div>
-              <div className="text-xs font-medium text-slate-500">Toggle theme</div>
             </div>
           </button>
 
@@ -169,13 +152,6 @@ export const SideMenu: React.FC<SideMenuProps> = ({
             </div>
           </div>
 
-        </div>
-
-        {/* Footer */}
-        <div className="p-4 border-t border-slate-200 dark:border-slate-800">
-          <p className="text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-            Logiki v0.1 Engine Phase 4
-          </p>
         </div>
 
       </div>
