@@ -116,6 +116,7 @@ export const GamePage: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
   const [explainedClue, setExplainedClue] = useState<ActiveClue | null>(null);
+  const [generationTrigger, setGenerationTrigger] = useState(0);
 
   const [puzzle, setPuzzle] = useState<PuzzleManifest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -518,7 +519,7 @@ export const GamePage: React.FC = () => {
     }, 150);
 
     return () => clearTimeout(t);
-  }, [selectedDifficulty, isManifestLoaded]);
+  }, [selectedDifficulty, isManifestLoaded, generationTrigger]);
 
   // Run initial analysis when puzzle loads
   useEffect(() => {
@@ -789,7 +790,9 @@ export const GamePage: React.FC = () => {
             }
             window.history.pushState({}, '', url.toString());
 
+            setHintCount(0);
             setSelectedDifficulty(level); 
+            setGenerationTrigger(g => g + 1);
             setIsMenuOpen(false); 
           }}
           onClose={() => setIsMenuOpen(false)}
