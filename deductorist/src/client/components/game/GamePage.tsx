@@ -328,6 +328,10 @@ export const GamePage: React.FC = () => {
   // DND Kit states
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   
+  const { setNodeRef: setGlobalBinRef, isOver: isGlobalBinOver } = useDroppable({
+    id: 'bin-drop-global',
+  });
+  
   const sensors = useSensors(
     useSensor(PointerSensor, { // For mouse re-order
       activationConstraint: {
@@ -965,6 +969,24 @@ export const GamePage: React.FC = () => {
               />
             </div>
           )}
+          
+          {/* GLOBAL BIN HOVER TARGET */}
+          <div
+            ref={setGlobalBinRef}
+            className={`absolute bottom-4 right-4 md:bottom-8 md:right-8 w-20 h-20 md:w-28 md:h-28 z-[100] rounded-3xl flex items-center justify-center transition-all duration-300 pointer-events-auto ${
+              activeDragId
+                ? 'opacity-100 translate-y-0 scale-100 shadow-2xl'
+                : 'opacity-0 translate-y-12 scale-90 pointer-events-none'
+            } ${
+              isGlobalBinOver
+                ? 'bg-red-500 ring-4 ring-offset-2 ring-offset-slate-100 dark:ring-offset-slate-900 ring-red-400 rotate-[8deg] shadow-[0_0_30px_rgba(239,68,68,0.5)] text-white'
+                : 'bg-white dark:bg-slate-700 shadow-[0_10px_25px_rgba(0,0,0,0.15)] border-2 border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-300'
+            }`}
+          >
+            <span className={`material-icons transition-transform duration-300 ${isGlobalBinOver ? 'scale-125' : ''} text-4xl md:text-6xl`}>
+              delete_sweep
+            </span>
+          </div>
         </div>
 
         {/* Row 2 (Mobile Only): Swappable Drawer Tabs */}
@@ -1150,12 +1172,14 @@ export const GamePage: React.FC = () => {
       {/* DRAG OVERLAY */}
       <DragOverlay zIndex={9999} dropAnimation={null}>
         {draggedClue ? (
-          <div className="pointer-events-none drop-shadow-2xl">
-            {isDraggedHorizontal ? (
-               <HorizontalClueUI clue={draggedClue} isHighlighted={false} />
-            ) : (
-               <VerticalClueUI clue={draggedClue} isHighlighted={false} />
-            )}
+          <div className={`pointer-events-none drop-shadow-2xl transition-all duration-300 ${isGlobalBinOver ? 'scale-90 rotate-[-5deg] contrast-125 saturate-200 brightness-110 drop-shadow-[0_0_25px_rgba(239,68,68,0.9)] opacity-90' : 'scale-105 rotate-[2deg] opacity-90'}`}>
+            <div className={`${isGlobalBinOver ? '[&>*]:bg-red-50 [&>*]:border-red-500 [&>*]:text-red-600 [&>*]:dark:bg-red-950/80 [&_span.material-icons]:text-red-500 [&_div.bg-slate-300]:bg-red-400 [&_div.bg-white]:bg-red-100' : ''}`}>
+              {isDraggedHorizontal ? (
+                 <HorizontalClueUI clue={draggedClue} isHighlighted={false} />
+              ) : (
+                 <VerticalClueUI clue={draggedClue} isHighlighted={false} />
+              )}
+            </div>
           </div>
         ) : null}
       </DragOverlay>
