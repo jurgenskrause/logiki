@@ -23,6 +23,8 @@ export type GameSubmitRequest = {
   boardState: number[]; // the grid masks from GameState
   moveLog: MoveLogEntry[];
   isDevBuild?: boolean;
+  devOverrideTimeMs?: number;
+  penaltyMs?: number;
 };
 
 export type GameSubmitResponse = {
@@ -41,4 +43,9 @@ export type LeaderboardResponse = {
   distribution?: Record<string, number>;
   totalSolvers?: number;
   type: 'leaderboard';
+};
+
+export type DevResetResponse = {
+  status: 'success' | 'error';
+  message?: string;
 };

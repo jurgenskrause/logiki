@@ -82,7 +82,7 @@ export const DistributionChart: React.FC<Props> = ({ leaderboardData, userTimeMs
 
       <div className="flex items-end justify-center w-full h-32 px-1 mb-2 gap-1 isolate relative">
         {chartData.map((bar, idx) => (
-          <div key={idx} className="flex flex-col items-center flex-1 max-w-[2.5rem] relative">
+          <div key={idx} className="flex flex-col items-center justify-end h-full flex-1 max-w-[2.5rem] relative">
             <span className={`text-[10px] font-bold opacity-80 flex flex-col items-center ${bar.isUser ? 'text-[#0ea5e9]' : 'text-slate-400'}`}>
               {bar.isUser && percentile >= 90 && <span className="material-icons text-[14px] text-amber-500 transform translate-y-1 z-10 filter drop-shadow">emoji_events</span>}
               <span className="mb-1">{bar.count > 0 ? bar.count : ''}</span>

@@ -63,16 +63,21 @@ api.post('/game/submit', async (c) => {
     if (!username) return c.json<ErrorResponse>({ status: 'error', message: 'Unauthorized' }, 401);
 
     const startTimeStr = await redis.get(`session:start:${username}`);
-    if (!startTimeStr) {
+    if (!startTimeStr && !body.isDevBuild) {
       // Missing start session (ghosted to prevent direct API injects)
       await redis.hSet('ghosted_users_v1', { [username]: 'true' });
       return c.json<GameSubmitResponse>({ status: 'ghosted', message: 'Invalid session' });
     }
 
-    const startTime = parseInt(startTimeStr, 10);
-    const now = Date.now();
-    const durationMs = now - startTime;
-    await redis.del(`session:start:${username}`);
+    let durationMs = 0;
+    if (body.isDevBuild && body.devOverrideTimeMs) {
+      durationMs = body.devOverrideTimeMs;
+    } else {
+      const startTime = parseInt(startTimeStr as string, 10);
+      const now = Date.now();
+      durationMs = now - startTime + (body.penaltyMs || 0);
+      await redis.del(`session:start:${username}`);
+    }
 
     let isVerified = true;
 
@@ -162,5 +167,16 @@ api.get('/game/leaderboard', async (c) => {
   } catch(e) {
     console.error(e);
     return c.json<ErrorResponse>({ status: 'error', message: 'Failed to fetch leaderboard' }, 500);
+  }
+});
+
+api.post('/game/dev/reset', async (c) => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    await redis.del(`leaderboard:daily:${today}`);
+    await redis.del(`leaderboard:daily:${today}:dist`);
+    return c.json({ status: 'success', message: 'Leaderboard cleared' });
+  } catch (e) {
+    return c.json<ErrorResponse>({ status: 'error', message: 'Failed to reset leaderboard' }, 500);
   }
 });

@@ -115,6 +115,44 @@ const GlobalDropBin = ({ activeDragId }: { activeDragId: string | null }) => {
 
 const loader = new ManifestLoader();
 
+const DevMenu = ({ puzzleId, grid }: { puzzleId?: string, grid?: Uint16Array | number[] }) => {
+  if (!DEV_BUILD) return null;
+
+  const handleReset = () => {
+    fetch('/api/game/dev/reset', { method: 'POST' })
+      .then(() => alert('Leaderboard reset command successfully dispatched.'))
+      .catch(console.error);
+  };
+
+  const handleRandomSubmit = () => {
+    const devOverrideTimeMs = Math.floor(Math.random() * 30000) + 30000;
+    fetch('/api/game/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        puzzleId: puzzleId || 'unknown',
+        boardState: grid ? Array.from(grid) : [],
+        moveLog: [],
+        isDevBuild: true,
+        devOverrideTimeMs
+      })
+    })
+      .then(() => console.log(`Mock time: ${devOverrideTimeMs}ms sent`))
+      .catch(console.error);
+  };
+
+  return (
+    <div className="fixed bottom-4 right-4 z-[999] flex gap-2 bg-slate-900/80 backdrop-blur-md p-2 rounded-xl border border-rose-500/30 shadow-2xl">
+      <button onClick={handleReset} className="px-3 py-2 bg-rose-600/90 hover:bg-rose-500 text-white rounded-lg font-black text-[10px] uppercase">
+        💣 Reset
+      </button>
+      <button onClick={handleRandomSubmit} className="px-3 py-2 bg-blue-600/90 hover:bg-blue-500 text-white rounded-lg font-black text-[10px] uppercase">
+        🎲 Random Submit
+      </button>
+    </div>
+  );
+};
+
 export const GamePage: React.FC = () => {
   const [selectedDifficulty, setSelectedDifficulty] = useState<number>(1);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -144,6 +182,7 @@ export const GamePage: React.FC = () => {
 
   // Anti-Cheat Telemetry
   const moveLogRef = useRef<{ cellIndex: number; timeOffsetMs: number }[]>([]);
+  const penaltyMsRef = useRef<number>(0);
 
   useEffect(() => {
     eliminateAudioRef.current = new Audio(eliminateSfx);
@@ -206,6 +245,7 @@ export const GamePage: React.FC = () => {
       if (gameState) setTimeout(runAnalysis, 50);
       setIsGameWon(false);
       moveLogRef.current = [];
+      penaltyMsRef.current = 0;
     }
   }, [puzzle]);
 
@@ -608,7 +648,8 @@ export const GamePage: React.FC = () => {
           puzzleId: `${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}`,
           boardState: Array.from(gameState.grid),
           moveLog: moveLogRef.current,
-          isDevBuild: DEV_BUILD
+          isDevBuild: DEV_BUILD,
+          penaltyMs: penaltyMsRef.current
         })
       })
       .then(r => r.json())
@@ -720,6 +761,8 @@ export const GamePage: React.FC = () => {
       }
       setHintShowing(true);
       setHintCount(c => c + 1);
+      setElapsedSeconds(s => s + 10);
+      penaltyMsRef.current += 10000;
 
       // Auto-focus logic for mobile drawer
       if (activeHint.clue && activeHint.clue.type !== 'error') {
@@ -954,6 +997,8 @@ export const GamePage: React.FC = () => {
 
         {/* INTERACTIVE CONTROLS (Z-Indexed Overlay) */}
         <div className="flex items-center gap-1.5 z-50 shrink-0 pr-2">
+          {isGameStarted && (
+            <>
             {isDesktop && !(hintShowing && activeHint) && (
               <div className="flex items-center h-10 space-x-1">
                 <div className="w-10 h-10">
@@ -1036,6 +1081,8 @@ export const GamePage: React.FC = () => {
                  </div>
                </>
             )}
+          </>
+          )}
           </div>
       </header>
       {/* Main Game Area Wrapper */}
@@ -1294,6 +1341,8 @@ export const GamePage: React.FC = () => {
           </div>
         ) : null}
       </DragOverlay>
+
+      <DevMenu puzzleId={puzzle ? `${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}` : undefined} grid={gameState?.grid} />
     </div>
     </DndContext>
   );
