@@ -9,6 +9,7 @@ interface GameSnapshot {
   confirmed: Uint8Array;
   noAutoSolve: Uint8Array;
   previousMask: Uint16Array;
+  binnedClues: string[];
 }
 
 /**
@@ -30,6 +31,7 @@ export class GameState {
   private _solution: Uint8Array;
   private _noAutoSolve: Uint8Array;
   private _previousMask: Uint16Array;
+  private _binnedClues: Set<string>;
 
   // Linear history
   private _history: GameSnapshot[] = [];
@@ -47,6 +49,7 @@ export class GameState {
     this._solution = new Uint8Array(rows * cols);
     this._noAutoSolve = new Uint8Array(rows * cols);
     this._previousMask = new Uint16Array(rows * cols);
+    this._binnedClues = new Set<string>();
     const initialMask: Bitmask = (1 << cols) - 1;
     this._grid.fill(initialMask);
     this._previousMask.fill(initialMask);
@@ -79,7 +82,8 @@ export class GameState {
       grid: new Uint16Array(this._grid),
       confirmed: new Uint8Array(this._confirmed),
       noAutoSolve: new Uint8Array(this._noAutoSolve),
-      previousMask: new Uint16Array(this._previousMask)
+      previousMask: new Uint16Array(this._previousMask),
+      binnedClues: Array.from(this._binnedClues)
     };
   }
 
@@ -88,6 +92,25 @@ export class GameState {
     this._confirmed = new Uint8Array(snapshot.confirmed);
     this._noAutoSolve = new Uint8Array(snapshot.noAutoSolve);
     this._previousMask = new Uint16Array(snapshot.previousMask);
+    this._binnedClues = new Set(snapshot.binnedClues);
+  }
+
+  // ─── Clue Binning System ───────────────────────────────────────────────────
+
+  public toggleBinnedClue(clueId: string): void {
+    if (this._binnedClues.has(clueId)) {
+      this._binnedClues.delete(clueId);
+    } else {
+      this._binnedClues.add(clueId);
+    }
+  }
+
+  public get binnedClues(): Set<string> {
+    return this._binnedClues;
+  }
+
+  public resetBinnedClues(): void {
+    this._binnedClues.clear();
   }
 
   // ─── History System ────────────────────────────────────────────────────────

@@ -172,9 +172,9 @@ export const GamePage: React.FC = () => {
     if (puzzle) {
       setIsGameStarted(false);
       setElapsedSeconds(0);
-      setBinnedClueIds(new Set());
+      setIsLoading(false);
       setShowBin(false);
-      setHintCount(0);
+      if (gameState) setTimeout(runAnalysis, 50);
       setIsGameWon(false);
       moveLogRef.current = [];
     }
@@ -225,7 +225,6 @@ export const GamePage: React.FC = () => {
   }, []);
 
   // Clue Bin state
-  const [binnedClueIds, setBinnedClueIds] = useState<Set<string>>(new Set());
   const [showBin, setShowBin] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
 
@@ -367,31 +366,7 @@ export const GamePage: React.FC = () => {
     return gs;
   }, [puzzle]);
 
-  const handleToggleBin = useCallback((clueId: string) => {
-    dismissHint();
-    playInteractionSound('moveclue');
-    setBinnedClueIds(prev => {
-      const isBinning = !prev.has(clueId);
-
-      // Warning System: Prevent binning if any item in the clue is unsolved
-      if (warningsEnabled && isBinning && gameState && puzzle) {
-        const clue = puzzle.clues.find(c => c.id === clueId);
-        if (clue) {
-          const allResolved = clue.params.every(p => gameState.isItemConfirmed(p.row, p.item));
-          if (!allResolved) {
-            triggerRedFlash();
-            setHintCount(c => c + 1);
-            return prev; // Prevent the binning action
-          }
-        }
-      }
-
-      const next = new Set(prev);
-      if (isBinning) next.add(clueId);
-      else next.delete(clueId);
-      return next;
-    });
-  }, [warningsEnabled, gameState, puzzle, triggerRedFlash]);
+  const binnedClueIds = gameState?.binnedClues || new Set<string>();
 
 
   // ─── Analysis ───────────────────────────────────────────────────────────────
@@ -427,6 +402,15 @@ export const GamePage: React.FC = () => {
     // If the hint changed while showing, dismiss the banner
     setHintShowing(false);
   }, [gameState, puzzle]);
+
+  const handleToggleBin = useCallback((clueId: string) => {
+    if (!gameState) return;
+    gameState.toggleBinnedClue(clueId);
+    gameState.pushHistory(); // Commit binaction as an atomic undoable action!
+    setTick(t => t + 1); // Trigger React UI render
+    setTimeout(runAnalysis, 50);
+    playInteractionSound('moveclue');
+  }, [gameState, playInteractionSound, runAnalysis]);
 
   // ─── Loaders ────────────────────────────────────────────────────────────────
 
@@ -684,10 +668,15 @@ export const GamePage: React.FC = () => {
 
   const handleResetBin = useCallback(() => {
     dismissHint();
-    setBinnedClueIds(new Set());
+    if (gameState) {
+      gameState.resetBinnedClues();
+      gameState.pushHistory();
+      setTick(t => t + 1);
+      setTimeout(runAnalysis, 50);
+    }
     setShowBin(false);
     playInteractionSound('moveclue');
-  }, [dismissHint, playInteractionSound]);
+  }, [dismissHint, gameState, playInteractionSound, runAnalysis]);
 
 
   // ─── Derived hint highlight data ─────────────────────────────────────────────

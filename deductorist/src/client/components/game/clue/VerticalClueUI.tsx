@@ -29,6 +29,7 @@ interface VerticalClueProps {
 
 export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue, onHover, isHighlighted, onDiscard, isBinned, onDoubleTap, dragHandleProps, isDesktop = false, clueIconSize = 24, hasMouse = false }) => {
   const { type, params } = clue;
+  const isFinePointer = useMediaQuery('(pointer: fine)');
 
   // Render icons for each param
   const icons = params.map(p => getFallbackEmoji(p.row, p.item));
@@ -149,7 +150,7 @@ export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue, onHover, isH
       {/* Drag Handle (Full Width Bottom Row) */}
       <div 
         {...(!hasMouse && dragHandleProps ? dragHandleProps : {})}
-        className={`absolute bottom-0 inset-x-0 h-6 items-center justify-center gap-2 cursor-grab active:cursor-grabbing hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-b-lg transition-colors group/handle touch-none ${hasMouse ? "hidden" : "flex"}`}
+        className={`absolute bottom-0 inset-x-0 h-6 flex flex-row items-center justify-center gap-1.5 cursor-grab active:cursor-grabbing hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-b-lg transition-colors group/handle touch-none ${hasMouse || isFinePointer ? "hidden" : "flex"}`}
       >
         <div className="flex flex-col gap-1">
           <div className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full" />

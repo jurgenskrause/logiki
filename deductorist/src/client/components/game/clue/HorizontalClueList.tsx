@@ -54,8 +54,6 @@ export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, o
   const [orderedClues, setOrderedClues] = useState<SortableClue[]>([]);
   const [isDragging, setIsDragging] = useState(false);
 
-  
-
   const cluesHash = JSON.stringify(clues);
 
   useEffect(() => {
@@ -226,7 +224,7 @@ export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, o
                  </div>
               </>
           )}
-        </SortableContext>
+         </SortableContext>
     </div>
   );
 };

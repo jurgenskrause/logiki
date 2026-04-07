@@ -29,6 +29,7 @@ interface HorizontalClueProps {
 
 export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover, isHighlighted, onDiscard, isBinned, onDoubleTap, dragHandleProps, isDesktop = false, clueIconSize = 24, hasMouse = false }) => {
   const { type, params } = clue;
+  const isFinePointer = useMediaQuery('(pointer: fine)');
 
   // Render icons for each param
   const icons = params.map(p => getFallbackEmoji(p.row, p.item));
@@ -146,10 +147,9 @@ export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover,
          {renderContent()}
       </div>
 
-      {/* Drag Handle (Full Height Right Column) */}
       <div 
         {...(!hasMouse && dragHandleProps ? dragHandleProps : {})}
-        className={`absolute right-0 inset-y-0 w-8 flex flex-col items-center justify-center gap-1.5 cursor-grab active:cursor-grabbing hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-r-lg transition-colors group/handle touch-none ${hasMouse ? "hidden" : "flex"}`}
+        className={`absolute right-0 inset-y-0 w-8 flex flex-col items-center justify-center gap-1.5 cursor-grab active:cursor-grabbing hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-r-lg transition-colors group/handle touch-none ${hasMouse || isFinePointer ? "hidden" : "flex"}`}
       >
         <div className="flex gap-1">
           <div className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full" />
