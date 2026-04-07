@@ -87,6 +87,28 @@ const DroppableMobileBin = ({ showBin, binnedCount, onToggle }: { showBin: boole
   );
 };
 
+const GlobalDropBin = ({ activeDragId }: { activeDragId: string | null }) => {
+  const { setNodeRef, isOver } = useDroppable({ id: 'bin-drop-global' });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`absolute bottom-4 right-4 md:bottom-8 md:right-8 w-20 h-20 md:w-28 md:h-28 z-[100] rounded-3xl flex items-center justify-center transition-all duration-300 pointer-events-auto ${
+        activeDragId
+          ? 'opacity-100 translate-y-0 scale-100 shadow-2xl'
+          : 'opacity-0 translate-y-12 scale-90 pointer-events-none'
+      } ${
+        isOver
+          ? 'bg-red-500 ring-4 ring-offset-2 ring-offset-slate-100 dark:ring-offset-slate-900 ring-red-400 rotate-[8deg] shadow-[0_0_30px_rgba(239,68,68,0.5)] text-white'
+          : 'bg-white dark:bg-slate-700 shadow-[0_10px_25px_rgba(0,0,0,0.15)] border-2 border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-300'
+      }`}
+    >
+      <span className={`material-icons transition-transform duration-300 ${isOver ? 'scale-125' : ''} text-4xl md:text-6xl`}>
+        delete_sweep
+      </span>
+    </div>
+  );
+};
+
 const loader = new ManifestLoader();
 
 export const GamePage: React.FC = () => {
@@ -327,10 +349,8 @@ export const GamePage: React.FC = () => {
   
   // DND Kit states
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
-  
-  const { setNodeRef: setGlobalBinRef, isOver: isGlobalBinOver } = useDroppable({
-    id: 'bin-drop-global',
-  });
+  const [activeOverId, setActiveOverId] = useState<string | null>(null);
+  const isGlobalBinOver = activeOverId === 'bin-drop-global';
   
   const sensors = useSensors(
     useSensor(PointerSensor, { // For mouse re-order
@@ -740,14 +760,19 @@ export const GamePage: React.FC = () => {
       sensors={sensors}
       collisionDetection={closestCenter}
       onDragStart={(e) => setActiveDragId(e.active.id.toString())}
+      onDragMove={(e) => setActiveOverId(e.over?.id.toString() || null)}
       onDragEnd={(e) => {
         const { active, over } = e;
         if (over && over.id.toString().startsWith('bin-drop')) {
            handleToggleBin(active.id.toString());
         }
         setActiveDragId(null);
+        setActiveOverId(null);
       }}
-      onDragCancel={() => setActiveDragId(null)}
+      onDragCancel={() => {
+        setActiveDragId(null);
+        setActiveOverId(null);
+      }}
     >
     <div className="flex flex-col h-[100dvh] w-screen overflow-hidden transition-colors duration-300 bg-slate-50 text-slate-900">
 
@@ -971,22 +996,7 @@ export const GamePage: React.FC = () => {
           )}
           
           {/* GLOBAL BIN HOVER TARGET */}
-          <div
-            ref={setGlobalBinRef}
-            className={`absolute bottom-4 right-4 md:bottom-8 md:right-8 w-20 h-20 md:w-28 md:h-28 z-[100] rounded-3xl flex items-center justify-center transition-all duration-300 pointer-events-auto ${
-              activeDragId
-                ? 'opacity-100 translate-y-0 scale-100 shadow-2xl'
-                : 'opacity-0 translate-y-12 scale-90 pointer-events-none'
-            } ${
-              isGlobalBinOver
-                ? 'bg-red-500 ring-4 ring-offset-2 ring-offset-slate-100 dark:ring-offset-slate-900 ring-red-400 rotate-[8deg] shadow-[0_0_30px_rgba(239,68,68,0.5)] text-white'
-                : 'bg-white dark:bg-slate-700 shadow-[0_10px_25px_rgba(0,0,0,0.15)] border-2 border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-300'
-            }`}
-          >
-            <span className={`material-icons transition-transform duration-300 ${isGlobalBinOver ? 'scale-125' : ''} text-4xl md:text-6xl`}>
-              delete_sweep
-            </span>
-          </div>
+          <GlobalDropBin activeDragId={activeDragId} />
         </div>
 
         {/* Row 2 (Mobile Only): Swappable Drawer Tabs */}
