@@ -911,7 +911,7 @@ export const GamePage: React.FC = () => {
         </div>
 
         {/* IMMERSIVE LEFT-ALIGNED TEXT AREA (Mobile) */}
-        <div className="flex-1 min-w-0 h-full flex items-center justify-start z-30 pointer-events-none select-none" style={{ containerType: 'inline-size' }}>
+        <div className={`flex-1 min-w-0 h-full flex items-center z-[60] pointer-events-none select-none ${isDesktop ? 'justify-center' : 'justify-start'}`} style={{ containerType: 'inline-size' }}>
           {hintShowing && activeHint ? (
             <p className="font-bold text-slate-800 dark:text-slate-100 leading-tight line-clamp-2 pr-2 bg-slate-50/95 dark:bg-slate-900/95 rounded shadow-[5px_0_10px_rgba(248,250,252,0.95)] dark:shadow-[5px_0_10px_rgba(15,23,42,0.95)] animate-in fade-in duration-200 pointer-events-auto" style={{ fontSize: 'clamp(10px, 4.5cqw, 14px)' }}>
               {activeHint.text.split('<nl>').map((line, i) => (
@@ -930,7 +930,23 @@ export const GamePage: React.FC = () => {
         </div>
 
         {/* INTERACTIVE CONTROLS (Z-Indexed Overlay) */}
-        <div className="absolute right-2 top-0 bottom-0 flex items-center gap-1.5 z-50">
+        <div className="flex items-center gap-1.5 z-50 shrink-0 pr-2">
+            {isDesktop && !(hintShowing && activeHint) && (
+              <div className="flex items-center h-10 space-x-1">
+                <div className="w-10 h-10">
+                   <DroppableMobileBin showBin={showBin} binnedCount={binnedClueIds.size} onToggle={() => { dismissHint(); setShowBin(!showBin); }} />
+                </div>
+                {showBin && binnedClueIds.size > 0 && (
+                  <button
+                    onClick={handleResetBin}
+                    className="w-10 h-10 flex items-center justify-center bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg hover:bg-slate-300 transition-colors shadow-sm"
+                    title="Reset Binned Clues"
+                  >
+                    <span className="material-icons text-base">restart_alt</span>
+                  </button>
+                )}
+              </div>
+            )}
             {hintShowing && activeHint ? (
                <button
                  onClick={handleHintClick}

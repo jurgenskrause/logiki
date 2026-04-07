@@ -150,7 +150,7 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
         >
           {isDesktop ? (
             <div 
-              className="flex flex-row flex-wrap content-start justify-start w-full h-max mx-auto px-2 py-4"
+              className="flex flex-row flex-wrap content-start justify-center w-full h-max mx-auto px-2 py-4"
               style={{ gap: `calc(${clueIconSize}px * 0.2)` }}
             >
               {orderedClues.map((item) => (
