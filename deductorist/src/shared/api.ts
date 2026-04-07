@@ -22,6 +22,7 @@ export type GameSubmitRequest = {
   puzzleId: string;
   boardState: number[]; // the grid masks from GameState
   moveLog: MoveLogEntry[];
+  isDevBuild?: boolean;
 };
 
 export type GameSubmitResponse = {
@@ -37,5 +38,7 @@ export type LeaderboardEntry = {
 
 export type LeaderboardResponse = {
   entries: LeaderboardEntry[];
+  distribution?: Record<string, number>;
+  totalSolvers?: number;
   type: 'leaderboard';
 };

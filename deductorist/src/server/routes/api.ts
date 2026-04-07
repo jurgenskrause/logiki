@@ -99,8 +99,14 @@ api.post('/game/submit', async (c) => {
     // (Integrity Hash Match logic omitted or placeholder for Phase 3.5)
 
     if (isVerified) {
+      const effectiveUsername = body.isDevBuild ? `${username}_${Date.now()}` : username;
       const today = new Date().toISOString().split('T')[0];
-      await redis.zAdd(`leaderboard:daily:${today}`, { member: username, score: durationMs });
+      const bucketSec = Math.floor(durationMs / 1000);
+      
+      await Promise.all([
+        redis.zAdd(`leaderboard:daily:${today}`, { member: effectiveUsername, score: durationMs }),
+        redis.hIncrBy(`leaderboard:daily:${today}:dist`, bucketSec.toString(), 1)
+      ]);
     } else {
       // Ghost them
       await redis.hSet('ghosted_users_v1', { [username]: 'true' });
@@ -123,22 +129,35 @@ api.get('/game/leaderboard', async (c) => {
     // For now hardcoded daily size / structure
     const today = new Date().toISOString().split('T')[0];
     
-    const [rawLeaderboard, ghostMap] = await Promise.all([
+    const [rawLeaderboard, ghostMap, distributionRaw] = await Promise.all([
       redis.zRange(`leaderboard:daily:${today}`, 0, 49, { by: 'rank' }),
-      redis.hGetAll('ghosted_users_v1')
+      redis.hGetAll('ghosted_users_v1'),
+      redis.hGetAll(`leaderboard:daily:${today}:dist`)
     ]);
 
     const filteredLeaderboard = rawLeaderboard.filter(entry => {
-      const isGhosted = ghostMap[entry.member] === 'true';
+      const baseName = entry.member.split('_')[0];
+      const isGhosted = ghostMap[baseName] === 'true';
       if (isGhosted) {
-        return entry.member === username;
+        return baseName === username;
       }
       return true;
     });
 
+    const distribution: Record<string, number> = {};
+    let totalSolvers = 0;
+    
+    for (const [bucket, countStr] of Object.entries(distributionRaw)) {
+       const count = parseInt(countStr, 10) || 0;
+       distribution[bucket] = count;
+       totalSolvers += count;
+    }
+
     return c.json<LeaderboardResponse>({
       type: 'leaderboard',
-      entries: filteredLeaderboard
+      entries: filteredLeaderboard,
+      distribution,
+      totalSolvers
     });
   } catch(e) {
     console.error(e);

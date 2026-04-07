@@ -8,9 +8,11 @@ import { ManifestLoader, type PuzzleManifest } from '../../../shared/engine/Mani
 import { GameState } from '../../../shared/engine/GameState';
 import { HorizontalClueList } from './clue/HorizontalClueList';
 import { VerticalClueList } from './clue/VerticalClueList';
+import { DistributionChart } from './leaderboard/DistributionChart';
 import { analyzeState, applyHint, type HintResult } from '../../../shared/engine/HintService';
 import { describeRule } from '../../../shared/engine/ClueDescriber';
 import type { ActiveClue } from '../../../shared/engine/Solver';
+import type { LeaderboardResponse } from '../../../shared/api';
 import {
   DndContext,
   closestCenter,
@@ -56,6 +58,8 @@ function useMediaQuery(query: string) {
 }
 
 
+
+const DEV_BUILD = true;
 
 const DroppableMobileBin = ({ showBin, binnedCount, onToggle }: { showBin: boolean; binnedCount: number; onToggle: () => void }) => {
   const { setNodeRef, isOver } = useDroppable({ id: 'bin-drop-mobile' });
@@ -130,6 +134,7 @@ export const GamePage: React.FC = () => {
 
   // Sound system
   const [isSoundEnabled, setIsSoundEnabled] = useState(true);
+  const [leaderboardData, setLeaderboardData] = useState<LeaderboardResponse | null>(null);
   const eliminateAudioRef = useRef<HTMLAudioElement | null>(null);
   const solveAudioRef = useRef<HTMLAudioElement | null>(null);
   const mistakeAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -190,6 +195,7 @@ export const GamePage: React.FC = () => {
   }, [isSoundEnabled]);
 
   const [isGameWon, setIsGameWon] = useState(false);
+  const [isSubmittingScore, setIsSubmittingScore] = useState(false);
 
   useEffect(() => {
     if (puzzle) {
@@ -593,16 +599,33 @@ export const GamePage: React.FC = () => {
       setIsGameWon(true);
       playInteractionSound('win');
       
-      // Submit to Sieve
+      // Submit to Sieve and retrieve distribution
+      setIsSubmittingScore(true);
       fetch('/api/game/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           puzzleId: `${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}`,
           boardState: Array.from(gameState.grid),
-          moveLog: moveLogRef.current
+          moveLog: moveLogRef.current,
+          isDevBuild: DEV_BUILD
         })
-      }).catch(console.error);
+      })
+      .then(r => r.json())
+      .then(res => {
+         if (res.status === 'verified' || DEV_BUILD) {
+             return fetch('/api/game/leaderboard');
+         }
+         throw new Error('Not verified');
+      })
+      .then(r => r.json())
+      .then(res => {
+         if (res.type === 'leaderboard') {
+            setLeaderboardData(res);
+         }
+      })
+      .catch(console.error)
+      .finally(() => setIsSubmittingScore(false));
     }
   }, [gameState, puzzle, isGameWon, playInteractionSound]);
 
@@ -1191,9 +1214,21 @@ export const GamePage: React.FC = () => {
                 <h2 className="text-3xl font-black mb-2 bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent uppercase tracking-tighter">
                   Logic Mastered
                 </h2>
-                <p className="text-slate-500 dark:text-slate-400 font-bold mb-8">
+                <p className="text-slate-500 dark:text-slate-400 font-bold mb-4">
                   Puzzle completed in {formatTime(elapsedSeconds)}
                 </p>
+                
+                {isSubmittingScore ? (
+                  <div className="flex flex-col items-center justify-center py-8 mb-4">
+                     <div className="w-8 h-8 rounded-full border-4 border-slate-200 dark:border-slate-700 border-t-emerald-500 animate-spin mb-4"></div>
+                     <p className="text-slate-500 font-bold animate-pulse text-sm">Submitting Time...</p>
+                  </div>
+                ) : leaderboardData && (
+                  <div className="mb-8">
+                     <DistributionChart leaderboardData={leaderboardData} userTimeMs={elapsedSeconds * 1000} />
+                  </div>
+                )}
+
                 <button 
                   onClick={() => window.location.reload()}
                   className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-black shadow-lg shadow-emerald-500/30 transition-all active:scale-95 uppercase tracking-widest text-xs"
