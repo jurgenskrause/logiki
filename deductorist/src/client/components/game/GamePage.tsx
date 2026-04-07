@@ -313,32 +313,53 @@ export const GamePage: React.FC = () => {
           const numH = hClues.length;
           const numV = vClues.length;
           
+          const maxAllowedWidth = viewport.width - 32;
+          const subCols = Math.ceil(puzzle.cols / 2);
+          const boardAspectRatio = (puzzle.cols * subCols) / (puzzle.rows * 2);
+          
           while (candidateIc >= 18) {
              const gap = candidateIc * 0.2; 
              const hW = 4.0 * candidateIc + gap;
              const hH = 1.5 * candidateIc + gap;
-             const colsH = Math.max(1, Math.floor((viewport.width - 32) / hW));
+             const colsH = Math.max(1, Math.floor(maxAllowedWidth / hW));
              const rowsH = Math.max(1, Math.ceil(numH / colsH));
              const panelHH = rowsH * hH;
              
              const vW = 1.5 * candidateIc + gap;
              const vH = 4.0 * candidateIc + gap;
-             const colsV = Math.max(1, Math.floor((viewport.width - 32) / vW));
+             const colsV = Math.max(1, Math.floor(maxAllowedWidth / vW));
              const rowsV = Math.max(1, Math.ceil(numV / colsV));
-             const panelVH = Math.min(rowsV, 1) * vH;
-             const panelHH_capped = Math.min(rowsH, 3) * hH;
+             const panelVH = rowsV * vH; 
+             const pureUnhinderedPanelMaxHeight = Math.max(panelHH, panelVH) + 16;
              
-             const requiredDrawerHeight = Math.max(panelHH_capped, panelVH) + 16;
-             const maxB_geo = viewport.height - requiredDrawerHeight - 40;
-             const maxB_width = viewport.width - 32;
+             // Absolute geometric bounds calculation
              const maxB_scale = candidateIc / (1.5 * C1);
-             const B = Math.min(maxB_width, Math.min(maxB_geo, maxB_scale));
+             const B = Math.min(maxAllowedWidth, maxB_scale); 
              
-             finalDrawerHeight = requiredDrawerHeight; // Fallback preservation if loop exhausts natively
-             if (B >= MIN_BOARD_SIZE) {
+             // Convert ideal width to its native physical scaled height constraints
+             const physicalBoardHeight = B / boardAspectRatio;
+             
+             // Steal massive chunks of padding metrics cleanly for drawer
+             // 130px represents static total Header height deductor + Mobile Padding Offsets
+             const availableDrawerHeight = viewport.height - 130 - physicalBoardHeight;
+             
+             // Guarantee minimally viable rendering capacity
+             const minRequiredDrawer = hH + 16;
+             
+             // High density grids naturally demand large MIN_BOARD_SIZE that exceed mobile widths.
+             const OPTIMAL_MIN_BOARD_SIZE = Math.min(MIN_BOARD_SIZE, maxAllowedWidth);
+             
+             if (B >= OPTIMAL_MIN_BOARD_SIZE && availableDrawerHeight >= minRequiredDrawer) {
                 validIc = candidateIc;
-                finalDrawerHeight = requiredDrawerHeight;
+                // Expose every remaining pixel explicitly to the unified drawer footprint bounds!
+                // Prioritize absolute available space so flex bounds consume fully down
+                finalDrawerHeight = availableDrawerHeight;
                 break;
+             }
+             
+             if (candidateIc === 18) {
+                validIc = 18;
+                finalDrawerHeight = Math.min(pureUnhinderedPanelMaxHeight, viewport.height - 130 - (B / boardAspectRatio));
              }
              candidateIc -= 0.5;
           }
