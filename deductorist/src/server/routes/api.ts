@@ -182,9 +182,12 @@ api.post('/game/share', async (c) => {
     const body: { message?: string } = await c.req.json();
     if (!body.message) return c.json<ErrorResponse>({ status: 'error', message: 'Payload message missing' }, 400);
 
+    const post = await reddit.getPostById(postId);
+    const permalink = post ? `https://reddit.com${post.permalink}` : '';
+
     await reddit.submitComment({
       id: postId,
-      text: body.message
+      text: `${body.message}\n\n[Play Deductorist!](${permalink})`
     });
 
     return c.json({ status: 'success' });

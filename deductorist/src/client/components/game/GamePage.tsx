@@ -177,17 +177,17 @@ export const GamePage: React.FC = () => {
   const [isSharing, setIsSharing] = useState(false);
 
   const winData = useMemo(() => {
-    if (!leaderboardData || userRank === null) return { text: "Logic Mastered", icon: "psychology" };
+    if (!leaderboardData || userRank === null) return { text: "Logic Mastered", icon: "psychology", isEpicInfo: false };
     const { totalSolvers } = leaderboardData;
-    if ((totalSolvers || 0) <= 1) return { text: "First to Solve!", icon: "rocket_launch" };
-    if (userRank === 1) return { text: "World Record!", icon: "emoji_events" };
-    if (userRank <= 10) return { text: `Global Top ${userRank}!`, icon: "star" };
+    if ((totalSolvers || 0) <= 1) return { text: "First to Solve!", icon: "rocket_launch", isEpicInfo: true };
+    if (userRank === 1) return { text: "World Record!", icon: "emoji_events", isEpicInfo: true };
+    if (userRank <= 10) return { text: `Global Top ${userRank}!`, icon: "star", isEpicInfo: true };
     const totalOthers = Math.max(0, (totalSolvers || 1) - 1);
     const perc = totalOthers > 0 ? Math.floor((((totalSolvers || 1) - userRank) / totalOthers) * 100) : 100;
-    if (perc >= 99) return { text: "Top 1% Worldwide!", icon: "workspace_premium" };
-    if (perc >= 95) return { text: "Top 5% Worldwide!", icon: "military_tech" };
-    if (perc >= 90) return { text: "Top 10% Worldwide!", icon: "military_tech" };
-    return { text: "Logic Mastered", icon: "psychology" };
+    if (perc >= 99) return { text: "Top 1% Worldwide!", icon: "workspace_premium", isEpicInfo: true };
+    if (perc >= 95) return { text: "Top 5% Worldwide!", icon: "military_tech", isEpicInfo: true };
+    if (perc >= 90) return { text: "Top 10% Worldwide!", icon: "military_tech", isEpicInfo: true };
+    return { text: "Logic Mastered", icon: "psychology", isEpicInfo: false };
   }, [leaderboardData, userRank]);
 
   const eliminateAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -1274,8 +1274,17 @@ export const GamePage: React.FC = () => {
         {/* Win Celebration */}
         {isGameWon && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-500 p-4">
-             <div className="text-center p-8 bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border-4 border-emerald-500 animate-in zoom-in-95 duration-300 max-w-sm w-full">
-                <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/50 rounded-full flex items-center justify-center mx-auto mb-6 text-emerald-500 shadow-lg shadow-emerald-500/20">
+             <div className={`text-center p-8 bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border-4 animate-in zoom-in-95 duration-300 max-w-sm w-full relative overflow-hidden ${
+                 winData.isEpicInfo
+                   ? 'border-amber-400 dark:border-amber-500 shadow-[0_0_50px_rgba(251,191,36,0.5)] animate-pulse'
+                   : 'border-emerald-500 shadow-emerald-500/20'
+               }`}>
+                 {winData.isEpicInfo && <div className="absolute -inset-10 bg-gradient-to-tr from-amber-500/20 via-transparent to-amber-500/20 animate-spin opacity-50 blur-xl pointer-events-none" style={{ animationDuration: '4s' }} />}
+                 <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg relative z-10 ${
+                   winData.isEpicInfo
+                     ? 'bg-gradient-to-tr from-amber-300 to-amber-500 text-amber-950 shadow-[0_10px_30px_rgba(251,191,36,0.6)] animate-bounce'
+                     : 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-500 shadow-emerald-500/20'
+                 }`}>
                   <span className="material-icons text-5xl flex items-center justify-center">{winData.icon}</span>
                 </div>
                 <h2 className="text-3xl font-black flex flex-col items-center justify-center mb-2 bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent uppercase tracking-tighter">
@@ -1301,7 +1310,42 @@ export const GamePage: React.FC = () => {
                     onClick={() => {
                       if (isSharing) return;
                       const emojiMap: Record<string, string> = { "rocket_launch": "🚀", "emoji_events": "🏆", "star": "🌟", "workspace_premium": "👑", "military_tech": "🏅", "psychology": "🧠" };
-                      const msg = `I just beat Deductorist Level ${selectedDifficulty} in ${formatTime(elapsedSeconds)}!\n\n${emojiMap[winData.icon] || '🎯'} ${winData.text}\n\nCan you beat my time? Play Deductorist!`;
+                      
+                      let histogramText = "";
+                      if (leaderboardData && leaderboardData.distribution) {
+                         const buckets = Object.keys(leaderboardData.distribution).map(k => parseInt(k, 10)).sort((a,b) => a - b);
+                         if (buckets.length > 0) {
+                            const userBucket = Math.floor(elapsedSeconds);
+                            const min = Math.min(buckets[0], userBucket);
+                            const max = Math.max(buckets[buckets.length - 1], userBucket);
+                            const range = max - min + 1;
+                            const numColumns = Math.min(10, range);
+                            const binSize = Math.max(1, Math.ceil(range / numColumns));
+                            
+                            const histData = [];
+                             let maxCount = 1;
+                             for (let start = min; start <= max; start += binSize) {
+                               let count = 0;
+                               let isUser = false;
+                               for(let i = start; i < start + binSize; i++) {
+                                  count += leaderboardData.distribution[i.toString()] || 0;
+                                  if (i === userBucket) isUser = true;
+                               }
+                               if (isUser && count === 0) count = 1;
+                               histData.push({ timeStr: formatTime(start), count, isUser });
+                               if (count > maxCount) maxCount = count;
+                             }
+                             
+                             histogramText = "\n\n**Distribution:**\n\n" + histData.map(d => {
+                                const blocks = Math.max(1, Math.floor((d.count / maxCount) * 8));
+                                const line = Array(blocks).fill(d.isUser ? "🟩" : "⬛").join("");
+                                return `\`${d.timeStr}\` ${line}${d.isUser ? ' 👈' : ''}`;
+                             }).join("\n");
+                         }
+                      }
+
+                      const msg = `I just beat Deductorist Level ${selectedDifficulty} in **${formatTime(elapsedSeconds)}**!\n\n${emojiMap[winData.icon] || '🎯'} **${winData.text}**${histogramText}`;
+                      
                       setIsSharing(true);
                       fetch('/api/game/share', {
                         method: 'POST',
