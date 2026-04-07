@@ -278,7 +278,8 @@ export const GamePage: React.FC = () => {
        const vClues = puzzle.clues.filter(c => ['VERTICAL', 'VERTICAL_NOT', 'VERTICAL_TRIO', 'VERTICAL_NOT_TRIO', 'DISJUNCTIVE_XOR', 'VERTICAL_DISJUNCTIVE_EXCLUSION'].includes(c.type));
        
        if (isDesk) {
-          let candidateIc = 50;
+          const maxIcFor3Cols = Math.floor(((viewport.width - 32) / 12.9) * 2) / 2;
+          let candidateIc = Math.min(50, maxIcFor3Cols);
           let validIc = 16;
           const numH = hClues.length;
           const C_h = Math.max(1, Math.min(numH, 3));
@@ -308,7 +309,9 @@ export const GamePage: React.FC = () => {
           }
           optimalIconSize = validIc;
        } else {
-          let candidateIc = 60;
+          const maxAllowedWidth = viewport.width - 32;
+          const maxIcFor3Cols = Math.floor((maxAllowedWidth / 12.6) * 2) / 2;
+          let candidateIc = Math.min(60, maxIcFor3Cols);
           let validIc = 20; // Increased Mobile Floor limit
           let backupIc = 20;
           let backupDrawer = 0;
@@ -317,7 +320,6 @@ export const GamePage: React.FC = () => {
           const numH = hClues.length;
           const numV = vClues.length;
           
-          const maxAllowedWidth = viewport.width - 32;
           const subCols = Math.ceil(puzzle.cols / 2);
           const boardAspectRatio = (puzzle.cols * subCols) / (puzzle.rows * 2);
           

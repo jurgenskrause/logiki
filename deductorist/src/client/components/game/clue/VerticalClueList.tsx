@@ -117,15 +117,15 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
 
 
 
-  // Derive equivalent Mobile Grid parameters ensuring top-to-bottom column fills
-  const { mobileRowsV } = useMemo(() => {
-     if (isDesktop) return { mobileRowsV: 1 };
+  // Derive equivalent Mobile Grid parameters ensuring left-to-right row fills
+  const { mobileRowsV, mobileColsV } = useMemo(() => {
+     if (isDesktop) return { mobileRowsV: 1, mobileColsV: 1 };
      const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 400;
      const gapMobile = clueIconSize * 0.2;
      const vW = 1.5 * clueIconSize + gapMobile;
-     const mobileColsV = Math.max(1, Math.floor((viewportWidth - 32) / vW));
-     const mobileRowsV = Math.max(1, Math.ceil(orderedClues.length / mobileColsV));
-     return { mobileRowsV };
+     const cols = Math.max(1, Math.floor((viewportWidth - 32) / vW));
+     const rows = Math.max(1, Math.ceil(orderedClues.length / cols));
+     return { mobileRowsV: rows, mobileColsV: cols };
   }, [isDesktop, orderedClues.length, clueIconSize]);
 
   useEffect(() => {
@@ -184,8 +184,8 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
                    className="grid content-start justify-center mx-auto min-h-[0px] w-full"
                    style={{ 
                       gap: `calc(${clueIconSize}px * 0.2)`,
-                      gridTemplateRows: `repeat(${mobileRowsV}, minmax(0, max-content))`,
-                      gridAutoFlow: 'column'
+                      gridTemplateColumns: `repeat(${mobileColsV}, minmax(0, max-content))`,
+                      gridAutoFlow: 'row'
                    }}
                 >
                    {orderedClues.map(item => (
