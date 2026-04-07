@@ -173,6 +173,23 @@ export const GamePage: React.FC = () => {
   // Sound system
   const [isSoundEnabled, setIsSoundEnabled] = useState(true);
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardResponse | null>(null);
+  const [userRank, setUserRank] = useState<number | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
+
+  const winData = useMemo(() => {
+    if (!leaderboardData || userRank === null) return { text: "Logic Mastered", icon: "psychology" };
+    const { totalSolvers } = leaderboardData;
+    if ((totalSolvers || 0) <= 1) return { text: "First to Solve!", icon: "rocket_launch" };
+    if (userRank === 1) return { text: "World Record!", icon: "emoji_events" };
+    if (userRank <= 10) return { text: `Global Top ${userRank}!`, icon: "star" };
+    const totalOthers = Math.max(0, (totalSolvers || 1) - 1);
+    const perc = totalOthers > 0 ? Math.floor((((totalSolvers || 1) - userRank) / totalOthers) * 100) : 100;
+    if (perc >= 99) return { text: "Top 1% Worldwide!", icon: "workspace_premium" };
+    if (perc >= 95) return { text: "Top 5% Worldwide!", icon: "military_tech" };
+    if (perc >= 90) return { text: "Top 10% Worldwide!", icon: "military_tech" };
+    return { text: "Logic Mastered", icon: "psychology" };
+  }, [leaderboardData, userRank]);
+
   const eliminateAudioRef = useRef<HTMLAudioElement | null>(null);
   const solveAudioRef = useRef<HTMLAudioElement | null>(null);
   const mistakeAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -655,6 +672,9 @@ export const GamePage: React.FC = () => {
       .then(r => r.json())
       .then(res => {
          if (res.status === 'verified' || DEV_BUILD) {
+             if (res.rank !== undefined) {
+                 setUserRank(res.rank);
+             }
              return fetch('/api/game/leaderboard');
          }
          throw new Error('Not verified');
@@ -1256,10 +1276,10 @@ export const GamePage: React.FC = () => {
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-500 p-4">
              <div className="text-center p-8 bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border-4 border-emerald-500 animate-in zoom-in-95 duration-300 max-w-sm w-full">
                 <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/50 rounded-full flex items-center justify-center mx-auto mb-6 text-emerald-500 shadow-lg shadow-emerald-500/20">
-                  <span className="material-icons text-5xl">emoji_events</span>
+                  <span className="material-icons text-5xl flex items-center justify-center">{winData.icon}</span>
                 </div>
-                <h2 className="text-3xl font-black mb-2 bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent uppercase tracking-tighter">
-                  Logic Mastered
+                <h2 className="text-3xl font-black flex flex-col items-center justify-center mb-2 bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent uppercase tracking-tighter">
+                  {winData.text}
                 </h2>
                 <p className="text-slate-500 dark:text-slate-400 font-bold mb-4">
                   Puzzle completed in {formatTime(elapsedSeconds)}
@@ -1276,12 +1296,35 @@ export const GamePage: React.FC = () => {
                   </div>
                 )}
 
-                <button 
-                  onClick={() => window.location.reload()}
-                  className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-black shadow-lg shadow-emerald-500/30 transition-all active:scale-95 uppercase tracking-widest text-xs"
-                >
-                  Next Puzzle
-                </button>
+                <div className="flex flex-col gap-2 w-full mt-2">
+                  <button 
+                    onClick={() => {
+                      if (isSharing) return;
+                      const emojiMap: Record<string, string> = { "rocket_launch": "🚀", "emoji_events": "🏆", "star": "🌟", "workspace_premium": "👑", "military_tech": "🏅", "psychology": "🧠" };
+                      const msg = `I just beat Deductorist Level ${selectedDifficulty} in ${formatTime(elapsedSeconds)}!\n\n${emojiMap[winData.icon] || '🎯'} ${winData.text}\n\nCan you beat my time? Play Deductorist!`;
+                      setIsSharing(true);
+                      fetch('/api/game/share', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: msg })
+                      }).then(async r => {
+                         const data = await r.json();
+                         if (data.status === 'success') alert('Score shared structurally to thread!');
+                         else alert('Failed to share: ' + data.message);
+                      }).catch(console.error).finally(() => setIsSharing(false));
+                    }}
+                    disabled={isSharing}
+                    className={`w-full py-4 text-white rounded-2xl font-black uppercase tracking-widest text-xs transition-all active:scale-95 ${isSharing ? 'bg-indigo-400 cursor-not-allowed opacity-80' : 'bg-indigo-500 hover:bg-indigo-600 shadow-[0_10px_20px_rgba(99,102,241,0.3)]'}`}
+                  >
+                    {isSharing ? 'Generating...' : 'Share to Thread'}
+                  </button>
+                  <button 
+                    onClick={() => window.location.reload()}
+                    className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-black shadow-lg shadow-emerald-500/30 transition-all active:scale-95 uppercase tracking-widest text-xs"
+                  >
+                    Next Puzzle
+                  </button>
+                </div>
              </div>
           </div>
         )}

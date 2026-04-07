@@ -103,6 +103,7 @@ api.post('/game/submit', async (c) => {
 
     // (Integrity Hash Match logic omitted or placeholder for Phase 3.5)
 
+    let absoluteRank = 0;
     if (isVerified) {
       const effectiveUsername = body.isDevBuild ? `${username}_${Date.now()}` : username;
       const today = new Date().toISOString().split('T')[0];
@@ -112,6 +113,8 @@ api.post('/game/submit', async (c) => {
         redis.zAdd(`leaderboard:daily:${today}`, { member: effectiveUsername, score: durationMs }),
         redis.hIncrBy(`leaderboard:daily:${today}:dist`, bucketSec.toString(), 1)
       ]);
+      const zScore = await redis.zRank(`leaderboard:daily:${today}`, effectiveUsername);
+      absoluteRank = zScore !== undefined ? zScore + 1 : 0;
     } else {
       // Ghost them
       await redis.hSet('ghosted_users_v1', { [username]: 'true' });
@@ -119,7 +122,8 @@ api.post('/game/submit', async (c) => {
 
     return c.json<GameSubmitResponse>({
       status: isVerified ? 'verified' : 'ghosted',
-      elapsedTimeMs: durationMs
+      elapsedTimeMs: durationMs,
+      rank: isVerified ? absoluteRank : undefined
     });
     
   } catch (e) {
@@ -167,6 +171,26 @@ api.get('/game/leaderboard', async (c) => {
   } catch(e) {
     console.error(e);
     return c.json<ErrorResponse>({ status: 'error', message: 'Failed to fetch leaderboard' }, 500);
+  }
+});
+
+api.post('/game/share', async (c) => {
+  try {
+    const { postId } = context;
+    if (!postId) return c.json<ErrorResponse>({ status: 'error', message: 'Missing active context' }, 400);
+
+    const body: { message?: string } = await c.req.json();
+    if (!body.message) return c.json<ErrorResponse>({ status: 'error', message: 'Payload message missing' }, 400);
+
+    await reddit.submitComment({
+      id: postId,
+      text: body.message
+    });
+
+    return c.json({ status: 'success' });
+  } catch (e) {
+    console.error(e);
+    return c.json<ErrorResponse>({ status: 'error', message: 'Network failure communicating via reddit api' }, 500);
   }
 });
 

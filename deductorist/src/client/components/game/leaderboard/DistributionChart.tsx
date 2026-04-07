@@ -10,8 +10,8 @@ export const DistributionChart: React.FC<Props> = ({ leaderboardData, userTimeMs
   const { distribution, totalSolvers } = leaderboardData;
   const userBucket = Math.floor(userTimeMs / 1000);
 
-  const { chartData, percentile, betterCount } = useMemo(() => {
-    if (!distribution || !totalSolvers) return { chartData: [], percentile: 0, betterCount: 0 };
+  const { chartData, percentile, totalOthers } = useMemo(() => {
+    if (!distribution || !totalSolvers) return { chartData: [], percentile: 0, betterCount: 0, totalOthers: 0 };
 
     const buckets = Object.keys(distribution).map(k => parseInt(k, 10)).sort((a, b) => a - b);
     if (buckets.length === 0) return { chartData: [], percentile: 0, betterCount: 0 };
@@ -32,7 +32,8 @@ export const DistributionChart: React.FC<Props> = ({ leaderboardData, userTimeMs
       }
     }
 
-    const perc = Math.floor((slowerCount / totalSolvers) * 100);
+    const totalOthers = Math.max(0, totalSolvers - 1);
+    const perc = totalOthers > 0 ? Math.floor((slowerCount / totalOthers) * 100) : 100;
 
     // Grouping by bins
     let maxVal = 1;
@@ -68,7 +69,7 @@ export const DistributionChart: React.FC<Props> = ({ leaderboardData, userTimeMs
        d.heightPercent = Math.max(2, Math.floor((d.count / maxVal) * 100));
     });
 
-    return { chartData: data, percentile: perc, betterCount: slowerCount };
+    return { chartData: data, percentile: perc, betterCount: slowerCount, totalOthers };
   }, [distribution, totalSolvers, userTimeMs, userBucket]);
 
   if (!distribution || chartData.length === 0) return null;
@@ -77,7 +78,10 @@ export const DistributionChart: React.FC<Props> = ({ leaderboardData, userTimeMs
     <div className="w-full mt-4 flex flex-col items-center">
       <h3 className="text-slate-600 dark:text-slate-300 font-medium mb-1 tracking-tight">Solution Distribution</h3>
       <p className="text-[12px] text-slate-500 mb-6 font-bold">
-        Your {userBucket}s - Better than {percentile}% of {totalSolvers} solvers
+        {totalOthers > 0 
+          ? `Your ${userBucket}s - Better than ${percentile}% of ${totalOthers} solvers`
+          : `Your ${userBucket}s - First to solve!`
+        }
       </p>
 
       <div className="flex items-end justify-center w-full h-32 px-1 mb-2 gap-1 isolate relative">

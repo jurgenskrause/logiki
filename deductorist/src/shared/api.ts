@@ -28,9 +28,10 @@ export type GameSubmitRequest = {
 };
 
 export type GameSubmitResponse = {
-  status: 'verified' | 'ghosted' | 'error';
+  status: 'verified' | 'ghosted';
   elapsedTimeMs?: number;
   message?: string;
+  rank?: number;
 };
 
 export type LeaderboardEntry = {
