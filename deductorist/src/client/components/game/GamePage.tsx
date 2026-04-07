@@ -308,91 +308,77 @@ export const GamePage: React.FC = () => {
           }
           optimalIconSize = validIc;
        } else {
+          let candidateIc = 60;
+          let validIc = 20; // Increased Mobile Floor limit
+          let backupIc = 20;
+          let backupDrawer = 0;
+          let foundEquilibrium = false;
+          
           const numH = hClues.length;
           const numV = vClues.length;
+          
           const maxAllowedWidth = viewport.width - 32;
           const subCols = Math.ceil(puzzle.cols / 2);
           const boardAspectRatio = (puzzle.cols * subCols) / (puzzle.rows * 2);
-          const OPTIMAL_MIN_BOARD_SIZE = Math.min(MIN_BOARD_SIZE, maxAllowedWidth);
           
-          let validIc = 18;
-          let finalDrawerHeight = 0;
-          
-          // Helper function to evaluate dimensions at any given candidateIc
-          const evalScale = (ic: number) => {
-             const gap = ic * 0.2; 
-             const hW = 4.0 * ic + gap;
-             const hH = 1.5 * ic + gap;
+          while (candidateIc >= 18) {
+             const gap = candidateIc * 0.2; 
+             const hW = 4.0 * candidateIc + gap;
+             const hH = 1.5 * candidateIc + gap;
              const colsH = Math.max(1, Math.floor(maxAllowedWidth / hW));
              const rowsH = Math.max(1, Math.ceil(numH / colsH));
              const panelHH = rowsH * hH;
              
-             const vW = 1.5 * ic + gap;
-             const vH = 4.0 * ic + gap;
+             const vW = 1.5 * candidateIc + gap;
+             const vH = 4.0 * candidateIc + gap;
              const colsV = Math.max(1, Math.floor(maxAllowedWidth / vW));
              const rowsV = Math.max(1, Math.ceil(numV / colsV));
              const panelVH = rowsV * vH; 
              const pureUnhinderedPanelMaxHeight = Math.max(panelHH, panelVH) + 16;
              
-             const maxB_scale = ic / (1.5 * C1);
+             // Absolute geometric bounds calculation
+             const maxB_scale = candidateIc / (1.5 * C1);
              const B = Math.min(maxAllowedWidth, maxB_scale); 
+             
+             // Convert ideal width to its native physical scaled height constraints
              const physicalBoardHeight = B / boardAspectRatio;
+             
+             // Steal massive chunks of padding metrics cleanly for drawer
+             // 130px represents static total Header height deductor + Mobile Padding Offsets
              const availableDrawerHeight = viewport.height - 130 - physicalBoardHeight;
+             
+             // Guarantee minimally viable rendering capacity
              const minRequiredDrawer = hH + 16;
              
-             const isBoardValid = B >= OPTIMAL_MIN_BOARD_SIZE && availableDrawerHeight >= minRequiredDrawer;
-             const doesFitWithoutScrolling = pureUnhinderedPanelMaxHeight <= availableDrawerHeight;
+             // High density grids naturally demand large MIN_BOARD_SIZE that exceed mobile widths.
+             const OPTIMAL_MIN_BOARD_SIZE = Math.min(MIN_BOARD_SIZE, maxAllowedWidth);
              
-             return { isBoardValid, doesFitWithoutScrolling, availableDrawerHeight };
-          };
-          
-          // Phase 1: Find the absolute minimum scale that supports the Board constraints natively
-          let minValidIc = 18;
-          while (minValidIc <= 60) {
-             const metrics = evalScale(minValidIc);
-             if (metrics.isBoardValid) break;
-             minValidIc += 0.5;
+             if (B >= OPTIMAL_MIN_BOARD_SIZE && availableDrawerHeight >= minRequiredDrawer) {
+                
+                // Cache the best possible "It visually fits, even if it scrolls" configuration
+                // Lock the backup down to 40 so we don't accidentally fall back to gigantically comical 60px clues.
+                if (!backupDrawer && candidateIc <= 40) {
+                    backupIc = candidateIc;
+                    backupDrawer = availableDrawerHeight;
+                }
+
+                // Is this configuration absolutely perfect? i.e. NO scrolling required for ANY clue format!
+                if (pureUnhinderedPanelMaxHeight <= availableDrawerHeight) {
+                    validIc = candidateIc;
+                    finalDrawerHeight = availableDrawerHeight;
+                    foundEquilibrium = true;
+                    break;
+                }
+             }
+             
+             candidateIc -= 0.5;
           }
-          // Cap at 60 as safety
-          if (minValidIc > 60) minValidIc = 18; 
           
-          // Measure the baseline to decide our strategy footprint
-          const baselineMetrics = evalScale(minValidIc);
-          
-          if (!baselineMetrics.doesFitWithoutScrolling) {
-              // Strategy A: Extreme Density
-              // It is impossible to fit these clues on screen without scrolling, even at the absolute minimum size.
-              // Therefore, do not punish the user with tiny clues: immediately jump to the most legible safe limit (up to 40px).
-              let legibleIc = 40;
-              while (legibleIc >= minValidIc) {
-                 if (evalScale(legibleIc).isBoardValid) {
-                     break;
-                 }
-                 legibleIc -= 0.5;
-              }
-              validIc = legibleIc;
-              finalDrawerHeight = evalScale(validIc).availableDrawerHeight;
-          } else {
-              // Strategy B: Zero-Waste Utopian Layout
-              // At minimum size, the clues fit perfectly with massive amounts of unused drawer space.
-              // Ascend geometrically from the baseline until the clues organically push perfectly into the drawer bounds!
-              let bestIc = minValidIc;
-              let bestDrawerHeight = baselineMetrics.availableDrawerHeight;
-              
-              let testIc = minValidIc + 0.5;
-              while (testIc <= 60) {
-                 const tMetrics = evalScale(testIc);
-                 if (tMetrics.isBoardValid && tMetrics.doesFitWithoutScrolling) {
-                    bestIc = testIc;
-                    bestDrawerHeight = tMetrics.availableDrawerHeight;
-                    testIc += 0.5;
-                 } else {
-                    break; 
-                 }
-              }
-              
-              validIc = bestIc;
-              finalDrawerHeight = bestDrawerHeight;
+          if (!foundEquilibrium) {
+             // We exhausted all options down to 18px and COULD NOT perfectly fit them without scrolling.
+             // This dense matrix natively requires scrolling. Recover the largest viable backup parameters.
+             validIc = backupDrawer ? backupIc : 18;
+             finalDrawerHeight = backupDrawer || Math.max(200, viewport.height - 130 - (Math.min(MIN_BOARD_SIZE, maxAllowedWidth) / boardAspectRatio));
           }
           
           optimalIconSize = validIc;
@@ -1022,7 +1008,7 @@ export const GamePage: React.FC = () => {
 
         {/* Row 1 (Mobile) / Col 1 Row 1 (Desktop): Board */}
         <div 
-          className={`w-full shrink min-h-0 min-w-0 flex items-center justify-center relative overflow-hidden ${isDesktop ? 'p-4 mb-0 w-auto col-start-1 row-start-1' : 'flex-1 p-0 mb-2'}`} 
+          className={`w-full shrink min-h-0 min-w-0 flex items-center justify-center relative overflow-hidden ${isDesktop ? 'w-auto col-start-1 row-start-1' : 'flex-1'}`} 
           style={{ containerType: 'size' }}
         >
           {puzzle && gameState && (
