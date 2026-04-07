@@ -918,6 +918,12 @@ export const GamePage: React.FC = () => {
                 <span key={i} className="block">{line.trim()}</span>
               ))}
             </p>
+          ) : hoveredClueText ? (
+            <p className="font-bold text-slate-800 dark:text-slate-100 leading-tight line-clamp-2 pr-2 bg-slate-50/95 dark:bg-slate-900/95 rounded shadow-[5px_0_10px_rgba(248,250,252,0.95)] dark:shadow-[5px_0_10px_rgba(15,23,42,0.95)] animate-in fade-in duration-200 pointer-events-auto" style={{ fontSize: 'clamp(10px, 4.5cqw, 14px)' }}>
+              {hoveredClueText.split('<nl>').map((line, i) => (
+                <span key={i} className="block">{line.trim()}</span>
+              ))}
+            </p>
           ) : (
             <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30">Deductorist</span>
           )}
