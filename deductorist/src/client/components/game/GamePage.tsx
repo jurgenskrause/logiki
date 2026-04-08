@@ -491,15 +491,61 @@ export const GamePage: React.FC = () => {
         gs.confirmCell(row, clue.targetCol, item);
       }
     });
-    // Save the post-anchor state as the initial history entry
-    gs.pushHistory();
-    gs.saveGoodState();
+    
+    if (puzzle.loadedSnapshot) {
+       gs.importSnapshot(puzzle.loadedSnapshot);
+    } else {
+       gs.pushHistory();
+       gs.saveGoodState();
+    }
     return gs;
   }, [puzzle]);
 
   const binnedClueIds = gameState?.binnedClues || new Set<string>();
 
+  const pendingSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const triggerSave = useCallback(() => {
+    if (!gameState || !puzzle || puzzle.isRandom) return;
+    
+    if (pendingSyncTimerRef.current) clearTimeout(pendingSyncTimerRef.current);
+    pendingSyncTimerRef.current = setTimeout(() => {
+       const payload = {
+          puzzleId: `${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}`,
+          boardState: gameState.exportSnapshot(),
+          timestamp: Date.now(),
+          binnedClues: []
+       };
+       fetch('/api/game/state/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          keepalive: true
+       }).catch(() => {});
+    }, 3000);
+  }, [gameState, puzzle]);
+
+  useEffect(() => {
+    const handleVisibility = () => {
+       if (document.visibilityState === 'hidden' && gameState && puzzle && !puzzle.isRandom) {
+           if (pendingSyncTimerRef.current) clearTimeout(pendingSyncTimerRef.current);
+           const payload = {
+              puzzleId: `${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}`,
+              boardState: gameState.exportSnapshot(),
+              timestamp: Date.now(),
+              binnedClues: []
+           };
+           fetch('/api/game/state/sync', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+              keepalive: true
+           }).catch(() => {});
+       }
+    };
+    window.addEventListener('visibilitychange', handleVisibility);
+    return () => window.removeEventListener('visibilitychange', handleVisibility);
+  }, [gameState, puzzle]);
   // ─── Analysis ───────────────────────────────────────────────────────────────
 
 
@@ -541,7 +587,8 @@ export const GamePage: React.FC = () => {
     setTick(t => t + 1); // Trigger React UI render
     setTimeout(runAnalysis, 50);
     playInteractionSound('moveclue');
-  }, [gameState, playInteractionSound, runAnalysis]);
+    triggerSave();
+  }, [gameState, playInteractionSound, runAnalysis, triggerSave]);
 
   // ─── Loaders ────────────────────────────────────────────────────────────────
 
@@ -611,9 +658,18 @@ export const GamePage: React.FC = () => {
           const dateStr = '2026-03-30';
           const data = await loader.getPuzzle(dateStr, difficulty);
           if (data) {
-            setActiveHint(null);
-            setHintShowing(false);
-            setPuzzle(data);
+             const p = `${data.rows}x${data.cols}-${data.difficulty}`;
+             try {
+                const res = await fetch(`/api/game/state/sync?puzzleId=${p}`);
+                const stateData = await res.json();
+                if (stateData.status === 'success' && stateData.boardState) {
+                    data.loadedSnapshot = stateData.boardState;
+                }
+             } catch (err) {}
+
+             setActiveHint(null);
+             setHintShowing(false);
+             setPuzzle(data);
           } else {
             setLoadError('Puzzle not found.');
           }
@@ -772,9 +828,10 @@ export const GamePage: React.FC = () => {
     
     setTick(t => t + 1);
     setIsCascading(true);
+    triggerSave();
     // Start the chain reaction
     cascadeTimerRef.current = setTimeout(runCascade, 250);
-  }, [runCascade, warningsEnabled, gameState, puzzle, binnedClueIds, triggerRedFlash, playInteractionSound]);
+  }, [runCascade, warningsEnabled, gameState, puzzle, binnedClueIds, triggerRedFlash, playInteractionSound, triggerSave]);
 
   // ─── Hint Button Logic ───────────────────────────────────────────────────────
 
@@ -834,10 +891,11 @@ export const GamePage: React.FC = () => {
       gameState.pushHistory();
       setTick(t => t + 1);
       setTimeout(runAnalysis, 50);
+      triggerSave();
     }
     setShowBin(false);
     playInteractionSound('moveclue');
-  }, [dismissHint, gameState, playInteractionSound, runAnalysis]);
+  }, [dismissHint, gameState, playInteractionSound, runAnalysis, triggerSave]);
 
 
   // ─── Derived hint highlight data ─────────────────────────────────────────────

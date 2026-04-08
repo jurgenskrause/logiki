@@ -4,7 +4,7 @@ import type { CategoryIndex, ColumnIndex, Bitmask, ItemIndex, MutationTrace } fr
  * GameSnapshot — a complete deep copy of the mutable board state.
  * At ~144 bytes per snapshot (for a 6×6 grid), storing hundreds is negligible.
  */
-interface GameSnapshot {
+export interface GameSnapshot {
   grid: Uint16Array;
   confirmed: Uint8Array;
   noAutoSolve: Uint8Array;
@@ -88,11 +88,24 @@ export class GameState {
   }
 
   private _loadSnapshot(snapshot: GameSnapshot): void {
-    this._grid = new Uint16Array(snapshot.grid);
-    this._confirmed = new Uint8Array(snapshot.confirmed);
-    this._noAutoSolve = new Uint8Array(snapshot.noAutoSolve);
-    this._previousMask = new Uint16Array(snapshot.previousMask);
+    // Reconstruct Uint16Array / Uint8Array in case they come from JSON as raw arrays/objects
+    this._grid = new Uint16Array(Object.values(snapshot.grid));
+    this._confirmed = new Uint8Array(Object.values(snapshot.confirmed));
+    this._noAutoSolve = new Uint8Array(Object.values(snapshot.noAutoSolve));
+    this._previousMask = new Uint16Array(Object.values(snapshot.previousMask));
     this._binnedClues = new Set(snapshot.binnedClues);
+  }
+
+  public exportSnapshot(): GameSnapshot {
+    return this._createSnapshot();
+  }
+
+  public importSnapshot(snapshot: GameSnapshot): void {
+    this._loadSnapshot(snapshot);
+    // Erase history prior to this restored point to prevent undoing into nothingness
+    this._history = [this._createSnapshot()];
+    this._cursor = 0;
+    this._lastGoodIndex = 0;
   }
 
   // ─── Clue Binning System ───────────────────────────────────────────────────

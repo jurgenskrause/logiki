@@ -1,4 +1,5 @@
 import type { ActiveClue } from './Solver';
+import type { GameSnapshot } from './GameState';
 
 // --- Binary Specification Constants (Matched with Packer) ---
 const VERSION = 0x01;
@@ -41,6 +42,7 @@ export interface PuzzleManifest {
   clues: ActiveClue[];
   integrityHash: Uint8Array;
   isRandom?: boolean;
+  loadedSnapshot?: GameSnapshot;
 }
 
 /**

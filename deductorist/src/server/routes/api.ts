@@ -6,7 +6,9 @@ import type {
   GameStartResponse,
   GameSubmitRequest,
   GameSubmitResponse,
-  LeaderboardResponse
+  LeaderboardResponse,
+  GameStateSyncRequest,
+  GameStateSyncResponse
 } from '../../shared/api';
 
 type ErrorResponse = {
@@ -103,6 +105,9 @@ api.post('/game/submit', async (c) => {
 
     // (Integrity Hash Match logic omitted or placeholder for Phase 3.5)
 
+    // Clear saved state since we submitted it
+    await redis.del(`gameState:${username}:${body.puzzleId}`);
+
     let absoluteRank = 0;
     if (isVerified) {
       const effectiveUsername = body.isDevBuild ? `${username}_${Date.now()}` : username;
@@ -130,6 +135,45 @@ api.post('/game/submit', async (c) => {
   } catch (e) {
     console.error(e);
     return c.json<ErrorResponse>({ status: 'error', message: 'Failed to process submission' }, 500);
+  }
+});
+
+api.post('/game/state/sync', async (c) => {
+  try {
+    const body: GameStateSyncRequest = await c.req.json();
+    const username = await reddit.getCurrentUsername();
+    if (!username) return c.json<ErrorResponse>({ status: 'error', message: 'Unauthorized' }, 401);
+
+    await redis.set(
+       `gameState:${username}:${body.puzzleId}`,
+       JSON.stringify(body)
+    );
+    return c.json({ status: 'success' });
+  } catch(e) {
+    console.error(e);
+    return c.json<ErrorResponse>({ status: 'error', message: 'Failed to sync game state' }, 500);
+  }
+});
+
+api.get('/game/state/sync', async (c) => {
+  try {
+    const puzzleId = c.req.query('puzzleId');
+    if (!puzzleId) return c.json<ErrorResponse>({ status: 'error', message: 'Missing puzzleId' }, 400);
+
+    const username = await reddit.getCurrentUsername();
+    if (!username) return c.json<ErrorResponse>({ status: 'error', message: 'Unauthorized' }, 401);
+
+    const raw = await redis.get(`gameState:${username}:${puzzleId}`);
+    if (!raw) return c.json<GameStateSyncResponse>({ status: 'not_found' });
+
+    const state = JSON.parse(raw.toString());
+    return c.json<GameStateSyncResponse>({
+      status: 'success',
+      ...state
+    });
+  } catch(e) {
+    console.error(e);
+    return c.json<ErrorResponse>({ status: 'error', message: 'Failed to fetch game state' }, 500);
   }
 });
 

@@ -27,6 +27,23 @@ export type GameSubmitRequest = {
   penaltyMs?: number;
 };
 
+import type { GameSnapshot } from './engine/GameState';
+
+export type GameStateSyncRequest = {
+  puzzleId: string;
+  boardState: GameSnapshot;
+  timestamp: number;
+  binnedClues: string[];
+};
+
+export type GameStateSyncResponse = {
+  status: 'success' | 'not_found';
+  puzzleId?: string;
+  boardState?: GameSnapshot;
+  timestamp?: number;
+  binnedClues?: string[];
+};
+
 export type GameSubmitResponse = {
   status: 'verified' | 'ghosted';
   elapsedTimeMs?: number;
