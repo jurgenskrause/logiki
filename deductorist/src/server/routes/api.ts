@@ -115,10 +115,16 @@ api.post('/game/submit', async (c) => {
       const gridSize = body.puzzleId.split('-')[0] || '4x4';
       const bucketSec = Math.floor(durationMs / 1000);
       
-      await Promise.all([
+      const promises: Promise<any>[] = [
         redis.zAdd(`leaderboard:daily:${today}:${gridSize}`, { member: effectiveUsername, score: durationMs }),
         redis.hIncrBy(`leaderboard:daily:${today}:${gridSize}:dist`, bucketSec.toString(), 1)
-      ]);
+      ];
+      
+      if (body.isDevBuild) {
+        promises.push(redis.zAdd(`leaderboard:daily:${today}:${gridSize}`, { member: username, score: durationMs }));
+      }
+      
+      await Promise.all(promises);
       const zScore = await redis.zRank(`leaderboard:daily:${today}:${gridSize}`, effectiveUsername);
       absoluteRank = zScore !== undefined ? zScore + 1 : 0;
     } else {
@@ -166,8 +172,12 @@ api.get('/game/state/sync', async (c) => {
     const gridSize = puzzleId.split('-')[0] || '4x4';
     const today = new Date().toISOString().split('T')[0];
     
+    console.log(`[GameState Sync] Checking leaderboard completion for ${username} on puzzle ${puzzleId} (grid: ${gridSize})`);
     const zScoreRaw = await redis.zScore(`leaderboard:daily:${today}:${gridSize}`, username);
+    console.log(`[GameState Sync] zScore query result for ${username}:`, zScoreRaw);
+
     if (zScoreRaw !== undefined && zScoreRaw !== null) {
+       console.log(`[GameState Sync] User ${username} has already completed this puzzle. Fast-forwarding to Win State.`);
        return c.json<GameStateSyncResponse>({
          status: 'completed',
          puzzleId,
@@ -176,6 +186,7 @@ api.get('/game/state/sync', async (c) => {
     }
 
     const raw = await redis.get(`gameState:${username}:${puzzleId}`);
+    console.log(`[GameState Sync] No completion found. Retrieving cached GameState: ${raw ? 'Exists (' + raw.length + ' bytes)' : 'Not Found'}`);
     if (!raw) return c.json<GameStateSyncResponse>({ status: 'not_found' });
 
     const state = JSON.parse(raw.toString());

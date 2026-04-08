@@ -259,6 +259,7 @@ export const GamePage: React.FC = () => {
 
   const [isGameWon, setIsGameWon] = useState(false);
   const [isSubmittingScore, setIsSubmittingScore] = useState(false);
+  const [isViewingCompletedBoard, setIsViewingCompletedBoard] = useState(false);
 
   useEffect(() => {
     if (puzzle) {
@@ -268,6 +269,7 @@ export const GamePage: React.FC = () => {
       setShowBin(false);
       if (gameState) setTimeout(runAnalysis, 50);
       setIsGameWon(false);
+      setIsViewingCompletedBoard(false);
       moveLogRef.current = [];
       penaltyMsRef.current = 0;
     }
@@ -588,7 +590,7 @@ export const GamePage: React.FC = () => {
   }, [gameState, puzzle]);
 
   const handleToggleBin = useCallback((clueId: string) => {
-    if (!gameState) return;
+    if (!gameState || isGameWon) return;
     gameState.toggleBinnedClue(clueId);
     gameState.pushHistory(); // Commit binaction as an atomic undoable action!
     setTick(t => t + 1); // Trigger React UI render
@@ -708,6 +710,7 @@ export const GamePage: React.FC = () => {
     }
     if (puzzle.isCompleted) {
         setIsGameWon(true);
+        setIsGameStarted(true);
         setIsSubmittingScore(true);
         fetch(`/api/game/leaderboard?gridSize=${puzzle.rows}x${puzzle.cols}`)
            .then(r => r.json())
@@ -719,7 +722,44 @@ export const GamePage: React.FC = () => {
         return; // Halt here implicitly without overriding anything
     }
 
-    const t = setTimeout(runAnalysis, 150);
+    const t = setTimeout(async () => {
+      let fullyConfirmed = true;
+      for (let r = 0; r < puzzle.rows; r++) {
+        for (let c = 0; c < puzzle.cols; c++) {
+          if (!gameState.isConfirmed(r, c)) {
+            fullyConfirmed = false;
+            break;
+          }
+        }
+        if (!fullyConfirmed) break;
+      }
+      
+      if (fullyConfirmed) {
+         const sol = new Uint8Array(puzzle.rows * puzzle.cols);
+         for (let r = 0; r < puzzle.rows; r++) {
+           for (let c = 0; c < puzzle.cols; c++) {
+             const mask = gameState.getRawGridValue(r, c);
+             sol[r * puzzle.cols + c] = Math.log2(mask);
+           }
+         }
+         const isWin = await loader.verifyWin(sol, puzzle.integrityHash);
+         if (isWin) {
+            setIsGameWon(true);
+            setIsGameStarted(true);
+            setIsSubmittingScore(true);
+            fetch(`/api/game/leaderboard?gridSize=${puzzle.rows}x${puzzle.cols}`)
+               .then(r => r.json())
+               .then(res => {
+                  if (res.type === 'leaderboard') setLeaderboardData(res);
+               })
+               .catch(console.error)
+               .finally(() => setIsSubmittingScore(false));
+            return;
+         }
+      }
+      
+      runAnalysis();
+    }, 150);
     return () => clearTimeout(t);
   }, [gameState, puzzle]);
 
@@ -835,6 +875,8 @@ export const GamePage: React.FC = () => {
   };
 
   const handleStateChange = useCallback(() => {
+    if (isGameWon) return;
+    
     if (cascadeTimerRef.current) clearTimeout(cascadeTimerRef.current);
     
     // Warning System: Prevent moves that make the puzzle unsolvable
@@ -863,12 +905,12 @@ export const GamePage: React.FC = () => {
     triggerSave();
     // Start the chain reaction
     cascadeTimerRef.current = setTimeout(runCascade, 250);
-  }, [runCascade, warningsEnabled, gameState, puzzle, binnedClueIds, triggerRedFlash, playInteractionSound, triggerSave]);
+  }, [runCascade, warningsEnabled, gameState, puzzle, binnedClueIds, triggerRedFlash, playInteractionSound, triggerSave, isGameWon]);
 
   // ─── Hint Button Logic ───────────────────────────────────────────────────────
 
   const handleHintClick = () => {
-    if (!activeHint) return;
+    if (!activeHint || isGameWon) return;
     if (isCascading) return; // Prevent hint clicks during animation
 
     if (!hintShowing) {
@@ -918,7 +960,7 @@ export const GamePage: React.FC = () => {
 
   const handleResetBin = useCallback(() => {
     dismissHint();
-    if (gameState) {
+    if (gameState && !isGameWon) {
       gameState.resetBinnedClues();
       gameState.pushHistory();
       setTick(t => t + 1);
@@ -1119,7 +1161,7 @@ export const GamePage: React.FC = () => {
         <div className="flex items-center gap-1.5 z-50 shrink-0 pr-2">
           {isGameStarted && (
             <>
-            {isDesktop && !(hintShowing && activeHint) && (
+            {isDesktop && !(hintShowing && activeHint) && !isGameWon && (
               <div className="flex items-center h-10 space-x-1">
                 <div className="w-10 h-10">
                    <DroppableMobileBin showBin={showBin} binnedCount={binnedClueIds.size} onToggle={() => { dismissHint(); setShowBin(!showBin); }} />
@@ -1135,7 +1177,7 @@ export const GamePage: React.FC = () => {
                 )}
               </div>
             )}
-            {hintShowing && activeHint ? (
+            {!isGameWon && (hintShowing && activeHint ? (
                <button
                  onClick={handleHintClick}
                  className="px-5 h-10 rounded-xl bg-emerald-500 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-500/30 animate-in zoom-in duration-200"
@@ -1196,11 +1238,11 @@ export const GamePage: React.FC = () => {
                  >
                    <span className="material-icons text-base">redo</span>
                  </button>
-                 <div className="ml-1 w-10 flex items-center justify-center font-mono text-[10px] font-black text-slate-400 dark:text-slate-600 shrink-0">
-                   {isGameStarted ? formatTime(elapsedSeconds) : '00:00'}
-                 </div>
                </>
-            )}
+            ))}
+            <div className="ml-1 w-10 flex items-center justify-center font-mono text-[10px] font-black text-slate-400 dark:text-slate-600 shrink-0">
+               {formatTime(elapsedSeconds)}
+            </div>
           </>
           )}
           </div>
@@ -1244,7 +1286,7 @@ export const GamePage: React.FC = () => {
                   handleStateChange();
                 }}
                 hintHighlights={hintHighlights}
-                isLocked={isCascading}
+                isLocked={isCascading || isGameWon}
                 flashRed={flashRed}
                 zoomEnabled={zoomEnabled}
               />
@@ -1259,19 +1301,23 @@ export const GamePage: React.FC = () => {
         <div className={`shrink-0 items-center justify-between px-4 py-2 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 shadow-sm z-20 gap-2 ${isDesktop ? 'hidden col-start-1 row-start-2' : 'flex'}`}>
           
           <div className="flex gap-2 items-center">
-            <DroppableMobileBin 
-              showBin={showBin} 
-              binnedCount={binnedClueIds.size} 
-              onToggle={() => { dismissHint(); setShowBin(!showBin); }} 
-            />
-            {showBin && binnedClueIds.size > 0 && (
-              <button
-                onClick={handleResetBin}
-                className="p-2 h-full aspect-square flex items-center justify-center bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg hover:bg-slate-300 transition-colors shadow-sm animate-in fade-in zoom-in duration-200"
-                title="Reset Binned Clues"
-              >
-                <span className="material-icons text-base">restart_alt</span>
-              </button>
+            {!isGameWon && (
+              <>
+                <DroppableMobileBin 
+                  showBin={showBin} 
+                  binnedCount={binnedClueIds.size} 
+                  onToggle={() => { dismissHint(); setShowBin(!showBin); }} 
+                />
+                {showBin && binnedClueIds.size > 0 && (
+                  <button
+                    onClick={handleResetBin}
+                    className="p-2 h-full aspect-square flex items-center justify-center bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg hover:bg-slate-300 transition-colors shadow-sm animate-in fade-in zoom-in duration-200"
+                    title="Reset Binned Clues"
+                  >
+                    <span className="material-icons text-base">restart_alt</span>
+                  </button>
+                )}
+              </>
             )}
           </div>
 
@@ -1325,11 +1371,11 @@ export const GamePage: React.FC = () => {
                   c.type !== 'ANCHOR' && 
                   (showBin ? binnedClueIds.has(c.id) : !binnedClueIds.has(c.id))
                 )} 
-                onClueHover={(c) => setHoveredClueText(c ? describeRule(c) : null)}
+                onClueHover={isGameWon ? undefined : (c) => setHoveredClueText(c ? describeRule(c) : null)}
                 highlightedClue={hintShowing && activeHint ? activeHint.clue : null}
-                onClueToggleBin={handleToggleBin}
+                onClueToggleBin={isGameWon ? undefined : handleToggleBin}
                 binnedIds={binnedClueIds}
-                onClueDoubleTap={setExplainedClue}
+                onClueDoubleTap={isGameWon ? undefined : setExplainedClue}
                 scrollToClueId={scrollToClueId}
                 onMoveClue={() => playInteractionSound('moveclue')}
               />
@@ -1357,11 +1403,11 @@ export const GamePage: React.FC = () => {
                   c.type !== 'ANCHOR' && 
                   (showBin ? binnedClueIds.has(c.id) : !binnedClueIds.has(c.id))
                 )} 
-                onClueHover={(c) => setHoveredClueText(c ? describeRule(c) : null)}
+                onClueHover={isGameWon ? undefined : (c) => setHoveredClueText(c ? describeRule(c) : null)}
                 highlightedClue={hintShowing && activeHint ? activeHint.clue : null}
-                onClueToggleBin={handleToggleBin}
+                onClueToggleBin={isGameWon ? undefined : handleToggleBin}
                 binnedIds={binnedClueIds}
-                onClueDoubleTap={setExplainedClue}
+                onClueDoubleTap={isGameWon ? undefined : setExplainedClue}
                 scrollToClueId={scrollToClueId}
                 onMoveClue={() => playInteractionSound('moveclue')}
               />
@@ -1372,7 +1418,7 @@ export const GamePage: React.FC = () => {
       </main>
 
         {/* Win Celebration */}
-        {isGameWon && (
+        {isGameWon && !isViewingCompletedBoard && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-500 p-4">
              <div className={`text-center p-8 bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border-4 animate-in zoom-in-95 duration-300 max-w-sm w-full relative overflow-hidden ${
                  winData.isEpicInfo
@@ -1397,7 +1443,7 @@ export const GamePage: React.FC = () => {
                 {isSubmittingScore ? (
                   <div className="flex flex-col items-center justify-center py-8 mb-4">
                      <div className="w-8 h-8 rounded-full border-4 border-slate-200 dark:border-slate-700 border-t-emerald-500 animate-spin mb-4"></div>
-                     <p className="text-slate-500 font-bold animate-pulse text-sm">Submitting Time...</p>
+                     <p className="text-slate-500 font-bold animate-pulse text-sm">{puzzle?.isCompleted ? 'Loading Leaderboard...' : 'Submitting Time...'}</p>
                   </div>
                 ) : leaderboardData && !puzzle?.isRandom && (
                   <div className="mb-8">
@@ -1468,6 +1514,12 @@ export const GamePage: React.FC = () => {
                   >
                     Next Puzzle
                   </button>
+                  <button 
+                    onClick={() => setIsViewingCompletedBoard(true)}
+                    className="w-full py-4 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-2xl font-black shadow-lg transition-all active:scale-95 uppercase tracking-widest text-xs"
+                  >
+                    View Game Board
+                  </button>
                 </div>
              </div>
           </div>
@@ -1513,6 +1565,18 @@ export const GamePage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {isViewingCompletedBoard && isGameWon && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-bottom-5">
+          <button
+             onClick={() => setIsViewingCompletedBoard(false)}
+             className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full font-black shadow-xl shadow-indigo-500/30 transition-all active:scale-95 flex items-center gap-2"
+          >
+            <span className="material-icons text-sm">arrow_back</span>
+            Back to Win Screen
+          </button>
+        </div>
+      )}
 
       {/* DRAG OVERLAY */}
       <DragOverlay zIndex={9999} dropAnimation={null}>
