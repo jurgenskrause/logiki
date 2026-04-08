@@ -40,6 +40,7 @@ export interface PuzzleManifest {
   difficulty: number;
   clues: ActiveClue[];
   integrityHash: Uint8Array;
+  isRandom?: boolean;
 }
 
 /**

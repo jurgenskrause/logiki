@@ -107,13 +107,14 @@ api.post('/game/submit', async (c) => {
     if (isVerified) {
       const effectiveUsername = body.isDevBuild ? `${username}_${Date.now()}` : username;
       const today = new Date().toISOString().split('T')[0];
+      const gridSize = body.puzzleId.split('-')[0] || '4x4';
       const bucketSec = Math.floor(durationMs / 1000);
       
       await Promise.all([
-        redis.zAdd(`leaderboard:daily:${today}`, { member: effectiveUsername, score: durationMs }),
-        redis.hIncrBy(`leaderboard:daily:${today}:dist`, bucketSec.toString(), 1)
+        redis.zAdd(`leaderboard:daily:${today}:${gridSize}`, { member: effectiveUsername, score: durationMs }),
+        redis.hIncrBy(`leaderboard:daily:${today}:${gridSize}:dist`, bucketSec.toString(), 1)
       ]);
-      const zScore = await redis.zRank(`leaderboard:daily:${today}`, effectiveUsername);
+      const zScore = await redis.zRank(`leaderboard:daily:${today}:${gridSize}`, effectiveUsername);
       absoluteRank = zScore !== undefined ? zScore + 1 : 0;
     } else {
       // Ghost them
@@ -135,13 +136,14 @@ api.post('/game/submit', async (c) => {
 api.get('/game/leaderboard', async (c) => {
   try {
     const username = await reddit.getCurrentUsername();
+    const gridSize = c.req.query('gridSize') || '4x4';
     // For now hardcoded daily size / structure
     const today = new Date().toISOString().split('T')[0];
     
     const [rawLeaderboard, ghostMap, distributionRaw] = await Promise.all([
-      redis.zRange(`leaderboard:daily:${today}`, 0, 49, { by: 'rank' }),
+      redis.zRange(`leaderboard:daily:${today}:${gridSize}`, 0, 49, { by: 'rank' }),
       redis.hGetAll('ghosted_users_v1'),
-      redis.hGetAll(`leaderboard:daily:${today}:dist`)
+      redis.hGetAll(`leaderboard:daily:${today}:${gridSize}:dist`)
     ]);
 
     const filteredLeaderboard = rawLeaderboard.filter(entry => {
@@ -199,9 +201,13 @@ api.post('/game/share', async (c) => {
 
 api.post('/game/dev/reset', async (c) => {
   try {
+    // Note: To clear properly, we must loop through all supported sizes in this dev route, or just clear the 4x4.
+    // Assuming you might play up to 8x8 right now.
     const today = new Date().toISOString().split('T')[0];
-    await redis.del(`leaderboard:daily:${today}`);
-    await redis.del(`leaderboard:daily:${today}:dist`);
+    for (let size = 4; size <= 8; size++) {
+       await redis.del(`leaderboard:daily:${today}:${size}x${size}`);
+       await redis.del(`leaderboard:daily:${today}:${size}x${size}:dist`);
+    }
     return c.json({ status: 'success', message: 'Leaderboard cleared' });
   } catch (e) {
     return c.json<ErrorResponse>({ status: 'error', message: 'Failed to reset leaderboard' }, 500);

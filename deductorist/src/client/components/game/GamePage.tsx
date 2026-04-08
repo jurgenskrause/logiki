@@ -60,6 +60,7 @@ function useMediaQuery(query: string) {
 
 
 const DEV_BUILD = true;
+export const ENABLE_RANDOM_MODE = true;
 
 const DroppableMobileBin = ({ showBin, binnedCount, onToggle }: { showBin: boolean; binnedCount: number; onToggle: () => void }) => {
   const { setNodeRef, isOver } = useDroppable({ id: 'bin-drop-mobile' });
@@ -177,6 +178,7 @@ export const GamePage: React.FC = () => {
   const [isSharing, setIsSharing] = useState(false);
 
   const winData = useMemo(() => {
+    if (puzzle?.isRandom) return { text: "Logic Mastered", icon: "psychology", isEpicInfo: false };
     if (!leaderboardData || userRank === null) return { text: "Logic Mastered", icon: "psychology", isEpicInfo: false };
     const { totalSolvers } = leaderboardData;
     if ((totalSolvers || 0) <= 1) return { text: "First to Solve!", icon: "rocket_launch", isEpicInfo: true };
@@ -567,7 +569,7 @@ export const GamePage: React.FC = () => {
       const difficulty = selectedDifficulty === 0 ? 1 : selectedDifficulty;
 
       const urlParams = new URLSearchParams(window.location.search);
-      const isRandom = urlParams.get('random') === 'true';
+      const isRandom = ENABLE_RANDOM_MODE && urlParams.get('random') === 'true';
       const seedParam = urlParams.get('seed') || Math.random().toString(36).substring(2, 9);
 
       try {
@@ -598,7 +600,8 @@ export const GamePage: React.FC = () => {
             cols: gridSize,
             difficulty: difficulty,
             clues: telemetry.clues.map(c => sieve.toActiveClue(c, telemetry.solution as any)),
-            integrityHash
+            integrityHash,
+            isRandom: true
           };
 
           setActiveHint(null);
@@ -656,6 +659,12 @@ export const GamePage: React.FC = () => {
       setIsGameWon(true);
       playInteractionSound('win');
       
+      if (puzzle.isRandom) {
+         setIsSubmittingScore(false);
+         setUserRank(null);
+         return;
+      }
+
       // Submit to Sieve and retrieve distribution
       setIsSubmittingScore(true);
       fetch('/api/game/submit', {
@@ -675,7 +684,7 @@ export const GamePage: React.FC = () => {
              if (res.rank !== undefined) {
                  setUserRank(res.rank);
              }
-             return fetch('/api/game/leaderboard');
+             return fetch(`/api/game/leaderboard?gridSize=${puzzle.rows}x${puzzle.cols}`);
          }
          throw new Error('Not verified');
       })
@@ -907,6 +916,7 @@ export const GamePage: React.FC = () => {
       {/* Difficulty menu */}
       {isMenuOpen && (
         <DifficultyMenu
+          enableRandom={ENABLE_RANDOM_MODE}
           onSelect={(level, mode) => { 
             const url = new URL(window.location.href);
             if (mode === 'random') {
@@ -1299,7 +1309,7 @@ export const GamePage: React.FC = () => {
                      <div className="w-8 h-8 rounded-full border-4 border-slate-200 dark:border-slate-700 border-t-emerald-500 animate-spin mb-4"></div>
                      <p className="text-slate-500 font-bold animate-pulse text-sm">Submitting Time...</p>
                   </div>
-                ) : leaderboardData && (
+                ) : leaderboardData && !puzzle?.isRandom && (
                   <div className="mb-8">
                      <DistributionChart leaderboardData={leaderboardData} userTimeMs={elapsedSeconds * 1000} />
                   </div>
