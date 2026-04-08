@@ -43,6 +43,8 @@ export interface PuzzleManifest {
   integrityHash: Uint8Array;
   isRandom?: boolean;
   loadedSnapshot?: GameSnapshot;
+  loadedElapsed?: number;
+  isCompleted?: boolean;
 }
 
 /**

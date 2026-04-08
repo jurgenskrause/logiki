@@ -34,14 +34,16 @@ export type GameStateSyncRequest = {
   boardState: GameSnapshot;
   timestamp: number;
   binnedClues: string[];
+  elapsedSeconds: number;
 };
 
 export type GameStateSyncResponse = {
-  status: 'success' | 'not_found';
+  status: 'success' | 'not_found' | 'completed';
   puzzleId?: string;
   boardState?: GameSnapshot;
   timestamp?: number;
   binnedClues?: string[];
+  elapsedSeconds?: number;
 };
 
 export type GameSubmitResponse = {

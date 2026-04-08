@@ -170,6 +170,11 @@ export const GamePage: React.FC = () => {
   // Timer
   const [isGameStarted, setIsGameStarted] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const elapsedSecondsRef = useRef(0);
+  
+  useEffect(() => {
+    elapsedSecondsRef.current = elapsedSeconds;
+  }, [elapsedSeconds]);
 
   // Sound system
   const [isSoundEnabled, setIsSoundEnabled] = useState(true);
@@ -514,7 +519,8 @@ export const GamePage: React.FC = () => {
           puzzleId: `${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}`,
           boardState: gameState.exportSnapshot(),
           timestamp: Date.now(),
-          binnedClues: []
+          binnedClues: [],
+          elapsedSeconds: elapsedSecondsRef.current
        };
        fetch('/api/game/state/sync', {
           method: 'POST',
@@ -533,7 +539,8 @@ export const GamePage: React.FC = () => {
               puzzleId: `${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}`,
               boardState: gameState.exportSnapshot(),
               timestamp: Date.now(),
-              binnedClues: []
+              binnedClues: [],
+              elapsedSeconds: elapsedSecondsRef.current
            };
            fetch('/api/game/state/sync', {
               method: 'POST',
@@ -664,6 +671,14 @@ export const GamePage: React.FC = () => {
                 const stateData = await res.json();
                 if (stateData.status === 'success' && stateData.boardState) {
                     data.loadedSnapshot = stateData.boardState;
+                    if (stateData.elapsedSeconds !== undefined) {
+                        data.loadedElapsed = stateData.elapsedSeconds;
+                    }
+                } else if (stateData.status === 'completed') {
+                    data.isCompleted = true;
+                    if (stateData.elapsedSeconds !== undefined) {
+                        data.loadedElapsed = stateData.elapsedSeconds;
+                    }
                 }
              } catch (err) {}
 
@@ -687,6 +702,23 @@ export const GamePage: React.FC = () => {
   // Run initial analysis when puzzle loads
   useEffect(() => {
     if (!gameState || !puzzle) return;
+    
+    if (puzzle.loadedElapsed !== undefined) {
+        setElapsedSeconds(puzzle.loadedElapsed);
+    }
+    if (puzzle.isCompleted) {
+        setIsGameWon(true);
+        setIsSubmittingScore(true);
+        fetch(`/api/game/leaderboard?gridSize=${puzzle.rows}x${puzzle.cols}`)
+           .then(r => r.json())
+           .then(res => {
+              if (res.type === 'leaderboard') setLeaderboardData(res);
+           })
+           .catch(console.error)
+           .finally(() => setIsSubmittingScore(false));
+        return; // Halt here implicitly without overriding anything
+    }
+
     const t = setTimeout(runAnalysis, 150);
     return () => clearTimeout(t);
   }, [gameState, puzzle]);

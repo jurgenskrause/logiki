@@ -163,6 +163,18 @@ api.get('/game/state/sync', async (c) => {
     const username = await reddit.getCurrentUsername();
     if (!username) return c.json<ErrorResponse>({ status: 'error', message: 'Unauthorized' }, 401);
 
+    const gridSize = puzzleId.split('-')[0] || '4x4';
+    const today = new Date().toISOString().split('T')[0];
+    
+    const zScoreRaw = await redis.zScore(`leaderboard:daily:${today}:${gridSize}`, username);
+    if (zScoreRaw !== undefined && zScoreRaw !== null) {
+       return c.json<GameStateSyncResponse>({
+         status: 'completed',
+         puzzleId,
+         elapsedSeconds: Math.floor(Number(zScoreRaw) / 1000)
+       });
+    }
+
     const raw = await redis.get(`gameState:${username}:${puzzleId}`);
     if (!raw) return c.json<GameStateSyncResponse>({ status: 'not_found' });
 
@@ -247,10 +259,14 @@ api.post('/game/dev/reset', async (c) => {
   try {
     // Note: To clear properly, we must loop through all supported sizes in this dev route, or just clear the 4x4.
     // Assuming you might play up to 8x8 right now.
+    const username = await reddit.getCurrentUsername();
     const today = new Date().toISOString().split('T')[0];
     for (let size = 4; size <= 8; size++) {
        await redis.del(`leaderboard:daily:${today}:${size}x${size}`);
        await redis.del(`leaderboard:daily:${today}:${size}x${size}:dist`);
+       if (username) {
+          await redis.del(`gameState:${username}:${size}x${size}-1`);
+       }
     }
     return c.json({ status: 'success', message: 'Leaderboard cleared' });
   } catch (e) {
