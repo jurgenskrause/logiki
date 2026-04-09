@@ -1,5 +1,19 @@
 import { Hono } from 'hono';
 import { context, redis, reddit } from '@devvit/web/server';
+import { buildTopologyLibrary } from '../../shared/engine/PermutationGenerator';
+import { TieringService } from '../../shared/engine/TieringService';
+import { StructuralSieve } from '../../shared/engine/StructuralSieve';
+
+function seedRNG(seed: string) {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) {
+    h = Math.imul(31, h) + seed.charCodeAt(i) | 0;
+  }
+  return () => {
+    h = Math.imul(48271, h) | 0;
+    return (h >>> 0) / 4294967296; 
+  };
+}
 import type {
   InitResponse,
   GameStartRequest,
@@ -55,6 +69,68 @@ api.post('/game/start', async (c) => {
     });
   } catch (e) {
     return c.json<ErrorResponse>({ status: 'error', message: 'Failed to start game' }, 500);
+  }
+});
+
+api.get('/game/puzzle', async (c) => {
+  try {
+    const requestedDate = c.req.query('date') || 'today';
+    const difficultyStr = c.req.query('difficulty') || '1';
+    const difficulty = parseInt(difficultyStr, 10) || 1;
+
+    let targetDateStr = requestedDate;
+    const today = new Date().toISOString().split('T')[0];
+
+    if (requestedDate === 'today') {
+      targetDateStr = today;
+    } else if (requestedDate > today) {
+      return c.json<ErrorResponse>({ status: 'error', message: 'Cannot access future puzzles' }, 403);
+    }
+
+    const cacheKey = `puzzle_v1:${targetDateStr}:${difficulty}`;
+    const cachedPuzzle = await redis.get(cacheKey);
+
+    if (cachedPuzzle) {
+       return c.json(JSON.parse(cachedPuzzle.toString()));
+    }
+
+    const gridSize = difficulty + 3;
+    const seed = `${targetDateStr}-${difficulty}`;
+    const rng = seedRNG(seed);
+    const sieve = new StructuralSieve();
+    
+    console.log(`[JIT] Generating puzzle ${cacheKey}...`);
+    const topoReport = buildTopologyLibrary(gridSize, gridSize, false);
+    const tiering = new TieringService(topoReport.library);
+    tiering.shuffle(rng);
+
+    const telemetry = await sieve.generateAsync(
+        tiering, 
+        gridSize, 
+        gridSize, 
+        async () => {}, 
+        rng
+    );
+
+    const solGrid = (telemetry.solution as any).getRawSolution(gridSize, gridSize);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', solGrid as BufferSource);
+    const integrityHash = Array.from(new Uint8Array(hashBuffer));
+    
+    const puzzleData = {
+      rows: gridSize,
+      cols: gridSize,
+      difficulty,
+      clues: telemetry.clues.map((clue: any) => sieve.toActiveClue(clue, telemetry.solution as any)),
+      integrityHash,
+      date: targetDateStr
+    };
+
+    await redis.set(cacheKey, JSON.stringify(puzzleData));
+    
+    return c.json(puzzleData);
+  } catch (e: any) {
+    console.error(`[JIT] Generate error: ${e.message}`);
+    return c.json<ErrorResponse>({ status: 'error', message: 'Failed to generate puzzle' }, 500);
   }
 });
 

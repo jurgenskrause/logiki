@@ -79,6 +79,29 @@ export const SideMenu: React.FC<SideMenuProps> = ({
             </div>
           </button>
 
+          <div className="w-full flex flex-col p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 mt-4 border border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-4 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-teal-100 dark:bg-teal-900/50 flex items-center justify-center text-teal-600 dark:text-teal-400">
+                <span className="material-icons">history</span>
+              </div>
+              <div>
+                <div className="font-bold text-slate-800 dark:text-slate-200">Puzzle Archive</div>
+                <div className="text-xs font-medium text-slate-500">Play previous days</div>
+              </div>
+            </div>
+            <input 
+              type="date"
+              className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-700 dark:text-slate-300 font-medium focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-sm"
+              defaultValue={new URLSearchParams(window.location.search).get('date') || new Date().toISOString().split('T')[0]}
+              max={new Date().toISOString().split('T')[0]}
+              onChange={(e) => {
+                if (e.target.value) {
+                  window.location.href = `/?date=${e.target.value}`;
+                }
+              }}
+            />
+          </div>
+
           <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-800 space-y-2">
             <div className="w-full flex items-center justify-between p-4 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
               <div className="flex items-center gap-4">

@@ -517,8 +517,9 @@ export const GamePage: React.FC = () => {
     
     if (pendingSyncTimerRef.current) clearTimeout(pendingSyncTimerRef.current);
     pendingSyncTimerRef.current = setTimeout(() => {
+       const puzzleDateId = (puzzle as any).date ? `${(puzzle as any).date}-` : '';
        const payload = {
-          puzzleId: `${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}`,
+          puzzleId: puzzle.isRandom ? `random-${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}` : `${puzzleDateId}${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}`,
           boardState: gameState.exportSnapshot(),
           timestamp: Date.now(),
           binnedClues: [],
@@ -537,8 +538,9 @@ export const GamePage: React.FC = () => {
     const handleVisibility = () => {
        if (document.visibilityState === 'hidden' && gameState && puzzle && !puzzle.isRandom) {
            if (pendingSyncTimerRef.current) clearTimeout(pendingSyncTimerRef.current);
+           const puzzleDateId = (puzzle as any).date ? `${(puzzle as any).date}-` : '';
            const payload = {
-              puzzleId: `${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}`,
+              puzzleId: puzzle.isRandom ? `random-${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}` : `${puzzleDateId}${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}`,
               boardState: gameState.exportSnapshot(),
               timestamp: Date.now(),
               binnedClues: [],
@@ -602,15 +604,8 @@ export const GamePage: React.FC = () => {
   // ─── Loaders ────────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    loader.loadFromUrl(`daily.bin`)
-      .then(() => {
-        setIsManifestLoaded(true);
-        setIsLoading(false);
-      })
-      .catch(() => {
-        setLoadError('Failed to load game manifest.');
-        setIsLoading(false);
-      });
+    setIsManifestLoaded(true);
+    setIsLoading(false);
   }, []);
 
   useEffect(() => {
@@ -664,31 +659,37 @@ export const GamePage: React.FC = () => {
           setHintShowing(false);
           setPuzzle(puzzleData);
         } else {
-          const dateStr = '2026-03-30';
-          const data = await loader.getPuzzle(dateStr, difficulty);
-          if (data) {
-             const p = `${data.rows}x${data.cols}-${data.difficulty}`;
-             try {
-                const res = await fetch(`/api/game/state/sync?puzzleId=${p}`);
-                const stateData = await res.json();
-                if (stateData.status === 'success' && stateData.boardState) {
-                    data.loadedSnapshot = stateData.boardState;
-                    if (stateData.elapsedSeconds !== undefined) {
-                        data.loadedElapsed = stateData.elapsedSeconds;
-                    }
-                } else if (stateData.status === 'completed') {
-                    data.isCompleted = true;
-                    if (stateData.elapsedSeconds !== undefined) {
-                        data.loadedElapsed = stateData.elapsedSeconds;
-                    }
-                }
-             } catch (err) {}
+          const dateParam = urlParams.get('date') || 'today';
+          try {
+            const res = await fetch(`/api/game/puzzle?date=${dateParam}&difficulty=${difficulty}`);
+            const data = await res.json();
+            if (res.ok && data && !data.status) {
+               const puzzleDate = data.date || dateParam;
+               const p = `${puzzleDate}-${data.rows}x${data.cols}-${data.difficulty}`;
+               try {
+                  const stateRes = await fetch(`/api/game/state/sync?puzzleId=${p}`);
+                  const stateData = await stateRes.json();
+                  if (stateData.status === 'success' && stateData.boardState) {
+                      data.loadedSnapshot = stateData.boardState;
+                      if (stateData.elapsedSeconds !== undefined) {
+                          data.loadedElapsed = stateData.elapsedSeconds;
+                      }
+                  } else if (stateData.status === 'completed') {
+                      data.isCompleted = true;
+                      if (stateData.elapsedSeconds !== undefined) {
+                          data.loadedElapsed = stateData.elapsedSeconds;
+                      }
+                  }
+               } catch (err) {}
 
-             setActiveHint(null);
-             setHintShowing(false);
-             setPuzzle(data);
-          } else {
-            setLoadError('Puzzle not found.');
+               setActiveHint(null);
+               setHintShowing(false);
+               setPuzzle(data);
+            } else {
+              setLoadError(data?.message || 'Puzzle not found.');
+            }
+          } catch(err) {
+            setLoadError('Error fetching puzzle from API.');
           }
         }
       } catch (err) {
@@ -747,7 +748,8 @@ export const GamePage: React.FC = () => {
             setIsGameWon(true);
             setIsGameStarted(true);
             setIsSubmittingScore(true);
-            fetch(`/api/game/leaderboard?gridSize=${puzzle.rows}x${puzzle.cols}`)
+            const puzzleDate = (puzzle as any).date || 'today';
+            fetch(`/api/game/leaderboard?gridSize=${puzzle.rows}x${puzzle.cols}&date=${puzzleDate}`)
                .then(r => r.json())
                .then(res => {
                   if (res.type === 'leaderboard') setLeaderboardData(res);
@@ -793,37 +795,51 @@ export const GamePage: React.FC = () => {
          return;
       }
 
-      // Submit to Sieve and retrieve distribution
+      const todayLocal = new Date().toISOString().split('T')[0];
+      const puzzleDate = (puzzle as any).date || todayLocal;
+      const isHistorical = puzzleDate !== todayLocal && puzzleDate !== 'today';
+
       setIsSubmittingScore(true);
-      fetch('/api/game/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          puzzleId: `${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}`,
-          boardState: Array.from(gameState.grid),
-          moveLog: moveLogRef.current,
-          isDevBuild: DEV_BUILD,
-          penaltyMs: penaltyMsRef.current
-        })
-      })
-      .then(r => r.json())
-      .then(res => {
-         if (res.status === 'verified' || DEV_BUILD) {
-             if (res.rank !== undefined) {
-                 setUserRank(res.rank);
+
+      if (isHistorical) {
+          fetch(`/api/game/leaderboard?gridSize=${puzzle.rows}x${puzzle.cols}&date=${puzzleDate}`)
+              .then(r => r.json())
+              .then(res => {
+                  if (res.type === 'leaderboard') setLeaderboardData(res);
+              })
+              .catch(console.error)
+              .finally(() => setIsSubmittingScore(false));
+      } else {
+          fetch('/api/game/submit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              puzzleId: `${puzzleDate}-${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}`,
+              boardState: Array.from(gameState.grid),
+              moveLog: moveLogRef.current,
+              isDevBuild: DEV_BUILD,
+              penaltyMs: penaltyMsRef.current
+            })
+          })
+          .then(r => r.json())
+          .then(res => {
+             if (res.status === 'verified' || DEV_BUILD) {
+                 if (res.rank !== undefined) {
+                     setUserRank(res.rank);
+                 }
+                 return fetch(`/api/game/leaderboard?gridSize=${puzzle.rows}x${puzzle.cols}&date=${puzzleDate}`);
              }
-             return fetch(`/api/game/leaderboard?gridSize=${puzzle.rows}x${puzzle.cols}`);
-         }
-         throw new Error('Not verified');
-      })
-      .then(r => r.json())
-      .then(res => {
-         if (res.type === 'leaderboard') {
-            setLeaderboardData(res);
-         }
-      })
-      .catch(console.error)
-      .finally(() => setIsSubmittingScore(false));
+             throw new Error('Not verified');
+          })
+          .then(r => r.json())
+          .then(res => {
+             if (res.type === 'leaderboard') {
+                setLeaderboardData(res);
+             }
+          })
+          .catch(console.error)
+          .finally(() => setIsSubmittingScore(false));
+      }
     }
   }, [gameState, puzzle, isGameWon, playInteractionSound]);
 
