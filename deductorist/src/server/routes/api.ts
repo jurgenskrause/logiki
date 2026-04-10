@@ -245,7 +245,8 @@ api.get('/game/state/sync', async (c) => {
     const username = await reddit.getCurrentUsername();
     if (!username) return c.json<ErrorResponse>({ status: 'error', message: 'Unauthorized' }, 401);
 
-    const gridSize = puzzleId.split('-')[0] || '4x4';
+    const gridMatch = puzzleId.match(/(\d+x\d+)/);
+    const gridSize = gridMatch ? gridMatch[1] : '4x4';
     const today = new Date().toISOString().split('T')[0];
     
     console.log(`[GameState Sync] Checking leaderboard completion for ${username} on puzzle ${puzzleId} (grid: ${gridSize})`);
@@ -273,6 +274,35 @@ api.get('/game/state/sync', async (c) => {
   } catch(e) {
     console.error(e);
     return c.json<ErrorResponse>({ status: 'error', message: 'Failed to fetch game state' }, 500);
+  }
+});
+
+api.get('/game/state/completed', async (c) => {
+  try {
+    const requestedDate = c.req.query('date');
+    if (!requestedDate) return c.json<ErrorResponse>({ status: 'error', message: 'Missing date parameter' }, 400);
+
+    const username = await reddit.getCurrentUsername();
+    if (!username) return c.json({ completed: [] }); // Graceful degradation for unauthenticated
+
+    const gridSizes = ['4x4', '5x5', '6x6', '7x7', '8x8'];
+    const completedList: number[] = [];
+
+    // Concurrently check all 5 grid sizes for completion
+    const checks = await Promise.all(
+      gridSizes.map(size => redis.zScore(`leaderboard:daily:${requestedDate}:${size}`, username))
+    );
+
+    checks.forEach((score, index) => {
+      if (score !== undefined && score !== null) {
+        completedList.push(index + 1); // 1-indexed difficulties
+      }
+    });
+
+    return c.json({ completed: completedList });
+  } catch(e) {
+    console.error(e);
+    return c.json<ErrorResponse>({ status: 'error', message: 'Failed to check completions' }, 500);
   }
 });
 
@@ -344,18 +374,23 @@ api.post('/game/share', async (c) => {
 
 api.post('/game/dev/reset', async (c) => {
   try {
-    // Note: To clear properly, we must loop through all supported sizes in this dev route, or just clear the 4x4.
-    // Assuming you might play up to 8x8 right now.
     const username = await reddit.getCurrentUsername();
+
     const today = new Date().toISOString().split('T')[0];
-    for (let size = 4; size <= 8; size++) {
+    for (let level = 1; level <= 5; level++) {
+       const size = level + 3;
+       const puzzleId = `${today}-${size}x${size}-${level}`;
+       
+       // Nuke the global leaderboards completely
        await redis.del(`leaderboard:daily:${today}:${size}x${size}`);
        await redis.del(`leaderboard:daily:${today}:${size}x${size}:dist`);
+       
+       // Wipe the local testing game state
        if (username) {
-          await redis.del(`gameState:${username}:${size}x${size}-1`);
+           await redis.del(`gameState:${username}:${puzzleId}`);
        }
     }
-    return c.json({ status: 'success', message: 'Leaderboard cleared' });
+    return c.json({ status: 'success', message: 'Global leaderboards annihilated' });
   } catch (e) {
     return c.json<ErrorResponse>({ status: 'error', message: 'Failed to reset leaderboard' }, 500);
   }

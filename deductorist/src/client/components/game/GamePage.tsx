@@ -260,6 +260,28 @@ export const GamePage: React.FC = () => {
   const [isGameWon, setIsGameWon] = useState(false);
   const [isSubmittingScore, setIsSubmittingScore] = useState(false);
   const [isViewingCompletedBoard, setIsViewingCompletedBoard] = useState(false);
+  const [completedLevels, setCompletedLevels] = useState<number[]>([]);
+
+  // Prevent state-bleeding across difficulty swaps
+  useEffect(() => {
+    setIsGameWon(false);
+    setIsViewingCompletedBoard(false);
+    setUserRank(null);
+    setLeaderboardData(null);
+  }, [selectedDifficulty]);
+
+  // Fetch completion states automatically to mark Difficulty selector
+  useEffect(() => {
+     if (puzzle && !puzzle.isRandom && (puzzle as any).date) {
+        fetch(`/api/game/state/completed?date=${(puzzle as any).date}`)
+          .then(r => r.json())
+          .then(data => {
+             if (data && data.completed) {
+                setCompletedLevels(data.completed);
+             }
+          }).catch(() => {});
+     }
+  }, [puzzle, isGameWon]);
 
   useEffect(() => {
     if (puzzle) {
@@ -1064,6 +1086,7 @@ export const GamePage: React.FC = () => {
       {/* Difficulty menu */}
       {isMenuOpen && (
         <DifficultyMenu
+          completedLevels={completedLevels}
           enableRandom={ENABLE_RANDOM_MODE}
           onSelect={(level, mode) => { 
             const url = new URL(window.location.href);
@@ -1524,12 +1547,24 @@ export const GamePage: React.FC = () => {
                   >
                     {isSharing ? 'Generating...' : 'Share to Thread'}
                   </button>
-                  <button 
-                    onClick={() => window.location.reload()}
-                    className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-black shadow-lg shadow-emerald-500/30 transition-all active:scale-95 uppercase tracking-widest text-xs"
-                  >
-                    Next Puzzle
-                  </button>
+                  {selectedDifficulty < 5 && (!puzzle?.isRandom) ? (
+                    <button 
+                      onClick={() => {
+                        setIsViewingCompletedBoard(true); // Drops z-index overlay priority
+                        setIsMenuOpen(true);              // Elevates difficulty modal visually
+                      }}
+                      className="w-full py-4 bg-indigo-500 hover:bg-indigo-600 text-white rounded-2xl font-black shadow-[0_10px_20px_rgba(99,102,241,0.3)] transition-all active:scale-95 uppercase tracking-widest text-xs border border-indigo-400"
+                    >
+                      Try a harder challenge!
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={() => window.location.reload()}
+                      className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-black shadow-lg shadow-emerald-500/30 transition-all active:scale-95 uppercase tracking-widest text-xs"
+                    >
+                      {puzzle?.isRandom ? 'Next Puzzle' : 'Replay Game'}
+                    </button>
+                  )}
                   <button 
                     onClick={() => setIsViewingCompletedBoard(true)}
                     className="w-full py-4 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-2xl font-black shadow-lg transition-all active:scale-95 uppercase tracking-widest text-xs"

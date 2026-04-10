@@ -4,6 +4,7 @@ interface DifficultyMenuProps {
   onSelect: (level: number, mode: 'daily' | 'random') => void;
   onClose?: () => void;
   enableRandom?: boolean;
+  completedLevels?: number[];
 }
 
 const LEVEL_BGS = [
@@ -27,7 +28,7 @@ const GridIcon: React.FC<{ size: number }> = ({ size }) => {
   );
 };
 
-export const DifficultyMenu: React.FC<DifficultyMenuProps> = ({ onSelect, onClose, enableRandom = true }) => {
+export const DifficultyMenu: React.FC<DifficultyMenuProps> = ({ onSelect, onClose, enableRandom = true, completedLevels = [] }) => {
   const [mode, setMode] = useState<'daily'|'random'>(() => {
     // Attempt to read current mode from URL if possible to ensure consistency
     const urlParams = new URLSearchParams(window.location.search);
@@ -86,25 +87,39 @@ export const DifficultyMenu: React.FC<DifficultyMenuProps> = ({ onSelect, onClos
         <div className="flex flex-wrap justify-center gap-4 sm:gap-6 w-full">
           {[1, 2, 3, 4, 5].map((level, index) => {
             const gridSize = level + 3; // L1=4x4, L2=5x5, L3=6x6, L4=7x7, L5=8x8
+            const isCompleted = mode === 'daily' && completedLevels.includes(level);
+            
             return (
               <button
                 key={level}
                 onClick={() => onSelect(level, mode)}
                 className={`flex-1 min-w-[140px] max-w-[180px] p-6 rounded-2xl bg-gradient-to-br ${LEVEL_BGS[index]} 
                   text-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 
-                  transition-all duration-300 border border-white/20 flex flex-col items-center group relative overflow-hidden`}
+                  transition-all duration-300 flex flex-col items-center group relative overflow-hidden
+                  ${isCompleted ? 'ring-4 ring-emerald-400 ring-offset-2 ring-offset-slate-900 border-none' : 'border border-white/20'}`}
               >
                 {/* Glossy overlay effect class */}
                 <div className="absolute inset-0 bg-white/20 translate-y-[-100%] group-hover:translate-y-[100%] transition-transform duration-700 ease-in-out opacity-0 group-hover:opacity-100" />
                 
+                {isCompleted && (
+                   <div className="absolute top-2 right-2 flex items-center justify-center bg-emerald-500 rounded-full shadow-md text-white border-2 border-white p-0.5 z-20">
+                     <span className="material-icons text-xs font-black">check</span>
+                   </div>
+                )}
+                
                 <GridIcon size={gridSize} />
                 
-                <span className="text-sm sm:text-base font-bold tracking-widest uppercase opacity-90 drop-shadow-sm text-white dark:text-slate-200">
+                <span className="text-sm sm:text-base font-bold tracking-widest uppercase opacity-90 drop-shadow-sm text-white dark:text-slate-200 mt-2 z-10 relative">
                   Level {level}
                 </span>
-                <span className="text-xl sm:text-2xl font-black tracking-tighter drop-shadow-md text-white dark:text-slate-100">
+                <span className="text-xl sm:text-2xl font-black tracking-tighter drop-shadow-md text-white dark:text-slate-100 z-10 relative">
                   {gridSize}x{gridSize}
                 </span>
+                {isCompleted && (
+                   <span className="mt-1 text-[10px] uppercase font-black tracking-wider text-emerald-100 bg-emerald-900/40 px-2 py-0.5 rounded-md shadow-inner z-10 relative">
+                     Completed
+                   </span>
+                )}
               </button>
             );
           })}
