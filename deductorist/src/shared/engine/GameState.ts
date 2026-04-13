@@ -12,6 +12,12 @@ export interface GameSnapshot {
   binnedClues: string[];
 }
 
+export interface ExportedGameState {
+  history: GameSnapshot[];
+  cursor: number;
+  lastGoodIndex: number;
+}
+
 /**
  * GameState Class
  * 
@@ -106,6 +112,47 @@ export class GameState {
     this._history = [this._createSnapshot()];
     this._cursor = 0;
     this._lastGoodIndex = 0;
+  }
+
+  public exportFullState(): ExportedGameState {
+    return {
+      history: this._history.map(s => this._createSnapshotFromExisting(s)),
+      cursor: this._cursor,
+      lastGoodIndex: this._lastGoodIndex
+    };
+  }
+
+  private _createSnapshotFromExisting(s: GameSnapshot): GameSnapshot {
+    return {
+      grid: new Uint16Array(s.grid),
+      confirmed: new Uint8Array(s.confirmed),
+      noAutoSolve: new Uint8Array(s.noAutoSolve),
+      previousMask: new Uint16Array(s.previousMask),
+      binnedClues: [...s.binnedClues]
+    };
+  }
+
+  public importFullState(data: ExportedGameState): void {
+    if (!data.history || !Array.isArray(data.history) || data.history.length === 0) {
+      // Fallback if empty or invalid
+      return;
+    }
+    
+    this._history = data.history.map(s => {
+      return {
+        grid: new Uint16Array(Object.values(s.grid)),
+        confirmed: new Uint8Array(Object.values(s.confirmed)),
+        noAutoSolve: new Uint8Array(Object.values(s.noAutoSolve)),
+        previousMask: new Uint16Array(Object.values(s.previousMask)),
+        binnedClues: [...s.binnedClues]
+      };
+    });
+    
+    this._cursor = Math.max(0, Math.min(data.cursor, this._history.length - 1));
+    this._lastGoodIndex = data.lastGoodIndex !== undefined ? data.lastGoodIndex : this._cursor;
+    
+    // Load the state exactly where the cursor is
+    this._loadSnapshot(this._history[this._cursor]);
   }
 
   // ─── Clue Binning System ───────────────────────────────────────────────────

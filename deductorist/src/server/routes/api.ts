@@ -226,6 +226,11 @@ api.post('/game/state/sync', async (c) => {
     const username = await reddit.getCurrentUsername();
     if (!username) return c.json<ErrorResponse>({ status: 'error', message: 'Unauthorized' }, 401);
 
+    const isNonCompete = await redis.hGet('noncompete_v1', `${username}:${body.puzzleId}`);
+    if (isNonCompete === 'true') {
+        return c.json({ status: 'ignored' });
+    }
+
     await redis.set(
        `gameState:${username}:${body.puzzleId}`,
        JSON.stringify(body)
@@ -244,6 +249,11 @@ api.get('/game/state/sync', async (c) => {
 
     const username = await reddit.getCurrentUsername();
     if (!username) return c.json<ErrorResponse>({ status: 'error', message: 'Unauthorized' }, 401);
+
+    const isNonCompete = await redis.hGet('noncompete_v1', `${username}:${puzzleId}`);
+    if (isNonCompete === 'true') {
+        return c.json<GameStateSyncResponse>({ status: 'non_compete', puzzleId });
+    }
 
     const gridMatch = puzzleId.match(/(\d+x\d+)/);
     const gridSize = gridMatch ? gridMatch[1] : '4x4';
@@ -274,6 +284,26 @@ api.get('/game/state/sync', async (c) => {
   } catch(e) {
     console.error(e);
     return c.json<ErrorResponse>({ status: 'error', message: 'Failed to fetch game state' }, 500);
+  }
+});
+
+api.post('/game/give-up', async (c) => {
+  try {
+    const body: { puzzleId: string } = await c.req.json();
+    const username = await reddit.getCurrentUsername();
+    if (!username) return c.json<ErrorResponse>({ status: 'error', message: 'Unauthorized' }, 401);
+
+    if (!body.puzzleId) return c.json<ErrorResponse>({ status: 'error', message: 'Missing puzzleId' }, 400);
+
+    await Promise.all([
+      redis.hSet('noncompete_v1', { [`${username}:${body.puzzleId}`]: 'true' }),
+      redis.del(`gameState:${username}:${body.puzzleId}`)
+    ]);
+
+    return c.json({ status: 'success' });
+  } catch(e) {
+    console.error(e);
+    return c.json<ErrorResponse>({ status: 'error', message: 'Failed to process give up' }, 500);
   }
 });
 

@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from 'react';
+import { CATEGORY_COLORS } from '../../../shared/utils/themeRegistry';
 
 export interface Possibility {
   id: number;
@@ -67,9 +68,9 @@ export const BoardCell: React.FC<BoardCellProps> = ({
   return (
     <div 
       ref={containerRef}
-      className={`relative w-full border bg-white dark:bg-slate-800 
+      className={`relative w-full border ${CATEGORY_COLORS[row] || 'bg-white dark:bg-slate-800'} 
                   flex items-center justify-center overflow-hidden cursor-pointer
-                  hover:bg-slate-50 dark:hover:bg-slate-750
+                  hover:brightness-105 dark:hover:brightness-110 transition-all
                   ${highlightItems.length > 0 
                     ? 'animate-hard-flash z-10' 
                     : 'border-slate-300 dark:border-slate-700'}`}
@@ -89,7 +90,7 @@ export const BoardCell: React.FC<BoardCellProps> = ({
       ) : (
         // Unresolved State: The Option Matrix, exactly 2 rows, N columns
         <div 
-          className="w-full h-full grid gap-[1px] bg-slate-200 dark:bg-slate-700 p-[1px] relative"
+          className="w-full h-full grid gap-[1px] bg-slate-300 dark:bg-slate-900 p-[1px] relative"
           style={{ 
             gridTemplateRows: 'repeat(2, minmax(0, 1fr))',
             gridTemplateColumns: `repeat(${subColumns}, minmax(0, 1fr))` 
@@ -117,7 +118,7 @@ export const BoardCell: React.FC<BoardCellProps> = ({
                   e.stopPropagation();
                   onInteract(cellId, opt.id, 'solve');
                 }}
-                className={`w-full h-full aspect-square flex items-center justify-center bg-white dark:bg-slate-800 
+                className={`w-full h-full aspect-square flex items-center justify-center ${CATEGORY_COLORS[row] || 'bg-white dark:bg-slate-800'} 
                             ${opt.isActive ? 'opacity-100 grayscale-0' : 'opacity-20 grayscale'}
                             ${ringClass}`}
                 style={{ containerType: 'size' }}
