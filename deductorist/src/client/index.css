@@ -1,5 +1,13 @@
 @import 'tailwindcss';
 
+@import url('https://fonts.googleapis.com/css2?family=Noto+Emoji:wght@400..700&display=swap');
+
+@layer base {
+  body {
+    font-family: ui-sans-serif, system-ui, sans-serif, 'Noto Emoji';
+  }
+}
+
 @keyframes float {
   0%, 100% {
     transform: translateY(0);

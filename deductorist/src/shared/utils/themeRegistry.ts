@@ -11,27 +11,16 @@ export function getAsset(themeName: string, catIndex: number, itemIndex: number)
   return `/theme/${themeName}/${catIndex}-${itemIndex}.webp`;
 }
 
-export const CATEGORY_COLORS = [
-  'bg-red-200 dark:bg-red-900/60',
-  'bg-blue-200 dark:bg-blue-900/60',
-  'bg-emerald-200 dark:bg-emerald-900/60',
-  'bg-amber-200 dark:bg-amber-900/60',
-  'bg-purple-200 dark:bg-purple-900/60',
-  'bg-pink-200 dark:bg-pink-900/60',
-  'bg-orange-200 dark:bg-orange-900/60',
-  'bg-cyan-200 dark:bg-cyan-900/60',
-];
-
 /**
  * Fallback Emoji Matrix (8 Categories x 8 Items)
  */
 export const FALLBACK_THEME: string[][] = [
   // 0: Characters / Occupations
-  ['🧔🏾‍♂️', '👷🏼‍♀️', '🥷', '🧑🏽‍🎓', '👮🏾', '👵🏻', '🧑🏼‍🎨', '👩🏿‍⚕️'],
+  ['👨🏻‍🌾', '👩🏾‍⚕️', '👨🏼‍🍳', '👩🏿‍🔬', '👨🏽‍🔧', '👩🏻‍🚒', '👨🏾‍✈️', '👩🏼‍⚖️'],
   // 1: Houses
   ['🏠', '🏛️', '🏰', '🏯', '🏢', '🏚', '⛺', '🛖'],
   // 2: Pets
-  ['🐶', '🐱', '🐰', '🦊', '🐻', '🐼', '🐹', '🐭'],
+  ['🐕', '🐈', '🐎', '🐇', '🐢', '🐄', '🐖', '🐘'],
   // 3: Vehicles
   ['🚗', '🚲', '🚅', '🚁', '🚢', '🚀', '🚜', '🛵'],
   // 4: Accessories
