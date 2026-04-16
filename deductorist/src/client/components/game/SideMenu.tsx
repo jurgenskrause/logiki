@@ -10,8 +10,6 @@ interface SideMenuProps {
   onToggleZoom: (enabled: boolean) => void;
   isSoundEnabled: boolean;
   onToggleSound: (enabled: boolean) => void;
-  onRestart: () => void;
-  onGiveUp: () => void;
 }
 
 export const SideMenu: React.FC<SideMenuProps> = ({ 
@@ -23,9 +21,7 @@ export const SideMenu: React.FC<SideMenuProps> = ({
   zoomEnabled,
   onToggleZoom,
   isSoundEnabled,
-  onToggleSound,
-  onRestart,
-  onGiveUp
+  onToggleSound
 }) => {
   return (
     <>
@@ -80,42 +76,6 @@ export const SideMenu: React.FC<SideMenuProps> = ({
             <div>
               <div className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">How to Play</div>
               <div className="text-xs font-medium text-slate-500">Game rules and controls</div>
-            </div>
-          </button>
-
-          <button 
-            onClick={() => {
-              if (window.confirm("Are you sure you want to restart? This will reset the board, but keep the timer running.")) {
-                onClose();
-                onRestart();
-              }
-            }}
-            className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left group"
-          >
-            <div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center text-orange-500 flex-shrink-0">
-              <span className="material-icons">restart_alt</span>
-            </div>
-            <div>
-              <div className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">Restart Puzzle</div>
-              <div className="text-xs font-medium text-slate-500">Clear board, keep timer</div>
-            </div>
-          </button>
-
-          <button 
-            onClick={() => {
-              if (window.confirm("Are you sure you want to give up? You won't be able to submit a score for this puzzle today.")) {
-                onClose();
-                onGiveUp();
-              }
-            }}
-            className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left group"
-          >
-            <div className="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/50 flex items-center justify-center text-red-500 flex-shrink-0">
-              <span className="material-icons">flag</span>
-            </div>
-            <div>
-              <div className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">Give Up</div>
-              <div className="text-xs font-medium text-slate-500">Reveal solution & end game</div>
             </div>
           </button>
 

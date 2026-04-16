@@ -27,22 +27,20 @@ export type GameSubmitRequest = {
   penaltyMs?: number;
 };
 
-import type { GameSnapshot, ExportedGameState } from './engine/GameState';
+import type { GameSnapshot } from './engine/GameState';
 
 export type GameStateSyncRequest = {
   puzzleId: string;
   boardState: GameSnapshot;
-  fullState?: ExportedGameState;
   timestamp: number;
   binnedClues: string[];
   elapsedSeconds: number;
 };
 
 export type GameStateSyncResponse = {
-  status: 'success' | 'not_found' | 'completed' | 'non_compete';
+  status: 'success' | 'not_found' | 'completed';
   puzzleId?: string;
   boardState?: GameSnapshot;
-  fullState?: ExportedGameState;
   timestamp?: number;
   binnedClues?: string[];
   elapsedSeconds?: number;

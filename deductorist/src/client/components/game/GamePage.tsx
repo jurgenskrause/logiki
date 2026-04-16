@@ -285,10 +285,8 @@ export const GamePage: React.FC = () => {
 
   useEffect(() => {
     if (puzzle) {
-      if (!(puzzle as any).isRestart) {
-        setIsGameStarted(false);
-        setElapsedSeconds(0);
-      }
+      setIsGameStarted(false);
+      setElapsedSeconds(0);
       setIsLoading(false);
       setShowBin(false);
       if (gameState) setTimeout(runAnalysis, 50);
@@ -523,9 +521,7 @@ export const GamePage: React.FC = () => {
       }
     });
     
-    if (puzzle.loadedFullState) {
-       gs.importFullState(puzzle.loadedFullState);
-    } else if (puzzle.loadedSnapshot) {
+    if (puzzle.loadedSnapshot) {
        gs.importSnapshot(puzzle.loadedSnapshot);
     } else {
        gs.pushHistory();
@@ -547,7 +543,6 @@ export const GamePage: React.FC = () => {
        const payload = {
           puzzleId: puzzle.isRandom ? `random-${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}` : `${puzzleDateId}${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}`,
           boardState: gameState.exportSnapshot(),
-          fullState: gameState.exportFullState(),
           timestamp: Date.now(),
           binnedClues: [],
           elapsedSeconds: elapsedSecondsRef.current
@@ -569,7 +564,6 @@ export const GamePage: React.FC = () => {
            const payload = {
               puzzleId: puzzle.isRandom ? `random-${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}` : `${puzzleDateId}${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}`,
               boardState: gameState.exportSnapshot(),
-              fullState: gameState.exportFullState(),
               timestamp: Date.now(),
               binnedClues: [],
               elapsedSeconds: elapsedSecondsRef.current
@@ -699,7 +693,6 @@ export const GamePage: React.FC = () => {
                   const stateData = await stateRes.json();
                   if (stateData.status === 'success' && stateData.boardState) {
                       data.loadedSnapshot = stateData.boardState;
-                      data.loadedFullState = stateData.fullState;
                       if (stateData.elapsedSeconds !== undefined) {
                           data.loadedElapsed = stateData.elapsedSeconds;
                       }
@@ -708,8 +701,6 @@ export const GamePage: React.FC = () => {
                       if (stateData.elapsedSeconds !== undefined) {
                           data.loadedElapsed = stateData.elapsedSeconds;
                       }
-                  } else if (stateData.status === 'non_compete') {
-                      data.isNonCompete = true;
                   }
                } catch (err) {}
 
@@ -1131,47 +1122,6 @@ export const GamePage: React.FC = () => {
           onToggleZoom={setZoomEnabled}
           isSoundEnabled={isSoundEnabled}
           onToggleSound={setIsSoundEnabled}
-          onRestart={() => {
-            if (!puzzle) return;
-            // Clean up history and recreate fresh game state
-            const freshGS = new GameState(puzzle.rows, puzzle.cols);
-            puzzle.clues.forEach((clue: any) => {
-              if (clue.type === 'ANCHOR' && clue.targetCol !== undefined && clue.params?.[0]) {
-                const { row, item } = clue.params[0];
-                freshGS.confirmCell(row, clue.targetCol, item);
-              }
-            });
-            freshGS.pushHistory();
-            freshGS.saveGoodState();
-            
-            // Delete loaded state from puzzle manifest so useMemo recreates it clean
-            const updatedPuzzle = { ...puzzle, loadedSnapshot: undefined, loadedFullState: undefined, isRestart: true };
-            setPuzzle(updatedPuzzle);
-            
-            moveLogRef.current = [];
-            setActiveHint(null);
-            setHintShowing(false);
-            setTick(t => t + 1);
-          }}
-          onGiveUp={() => {
-            if (!puzzle) return;
-            setIsGameWon(true);
-            setIsGameStarted(true);
-            setIsSubmittingScore(false);
-            
-            const puzzleDateId = (puzzle as any).date || 'today';
-            const puzzleIdStr = puzzle.isRandom 
-                ? `random-${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}` 
-                : `${puzzleDateId}-${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}`;
-                
-            fetch('/api/game/give-up', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ puzzleId: puzzleIdStr })
-            }).catch(console.error);
-            
-            setPuzzle({ ...puzzle, isNonCompete: true });
-          }}
         />
       )}
 
