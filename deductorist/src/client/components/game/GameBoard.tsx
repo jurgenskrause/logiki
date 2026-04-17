@@ -171,8 +171,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns, cl
       className="w-full h-full flex items-center justify-center relative overflow-hidden"
     >
       <div 
-        className={`bg-slate-100 dark:bg-slate-900 shadow-2xl overflow-hidden relative border-4 rounded-lg flex-shrink-0 ${
-          flashRed ? 'border-red-500 shadow-[0_0_50px_rgba(239,68,68,0.6)]' : 'border-slate-300 dark:border-slate-800'
+        className={`bg-white/5 backdrop-blur-md shadow-[0_0_40px_rgba(0,0,0,0.5)] overflow-hidden relative border rounded-xl flex-shrink-0 ${
+          flashRed ? 'border-red-500 shadow-[0_0_50px_rgba(239,68,68,0.6)]' : 'border-white/10'
         }`}
         style={{
           width: boardWidth || '100%',
@@ -182,7 +182,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns, cl
           gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
           gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
           gap: '2px',
-          background: 'var(--board-bg, #e2e8f0)',
           boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1), inset 0 2px 4px 0 rgb(255 255 255 / 0.05)'
         }}
       >

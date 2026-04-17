@@ -67,12 +67,12 @@ export const BoardCell: React.FC<BoardCellProps> = ({
   return (
     <div 
       ref={containerRef}
-      className={`relative w-full border bg-white dark:bg-slate-800 
+      className={`relative w-full border bg-white/5 backdrop-blur-sm
                   flex items-center justify-center overflow-hidden cursor-pointer
-                  hover:bg-slate-50 dark:hover:bg-slate-750
+                  hover:bg-white/10
                   ${highlightItems.length > 0 
                     ? 'animate-hard-flash z-10' 
-                    : 'border-slate-300 dark:border-slate-700'}`}
+                    : 'border-white/10'}`}
       style={aspectStyle}
        
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -84,14 +84,14 @@ export const BoardCell: React.FC<BoardCellProps> = ({
           className="h-full aspect-square flex items-center justify-center text-blue-500 dark:text-blue-400 font-bold p-1"
           style={{ containerType: 'size' }}
         >
-          <span style={{ fontSize: '75cqmin' }}>
+          <span className="drop-shadow-lg" style={{ fontSize: '75cqmin' }}>
             {resolvedValue}
           </span>
         </div>
       ) : (
         // Unresolved State: The Option Matrix, exactly 2 rows, N columns
         <div 
-          className="w-full h-full grid gap-[1px] bg-slate-200 dark:bg-slate-700 p-[1px] relative"
+          className="w-full h-full grid gap-[1px] bg-transparent p-[1px] relative"
           style={{ 
             gridTemplateRows: 'repeat(2, minmax(0, 1fr))',
             gridTemplateColumns: `repeat(${subColumns}, minmax(0, 1fr))` 
@@ -103,9 +103,9 @@ export const BoardCell: React.FC<BoardCellProps> = ({
           {options.map((opt) => {
             const hlColor = highlightMap.get(opt.id);
             const ringClass = hlColor === 'red'
-              ? 'ring-2 ring-red-500 ring-inset animate-pulse'
+              ? 'ring-2 ring-red-500 ring-inset animate-pulse rounded-full'
               : hlColor === 'green'
-                ? 'ring-2 ring-emerald-500 ring-inset animate-pulse'
+                ? 'ring-2 ring-emerald-500 ring-inset animate-pulse rounded-full'
                 : '';
             return (
               <div 
@@ -119,17 +119,18 @@ export const BoardCell: React.FC<BoardCellProps> = ({
                   e.stopPropagation();
                   onInteract(cellId, opt.id, 'solve');
                 }}
-                className={`w-full h-full aspect-square flex items-center justify-center bg-white dark:bg-slate-800 
-                            ${opt.isActive ? 'opacity-100 grayscale-0' : 'opacity-20 grayscale'}
-                            ${ringClass}`}
+                className={`w-full h-full aspect-square flex items-center justify-center 
+                            ${opt.isActive ? 'opacity-100 grayscale-0' : 'opacity-20 grayscale'}`}
                 style={{ containerType: 'size' }}
               >
-                <span 
-                  className="flex items-center justify-center leading-none"
-                  style={{ fontSize: '75cqmin' }}
-                >
-                  {opt.value}
-                </span>
+                <div className={`w-[90%] h-[90%] flex items-center justify-center ${ringClass}`}>
+                  <span 
+                    className="flex items-center justify-center leading-none drop-shadow-lg"
+                    style={{ fontSize: '65cqmin' }}
+                  >
+                    {opt.value}
+                  </span>
+                </div>
               </div>
             );
           })}

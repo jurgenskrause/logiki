@@ -95,7 +95,7 @@ export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover,
             <IconRender left="15%">{icons[0]}</IconRender>
             <IconRender left="50%">{icons[1]}</IconRender>
             <div className="absolute left-[67.5%] top-[50%] transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center z-20 pointer-events-none">
-               <span style={{ fontSize: `${drawSize * 0.5}px` }} className="material-icons text-blue-500 bg-white/90 dark:bg-slate-900/90 rounded-full p-0.5 shadow-xs border border-slate-200 dark:border-slate-700">sync</span>
+               <span style={{ fontSize: `${drawSize * 0.5}px` }} className="material-icons text-blue-400 bg-black/40 rounded-full p-0.5 shadow-xs border border-white/10">sync</span>
             </div>
             <IconRender left="85%">{icons[2]}</IconRender>
           </div>
@@ -129,11 +129,11 @@ export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover,
   return (
     <div 
       style={{ width: `calc(${clueIconSize}px * 4.0)`, height: `calc(${clueIconSize}px * 1.5)`, fontSize: `${clueIconSize}px` }}
-      className={`shrink-0 bg-white dark:bg-slate-800 rounded-lg shadow-md hover:border-blue-400 group flex items-center justify-center select-none ${
+      className={`shrink-0 bg-white/5 backdrop-blur-md rounded-lg shadow-[0_0_15px_rgba(0,0,0,0.2)] hover:bg-white/10 group flex items-center justify-center select-none ${
         isHighlighted 
           ? 'animate-hard-flash z-10' 
-          : 'border border-slate-200 dark:border-slate-700'
-      } ${isBinned ? 'ring-2 ring-white/10 ring-inset scale-[0.98]' : ''}`}
+          : 'border border-white/10'
+      } ${isBinned ? 'ring-2 ring-white/10 ring-inset scale-[0.98] opacity-50' : ''}`}
       onMouseEnter={() => !isBinned && onHover?.(clue)}
       onMouseLeave={() => {
         onHover?.(null);

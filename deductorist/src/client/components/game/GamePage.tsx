@@ -1131,8 +1131,12 @@ export const GamePage: React.FC = () => {
         setActiveOverId(null);
       }}
     >
-    <div className="flex flex-col h-[100dvh] w-screen overflow-hidden transition-colors duration-300 bg-slate-50 text-slate-900">
-
+    <div className="flex flex-col h-[100dvh] w-screen overflow-hidden transition-colors duration-300 bg-slate-950 text-slate-100 relative shadow-inner">
+      {/* Background Underlay mapped exactly to the splash screen */}
+      <div className="absolute inset-0 bg-gradient-to-br from-indigo-950 via-slate-900 to-purple-950 opacity-90 pointer-events-none z-0" />
+      
+      {/* Layout wrapper pushes above the z-0 gradient background */}
+      <div className="flex flex-col w-full h-[100dvh] relative z-10 w-full min-w-0 min-h-0">
       {/* Difficulty menu */}
       {isMenuOpen && (
         <DifficultyMenu
@@ -1387,7 +1391,7 @@ export const GamePage: React.FC = () => {
         </div>
 
         {/* Row 2 (Mobile Only): Swappable Drawer Tabs */}
-        <div className={`shrink-0 items-center justify-between px-4 py-2 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 shadow-sm z-20 gap-2 ${isDesktop ? 'hidden col-start-1 row-start-2' : 'flex'}`}>
+        <div className={`shrink-0 items-center justify-between px-4 py-3 bg-white/5 backdrop-blur-md border-t border-white/10 z-20 gap-2 ${isDesktop ? 'hidden col-start-1 row-start-2' : 'flex'}`}>
           
           <div className="flex gap-2 items-center">
             {!isGameWon && (
@@ -1410,7 +1414,7 @@ export const GamePage: React.FC = () => {
             )}
           </div>
 
-          <div className="flex bg-slate-200 dark:bg-slate-800 rounded-lg p-1 w-full gap-1 shadow-inner">
+          <div className="flex bg-black/20 rounded-lg p-1 w-full gap-1 shadow-inner">
             <button 
               onClick={() => {
                 dismissHint();
@@ -1418,8 +1422,8 @@ export const GamePage: React.FC = () => {
               }}
               className={`flex-1 py-1.5 px-3 rounded-md text-xs font-bold uppercase tracking-wider transition-all ${
                 activeMobileTab === 'horizontal' 
-                  ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-300 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
+                  ? 'bg-white/20 text-white shadow-sm'
+                  : 'text-white/50 hover:text-white/80'
               }`}
             >
               Horizontal
@@ -1431,8 +1435,8 @@ export const GamePage: React.FC = () => {
               }}
               className={`flex-1 py-1.5 px-3 rounded-md text-xs font-bold uppercase tracking-wider transition-all ${
                 activeMobileTab === 'vertical' 
-                  ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-300 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
+                  ? 'bg-white/20 text-white shadow-sm'
+                  : 'text-white/50 hover:text-white/80'
               }`}
             >
                Vertical
@@ -1443,7 +1447,7 @@ export const GamePage: React.FC = () => {
         {/* Row 3 (Mobile) / Col 2 Row 1-span-2 (Desktop): Horizontal Clues */}
         <div 
           title="GamePage: Horizontal Drawer Wrapper"
-          className={`min-h-[0px] bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-inner flex-col ${
+          className={`min-h-[0px] flex-col ${
           isDesktop ? 'flex-1 col-start-2 row-start-1 row-span-2 min-h-0 h-full border-t-0 border-l w-auto visible flex pointer-events-auto relative z-10' 
                     : (activeMobileTab === 'horizontal' ? 'border-t w-full flex shrink-0 z-10 relative visible pointer-events-auto' : 'hidden')
         }`}
@@ -1475,7 +1479,7 @@ export const GamePage: React.FC = () => {
         {/* Row 3 (Mobile) / Col 1 Row 2 (Desktop): Vertical Clues */}
         <div 
           title="GamePage: Vertical Drawer Wrapper"
-          className={`min-h-[0px] bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-inner flex-col ${
+          className={`min-h-[0px] flex-col ${
           isDesktop ? 'flex-1 col-start-1 row-start-2 min-h-0 h-full border-t w-full visible flex pointer-events-auto relative z-10' 
                     : (activeMobileTab === 'vertical' ? 'border-t w-full flex shrink-0 z-10 relative visible pointer-events-auto' : 'hidden')
         }`}
@@ -1698,6 +1702,7 @@ export const GamePage: React.FC = () => {
       </DragOverlay>
 
       <DevMenu puzzleId={puzzle ? `${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}` : undefined} grid={gameState?.grid} />
+      </div>
     </div>
     </DndContext>
   );
