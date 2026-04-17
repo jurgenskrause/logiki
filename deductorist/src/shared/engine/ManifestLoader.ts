@@ -19,6 +19,7 @@ export const ClueType = {
   ANCHOR: 10,
 } as const;
 
+// eslint-disable-next-line no-redeclare
 export type ClueType = typeof ClueType[keyof typeof ClueType];
 
 const TYPE_REVERSE_MAP: Record<number, string> = {

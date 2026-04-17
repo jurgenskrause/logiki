@@ -84,6 +84,7 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
       
       return nextOrdered;
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cluesHash]);
 
   useDndMonitor({

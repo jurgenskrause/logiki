@@ -1,5 +1,31 @@
 import { getFallbackEmoji } from '../../shared/utils/themeRegistry';
 import type { TopologyLibrary } from '../../shared/engine/PermutationGenerator';
+import type { ReactNode } from 'react';
+
+const ClueBox = ({ title, tooltip, count, children }: { 
+  title: string, 
+  tooltip: string, 
+  count?: number,
+  children: ReactNode 
+}) => (
+  <div 
+    className="bg-slate-900 border border-slate-700/50 rounded-xl p-4 flex flex-col items-center justify-between gap-3 group relative cursor-help hover:border-blue-500 transition-colors"
+    title={tooltip}
+  >
+    <div className="flex flex-col items-center gap-0.5">
+      <span className="text-[10px] font-bold text-slate-500 uppercase text-center">{title}</span>
+      {count !== undefined && (
+        <span className="text-[10px] font-mono font-bold text-orange-500 bg-orange-500/10 px-1.5 rounded-full">{count}</span>
+      )}
+    </div>
+    <div className="flex-1 flex items-center justify-center">
+      {children}
+    </div>
+    <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 border border-slate-600 text-slate-200 text-xs p-2 rounded shadow-xl -top-12 left-1/2 -translate-x-1/2 w-48 text-center pointer-events-none z-10">
+      {tooltip}
+    </div>
+  </div>
+);
 
 /**
  * Phase 3.2.4: Clue Typography & Symbology
@@ -9,31 +35,6 @@ export function ClueShowcase({ library }: { library?: TopologyLibrary }) {
   const itemA = getFallbackEmoji(2, 0); // Dog
   const itemB = getFallbackEmoji(1, 0); // House
   const itemC = getFallbackEmoji(5, 0); // Number 1
-
-  const ClueBox = ({ title, tooltip, count, children }: { 
-    title: string, 
-    tooltip: string, 
-    count?: number,
-    children: React.ReactNode 
-  }) => (
-    <div 
-      className="bg-slate-900 border border-slate-700/50 rounded-xl p-4 flex flex-col items-center justify-between gap-3 group relative cursor-help hover:border-blue-500 transition-colors"
-      title={tooltip}
-    >
-      <div className="flex flex-col items-center gap-0.5">
-        <span className="text-[10px] font-bold text-slate-500 uppercase text-center">{title}</span>
-        {count !== undefined && (
-          <span className="text-[10px] font-mono font-bold text-orange-500 bg-orange-500/10 px-1.5 rounded-full">{count}</span>
-        )}
-      </div>
-      <div className="flex-1 flex items-center justify-center">
-        {children}
-      </div>
-      <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 border border-slate-600 text-slate-200 text-xs p-2 rounded shadow-xl -top-12 left-1/2 -translate-x-1/2 w-48 text-center pointer-events-none z-10">
-        {tooltip}
-      </div>
-    </div>
-  );
 
   return (
     <div className="mt-8 pt-8 border-t border-slate-800 space-y-10">

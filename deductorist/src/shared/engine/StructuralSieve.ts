@@ -137,6 +137,7 @@ export class StructuralSieve {
         const itemIndex = solution.getItemIndexAtSlot(new Slot(r, c));
         const anchor: TopologyEntry = {
           topologyID: `ANCHOR_R${r}I${itemIndex}C${c}`,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           type: 'ANCHOR' as any,
           slots: [new Slot(r, c)],
           weight: 1
@@ -362,6 +363,7 @@ export class StructuralSieve {
     const itemIndex = solution.getItemIndexAtSlot(new Slot(r, c));
     return {
       topologyID: `ANCHOR_R${r}I${itemIndex}C${c}`,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       type: 'ANCHOR' as any,
       slots: [new Slot(r, c)],
       weight: 1

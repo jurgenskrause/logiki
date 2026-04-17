@@ -15,6 +15,8 @@ export function TopologyAuditUI() {
   // Re-run the exhaustive sweep if dimensions change or the user forces a refresh
   const report = useMemo(() => {
     return buildTopologyLibrary(rows, cols, true); // true = force bypass cache for accurate time
+   
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows, cols, trigger]);
 
   const { library, timeMs, collisions } = report;

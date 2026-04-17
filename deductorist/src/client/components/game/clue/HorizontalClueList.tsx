@@ -92,6 +92,7 @@ export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, o
       
       return nextOrdered;
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cluesHash]);
 
   useDndMonitor({

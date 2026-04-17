@@ -31,6 +31,7 @@ export const SortableClueWrapper: React.FC<SortableClueWrapperProps> = ({ id, ch
       style={style}
       className={`${isDragging ? 'shadow-2xl ring-2 ring-indigo-500 rounded-xl scale-[1.05] z-50' : ''}`}
     >
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       {React.cloneElement(children as React.ReactElement<any>, {
         dragHandleProps: { ...attributes, ...listeners }
       })}

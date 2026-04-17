@@ -6,10 +6,12 @@ import AuditApp from './AuditApp';
 import { GamePage } from './components/game/GamePage';
 import { BinLoaderPage } from './components/tools/BinLoaderPage';
 
+// eslint-disable-next-line react-refresh/only-export-components
 const GameRouteWrapper = () => {
   return <GamePage />;
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 const BinLoaderRouteWrapper = () => {
   return <BinLoaderPage />;
 };

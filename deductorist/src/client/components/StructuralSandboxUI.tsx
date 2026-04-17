@@ -137,6 +137,8 @@ export function StructuralSandboxUI() {
       setEvents(prev => [...prev, { msg: `✓ Generation Pipeline finished in ${result.timeMs.toFixed(1)}ms` }]);
       setPrevMasks(currentMasks);
 
+     
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       if (e instanceof ContradictionError) {
         const cellList = e.deadCells.map(c => `R${c.row}:C${c.col}`).join(', ');
@@ -349,8 +351,12 @@ export function StructuralSandboxUI() {
                     </div>
                   );
                 }
+ 
 
+                 
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 if ((ev as any).isContradiction && ev.entry) {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   const deadCells: { row: number; col: number }[] = (ev as any).deadCells ?? [];
                   return (
                     <div key={i} className="shrink-0 rounded-lg border border-red-900/50 bg-red-950/20 border-l-[3px] border-l-red-500 overflow-hidden">

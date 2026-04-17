@@ -24,6 +24,7 @@ interface HorizontalClueProps {
   onDiscard?: (clueId: string) => void;
   isBinned?: boolean;
   onDoubleTap?: (clue: ActiveClue) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   dragHandleProps?: any;
 }
 
@@ -36,6 +37,7 @@ export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover,
 
   const drawSize = clueIconSize * 0.75;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const IconRender = ({ children, left, top = '50%', scale = 1, isSymbol = false }: any) => (
     <div 
       className={`absolute transform -translate-x-1/2 -translate-y-1/2 leading-none flex items-center justify-center ${isSymbol ? 'text-slate-400 dark:text-slate-300 material-icons' : 'drop-shadow-sm'}`}

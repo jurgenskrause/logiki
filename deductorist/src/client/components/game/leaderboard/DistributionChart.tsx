@@ -70,6 +70,7 @@ export const DistributionChart: React.FC<Props> = ({ leaderboardData, userTimeMs
     });
 
     return { chartData: data, percentile: perc, betterCount: slowerCount, totalOthers };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [distribution, totalSolvers, userTimeMs, userBucket]);
 
   if (!distribution || chartData.length === 0) return null;

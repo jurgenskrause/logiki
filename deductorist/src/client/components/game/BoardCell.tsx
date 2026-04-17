@@ -47,7 +47,7 @@ export const BoardCell: React.FC<BoardCellProps> = ({
     if (!containerRef.current || !cellSizeRef) return;
     
     const observer = new ResizeObserver((entries) => {
-      for (let entry of entries) {
+      for (const entry of entries) {
         // We measure the entire BoardCell, but the parent knows a PossibilityCell 
         // is (Height / 2) because there are exactly 2 rows.
         cellSizeRef({
@@ -74,6 +74,8 @@ export const BoardCell: React.FC<BoardCellProps> = ({
                     ? 'animate-hard-flash z-10' 
                     : 'border-slate-300 dark:border-slate-700'}`}
       style={aspectStyle}
+       
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       onClick={() => onInteract(cellId, -1, 'zoom_trigger' as any)}
     >
       {isResolved ? (

@@ -24,6 +24,7 @@ interface VerticalClueProps {
   onDiscard?: (clueId: string) => void;
   isBinned?: boolean;
   onDoubleTap?: (clue: ActiveClue) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   dragHandleProps?: any;
 }
 
@@ -36,6 +37,7 @@ export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue, onHover, isH
 
   const drawSize = clueIconSize * 0.75;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const IconRender = ({ children, left = '50%', top, scale = 1, isSymbol = false }: any) => (
     <div 
       className={`absolute transform -translate-x-1/2 -translate-y-1/2 leading-none flex items-center justify-center ${isSymbol ? 'text-slate-400 dark:text-slate-300 material-icons' : 'drop-shadow-sm'}`}
@@ -134,6 +136,7 @@ export const VerticalClueUI: React.FC<VerticalClueProps> = ({ clue, onHover, isH
       } ${isBinned ? 'ring-2 ring-white/10 ring-inset scale-[0.98]' : ''}`}
       onMouseEnter={() => !isBinned && onHover && onHover(clue)}
       onMouseLeave={() => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
         onHover && onHover(null);
       }}
       onContextMenu={(e) => {

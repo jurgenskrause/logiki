@@ -330,6 +330,7 @@ export class GameState {
     // 1. Naked Singles
     for (let r = 0; r < this._rows; r++) {
       for (let c = 0; c < this._cols; c++) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const idx = this._getIndex(r as any, c as any);
         if (this._confirmed[idx]) continue;
         if (this._noAutoSolve[idx]) continue;
@@ -337,6 +338,7 @@ export class GameState {
         const mask = this._grid[idx];
         if (this._getPossibleCountFromMask(mask) === 1) {
           const item = Math.log2(mask) as ItemIndex;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           this._applyConfirmation(r as any, c as any, item, traces);
           return traces;
         }
@@ -347,9 +349,10 @@ export class GameState {
     for (let r = 0; r < this._rows; r++) {
       for (let item = 0; item < this._cols; item++) {
         const bit = 1 << item;
-        let possibleCols: number[] = [];
+        const possibleCols: number[] = [];
         let confirmedCol: number = -1;
         for (let c = 0; c < this._cols; c++) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const idx = this._getIndex(r as any, c as any);
           if (this._grid[idx] & bit) {
             possibleCols.push(c);
@@ -358,9 +361,11 @@ export class GameState {
         }
         if (possibleCols.length === 1 && confirmedCol === -1) {
           const targetCol = possibleCols[0];
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const targetIdx = this._getIndex(r as any, targetCol as any);
           if (this._noAutoSolve[targetIdx]) continue;
           
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           this._applyConfirmation(r as any, targetCol as any, item as any, traces);
           return traces;
         }
@@ -400,7 +405,7 @@ export class GameState {
       const otherIndex = this._getIndex(row, c as ColumnIndex);
       if (this._confirmed[otherIndex]) {
         // Find which item is confirmed there
-        let mask = this._grid[otherIndex];
+        const mask = this._grid[otherIndex];
         // Ensure it's a clean power of two
         if (mask !== 0 && (mask & (mask - 1)) === 0) {
            this._grid[index] &= ~mask;

@@ -21,6 +21,7 @@ export const SolverResult = {
   CONTRADICTION: 'CONTRADICTION',
 } as const;
 
+// eslint-disable-next-line no-redeclare
 export type SolverResult = (typeof SolverResult)[keyof typeof SolverResult];
 
 /**

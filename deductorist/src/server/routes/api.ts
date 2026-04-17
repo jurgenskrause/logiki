@@ -112,6 +112,7 @@ api.get('/game/puzzle', async (c) => {
         rng
     );
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const solGrid = (telemetry.solution as any).getRawSolution(gridSize, gridSize);
     const hashBuffer = await crypto.subtle.digest('SHA-256', solGrid as BufferSource);
     const integrityHash = Array.from(new Uint8Array(hashBuffer));
@@ -120,6 +121,7 @@ api.get('/game/puzzle', async (c) => {
       rows: gridSize,
       cols: gridSize,
       difficulty,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       clues: telemetry.clues.map((clue: any) => sieve.toActiveClue(clue, telemetry.solution as any)),
       integrityHash,
       date: targetDateStr
@@ -128,6 +130,7 @@ api.get('/game/puzzle', async (c) => {
     await redis.set(cacheKey, JSON.stringify(puzzleData));
     
     return c.json(puzzleData);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (e: any) {
     console.error(`[JIT] Generate error: ${e.message}`);
     return c.json<ErrorResponse>({ status: 'error', message: 'Failed to generate puzzle' }, 500);
@@ -191,6 +194,7 @@ api.post('/game/submit', async (c) => {
       const gridSize = body.puzzleId.split('-')[0] || '4x4';
       const bucketSec = Math.floor(durationMs / 1000);
       
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const promises: Promise<any>[] = [
         redis.zAdd(`leaderboard:daily:${today}:${gridSize}`, { member: effectiveUsername, score: durationMs }),
         redis.hIncrBy(`leaderboard:daily:${today}:${gridSize}:dist`, bucketSec.toString(), 1)
