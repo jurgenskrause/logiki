@@ -108,6 +108,44 @@ export class GameState {
     this._lastGoodIndex = 0;
   }
 
+  public exportFullState() {
+    return {
+      history: this._history.map(s => ({
+        grid: new Uint16Array(s.grid),
+        confirmed: new Uint8Array(s.confirmed),
+        noAutoSolve: new Uint8Array(s.noAutoSolve),
+        previousMask: new Uint16Array(s.previousMask),
+        binnedClues: [...s.binnedClues]
+      })),
+      cursor: this._cursor,
+      lastGoodIndex: this._lastGoodIndex,
+      isError: this._isError
+    };
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public importFullState(state: any): void {
+    if (!state || !state.history || state.history.length === 0) return;
+    this._history = state.history.map((s: any) => ({
+        // Support pulling straight from JSON mapping objects if UintArray parsing is wonky
+        grid: new Uint16Array(Object.values(s.grid || {})),
+        confirmed: new Uint8Array(Object.values(s.confirmed || {})),
+        noAutoSolve: new Uint8Array(Object.values(s.noAutoSolve || {})),
+        previousMask: new Uint16Array(Object.values(s.previousMask || {})),
+        binnedClues: [...(s.binnedClues || [])]
+    }));
+    this._cursor = state.cursor ?? 0;
+    this._lastGoodIndex = state.lastGoodIndex ?? 0;
+    this._isError = state.isError ?? false;
+    
+    if (this._cursor >= 0 && this._cursor < this._history.length) {
+      this._loadSnapshot(this._history[this._cursor]);
+    } else if (this._history.length > 0) {
+      this._cursor = this._history.length - 1;
+      this._loadSnapshot(this._history[this._cursor]);
+    }
+  }
+
   // ─── Clue Binning System ───────────────────────────────────────────────────
 
   public toggleBinnedClue(clueId: string): void {

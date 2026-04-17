@@ -546,7 +546,9 @@ export const GamePage: React.FC = () => {
       }
     });
     
-    if (puzzle.loadedSnapshot) {
+    if ((puzzle as any).loadedFullState) {
+       gs.importFullState((puzzle as any).loadedFullState);
+    } else if (puzzle.loadedSnapshot) {
        gs.importSnapshot(puzzle.loadedSnapshot);
     } else {
        gs.pushHistory();
@@ -573,8 +575,9 @@ export const GamePage: React.FC = () => {
        const payload = {
           puzzleId: puzzle.isRandom ? `random-${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}` : `${puzzleDateId}${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}`,
           boardState: gameState.exportSnapshot(),
+          fullState: gameState.exportFullState(),
           timestamp: Date.now(),
-          binnedClues: [],
+          binnedClues: Array.from(gameState.binnedClues),
           elapsedSeconds: elapsedSecondsRef.current
        };
        fetch('/api/game/state/sync', {
@@ -601,8 +604,9 @@ export const GamePage: React.FC = () => {
            const payload = {
               puzzleId: puzzle.isRandom ? `random-${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}` : `${puzzleDateId}${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}`,
               boardState: gameState.exportSnapshot(),
+              fullState: gameState.exportFullState(),
               timestamp: Date.now(),
-              binnedClues: [],
+              binnedClues: Array.from(gameState.binnedClues),
               elapsedSeconds: elapsedSecondsRef.current
            };
            fetch('/api/game/state/sync', {
@@ -734,7 +738,15 @@ export const GamePage: React.FC = () => {
                   const stateRes = await fetch(`/api/game/state/sync?puzzleId=${p}`);
                   const stateData = await stateRes.json();
                   if (stateData.status === 'success' && stateData.boardState) {
+                    if (stateData.boardState) {
                       data.loadedSnapshot = stateData.boardState;
+                    }
+                    if (stateData.fullState) {
+                      (data as any).loadedFullState = stateData.fullState;
+                    }
+                    if (stateData.binnedClues) {
+                      (data as any).loadedBinnedClues = stateData.binnedClues;
+                    }
                       if (stateData.elapsedSeconds !== undefined) {
                           data.loadedElapsed = stateData.elapsedSeconds;
                       }
