@@ -74,12 +74,12 @@ const DroppableMobileBin = ({ showBin, binnedCount, onToggle }: { showBin: boole
           : showBin 
             ? 'bg-amber-500 text-white shadow-inner ring-2 ring-amber-300' 
             : binnedCount > 0
-              ? 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-300'
-              : 'bg-slate-200 text-slate-400 dark:bg-slate-800 dark:text-slate-600'
+              ? 'bg-white/10 text-white hover:bg-white/20 shadow-sm'
+              : 'bg-black/20 text-white/30 shadow-inner'
       }`}
       title={showBin ? "Show Active Clues" : "Show Binned Clues"}
     >
-      <span className="material-icons text-base text-inherit">{showBin ? 'delete_sweep' : 'delete_outline'}</span>
+      <span className="material-icons text-xl md:text-2xl drop-shadow-md text-inherit">{showBin ? 'delete_sweep' : 'delete_outline'}</span>
       {binnedCount > 0 && !showBin && (
          <span className="absolute -top-1 -right-1 flex h-4 w-4 z-20">
            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
@@ -1119,10 +1119,10 @@ export const GamePage: React.FC = () => {
 
   // Hint button variants
   const hintBtnClass = !activeHint
-    ? 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600 cursor-not-allowed opacity-50'
+    ? 'bg-black/20 text-white/30 cursor-not-allowed shadow-inner'
     : hintShowing
-      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-800 ring-1 ring-emerald-400'
-      : 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-800';
+      ? 'bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 ring-1 ring-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
+      : 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 shadow-[0_0_15px_rgba(245,158,11,0.2)]';
 
   return (
     <DndContext
@@ -1234,31 +1234,31 @@ export const GamePage: React.FC = () => {
       )}
 
       {/* ====== MOBILE HEADER (Immersive) ====== */}
-      <header className="relative flex items-center px-2 h-16 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm z-40 shrink-0 overflow-hidden text-left">
+      <header className="relative flex items-center px-2 h-16 border-b border-black/40 shadow-xl bg-gradient-to-r from-slate-900/80 via-indigo-900/60 to-slate-900/80 backdrop-blur-md z-40 shrink-0 overflow-hidden text-left text-white">
         
         {/* LEFT MENU BUTTON */}
         <div className="flex items-center z-10 shrink-0 mr-2">
-          <button onClick={() => setIsSideMenuOpen(true)} className="p-3 rounded-xl flex items-center justify-center hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors text-slate-700 dark:text-slate-300">
-            <span className="material-icons">menu</span>
+          <button onClick={() => setIsSideMenuOpen(true)} className="p-3 rounded-xl flex items-center justify-center hover:bg-white/20 transition-colors text-white drop-shadow-md">
+            <span className="material-icons text-xl md:text-2xl">menu</span>
           </button>
         </div>
 
         {/* IMMERSIVE LEFT-ALIGNED TEXT AREA (Mobile) */}
         <div className={`flex-1 min-w-0 h-full flex items-center z-[60] pointer-events-none select-none ${isDesktop ? 'justify-center' : 'justify-start'}`} style={{ containerType: 'inline-size' }}>
           {hintShowing && activeHint ? (
-            <p className="font-bold text-slate-800 dark:text-slate-100 leading-tight line-clamp-2 pr-2 bg-slate-50/95 dark:bg-slate-900/95 rounded shadow-[5px_0_10px_rgba(248,250,252,0.95)] dark:shadow-[5px_0_10px_rgba(15,23,42,0.95)] animate-in fade-in duration-200 pointer-events-auto" style={{ fontSize: 'clamp(10px, 4.5cqw, 14px)' }}>
+            <p className="font-bold text-white/90 leading-tight line-clamp-2 px-2 py-0.5 bg-black/40 rounded shadow-md animate-in fade-in duration-200 pointer-events-auto" style={{ fontSize: 'clamp(10px, 4.5cqw, 14px)' }}>
               {activeHint.text.split('<nl>').map((line, i) => (
                 <span key={i} className="block">{line.trim()}</span>
               ))}
             </p>
           ) : hoveredClueText ? (
-            <p className="font-bold text-slate-800 dark:text-slate-100 leading-tight line-clamp-2 pr-2 bg-slate-50/95 dark:bg-slate-900/95 rounded shadow-[5px_0_10px_rgba(248,250,252,0.95)] dark:shadow-[5px_0_10px_rgba(15,23,42,0.95)] animate-in fade-in duration-200 pointer-events-auto" style={{ fontSize: 'clamp(10px, 4.5cqw, 14px)' }}>
+            <p className="font-bold text-white/90 leading-tight line-clamp-2 px-2 py-0.5 bg-black/40 rounded shadow-md animate-in fade-in duration-200 pointer-events-auto" style={{ fontSize: 'clamp(10px, 4.5cqw, 14px)' }}>
               {hoveredClueText.split('<nl>').map((line, i) => (
                 <span key={i} className="block">{line.trim()}</span>
               ))}
             </p>
           ) : (
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30">Deductorist</span>
+            <span className="text-xs md:text-sm font-black uppercase tracking-[0.3em] text-white drop-shadow-lg drop-shadow-[0_0_10px_rgba(255,255,255,0.4)]">Deductorist</span>
           )}
         </div>
 
@@ -1274,7 +1274,7 @@ export const GamePage: React.FC = () => {
                 {showBin && binnedClueIds.size > 0 && (
                   <button
                     onClick={handleResetBin}
-                    className="w-10 h-10 flex items-center justify-center bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg hover:bg-slate-300 transition-colors shadow-sm"
+                    className="w-10 h-10 flex items-center justify-center bg-white/10 text-white/80 rounded-lg hover:bg-white/20 hover:text-white transition-colors shadow-sm"
                     title="Reset Binned Clues"
                   >
                     <span className="material-icons text-base">restart_alt</span>
@@ -1317,12 +1317,12 @@ export const GamePage: React.FC = () => {
                    disabled={!gameState || !gameState.canUndo}
                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all shadow-sm ${
                      gameState && gameState.canUndo
-                       ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 hover:bg-blue-200'
-                       : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600 opacity-50 cursor-not-allowed'
+                       ? 'bg-white/10 text-white hover:bg-white/20'
+                       : 'bg-black/20 text-white/30 cursor-not-allowed shadow-inner'
                    }`}
                    title="Undo"
                  >
-                   <span className="material-icons text-base">undo</span>
+                   <span className="material-icons text-xl drop-shadow-md">undo</span>
                  </button>
                  <button
                    onClick={() => {
@@ -1336,12 +1336,12 @@ export const GamePage: React.FC = () => {
                    disabled={!gameState || !gameState.canRedo}
                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all shadow-sm ${
                      gameState && gameState.canRedo
-                       ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 hover:bg-blue-200'
-                       : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600 opacity-50 cursor-not-allowed'
+                       ? 'bg-white/10 text-white hover:bg-white/20'
+                       : 'bg-black/20 text-white/30 cursor-not-allowed shadow-inner'
                    }`}
                    title="Redo"
                  >
-                   <span className="material-icons text-base">redo</span>
+                   <span className="material-icons text-xl drop-shadow-md">redo</span>
                  </button>
                </>
             ))}

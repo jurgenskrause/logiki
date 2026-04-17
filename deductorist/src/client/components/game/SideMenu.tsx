@@ -31,11 +31,8 @@ export const SideMenu: React.FC<SideMenuProps> = ({
       />
       <div className="fixed inset-y-0 left-0 z-[70] w-72 bg-white dark:bg-slate-900 shadow-2xl border-r border-slate-200 dark:border-slate-800 animate-in slide-in-from-left duration-300 flex flex-col">
         
-        {/* Header */}
-        <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-          <h2 className="text-xl font-black tracking-tighter uppercase text-slate-800 dark:text-slate-200">
-            Deductorist
-          </h2>
+        {/* Absolute Close Button */}
+        <div className="absolute top-2 right-2 z-10">
           <button 
             onClick={onClose}
             className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors"
@@ -45,21 +42,21 @@ export const SideMenu: React.FC<SideMenuProps> = ({
         </div>
 
         {/* Menu Items */}
-        <div className="flex-1 overflow-y-auto py-6 px-4 space-y-2">
+        <div className="flex-1 overflow-y-auto pt-14 pb-4 px-3 space-y-1.5">
           
           <button 
             onClick={() => {
               onClose();
               onOpenDifficulty();
             }}
-            className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left group"
+            className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left group"
           >
-            <div className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-500">
+            <div className="w-10 h-10 shrink-0 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-500">
               <span className="material-icons">tune</span>
             </div>
-            <div>
-              <div className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Change Difficulty</div>
-              <div className="text-xs font-medium text-slate-500">Select grid size</div>
+            <div className="min-w-0 flex-1">
+              <div className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate">Change Difficulty</div>
+              <div className="text-xs font-medium text-slate-500 truncate">Select grid size</div>
             </div>
           </button>
 
@@ -68,30 +65,30 @@ export const SideMenu: React.FC<SideMenuProps> = ({
               onClose();
               onOpenHelp();
             }}
-            className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left group"
+            className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left group"
           >
-            <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-500">
+            <div className="w-10 h-10 shrink-0 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-500">
               <span className="material-icons">help_outline</span>
             </div>
-            <div>
-              <div className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">How to Play</div>
-              <div className="text-xs font-medium text-slate-500">Game rules and controls</div>
+            <div className="min-w-0 flex-1">
+              <div className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors truncate">How to Play</div>
+              <div className="text-xs font-medium text-slate-500 truncate">Game rules and controls</div>
             </div>
           </button>
 
-          <div className="w-full flex flex-col p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 mt-4 border border-slate-100 dark:border-slate-800">
-            <div className="flex items-center gap-4 mb-3">
-              <div className="w-10 h-10 rounded-lg bg-teal-100 dark:bg-teal-900/50 flex items-center justify-center text-teal-600 dark:text-teal-400">
+          <div className="w-full flex flex-col p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 mt-3 border border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 shrink-0 rounded-lg bg-teal-100 dark:bg-teal-900/50 flex items-center justify-center text-teal-600 dark:text-teal-400">
                 <span className="material-icons">history</span>
               </div>
-              <div>
-                <div className="font-bold text-slate-800 dark:text-slate-200">Puzzle Archive</div>
-                <div className="text-xs font-medium text-slate-500">Play previous days</div>
+              <div className="min-w-0 flex-1">
+                <div className="font-bold text-slate-800 dark:text-slate-200 truncate">Puzzle Archive</div>
+                <div className="text-xs font-medium text-slate-500 truncate">Play previous days</div>
               </div>
             </div>
             <input 
               type="date"
-              className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-700 dark:text-slate-300 font-medium focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-sm"
+              className="w-full px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-700 dark:text-slate-300 font-medium focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-sm"
               defaultValue={new URLSearchParams(window.location.search).get('date') || new Date().toISOString().split('T')[0]}
               max={new Date().toISOString().split('T')[0]}
               onChange={(e) => {
@@ -102,15 +99,15 @@ export const SideMenu: React.FC<SideMenuProps> = ({
             />
           </div>
 
-          <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-800 space-y-2">
-            <div className="w-full flex items-center justify-between p-4 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-              <div className="flex items-center gap-4">
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${zoomEnabled ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-500' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
+          <div className="pt-3 mt-3 border-t border-slate-200 dark:border-slate-800 space-y-1.5">
+            <div className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className={`w-10 h-10 shrink-0 rounded-lg flex items-center justify-center transition-colors ${zoomEnabled ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-500' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
                   <span className="material-icons">zoom_in</span>
                 </div>
-                <div>
-                  <div className="font-bold text-slate-800 dark:text-slate-200">Cell Zoom</div>
-                  <div className="text-[10px] sm:text-xs font-medium text-slate-500 leading-tight mt-0.5">Magnify tiles when tapping</div>
+                <div className="min-w-0 flex-1">
+                  <div className="font-bold text-slate-800 dark:text-slate-200 truncate">Cell Zoom</div>
+                  <div className="text-[10px] sm:text-xs font-medium text-slate-500 leading-tight mt-0.5 truncate">Magnify tiles</div>
                 </div>
               </div>
               <label className="flex items-center cursor-pointer shrink-0 ml-2">
@@ -127,14 +124,14 @@ export const SideMenu: React.FC<SideMenuProps> = ({
               </label>
             </div>
 
-            <div className="w-full flex items-center justify-between p-4 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-              <div className="flex items-center gap-4">
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${warningsEnabled ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-500' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
+            <div className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className={`w-10 h-10 shrink-0 rounded-lg flex items-center justify-center transition-colors ${warningsEnabled ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-500' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
                   <span className="material-icons">warning</span>
                 </div>
-                <div>
-                  <div className="font-bold text-slate-800 dark:text-slate-200">Warnings</div>
-                  <div className="text-[10px] sm:text-xs font-medium text-slate-500 leading-tight mt-0.5">Flash invalid moves instantly</div>
+                <div className="min-w-0 flex-1">
+                  <div className="font-bold text-slate-800 dark:text-slate-200 truncate">Warnings</div>
+                  <div className="text-[10px] sm:text-xs font-medium text-slate-500 leading-tight mt-0.5 truncate">Flash invalid moves</div>
                 </div>
               </div>
               <label className="flex items-center cursor-pointer shrink-0 ml-2">
@@ -150,14 +147,15 @@ export const SideMenu: React.FC<SideMenuProps> = ({
                 </div>
               </label>
             </div>
-            <div className="w-full flex items-center justify-between p-4 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-              <div className="flex items-center gap-4">
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${isSoundEnabled ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-500' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
+            
+            <div className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className={`w-10 h-10 shrink-0 rounded-lg flex items-center justify-center transition-colors ${isSoundEnabled ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-500' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
                   <span className="material-icons">{isSoundEnabled ? 'volume_up' : 'volume_off'}</span>
                 </div>
-                <div>
-                  <div className="font-bold text-slate-800 dark:text-slate-200">Sound Effects</div>
-                  <div className="text-[10px] sm:text-xs font-medium text-slate-500 leading-tight mt-0.5">Play sounds on interaction</div>
+                <div className="min-w-0 flex-1">
+                  <div className="font-bold text-slate-800 dark:text-slate-200 truncate">Sound Effects</div>
+                  <div className="text-[10px] sm:text-xs font-medium text-slate-500 leading-tight mt-0.5 truncate">Play interactions</div>
                 </div>
               </div>
               <label className="flex items-center cursor-pointer shrink-0 ml-2">
