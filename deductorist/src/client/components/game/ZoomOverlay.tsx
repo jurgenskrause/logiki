@@ -56,11 +56,11 @@ const CellOptionButton = ({
         isHeldRef.current = true; // prevent any subsequent pointerUp from eliminating
         onInteract(cellId, opt.id, 'solve');
       }}
-      className={`w-full h-full flex items-center justify-center bg-white dark:bg-slate-800 transition-all active:scale-95 touch-none select-none
-                ${opt.isActive ? 'opacity-100 grayscale-0 shadow-sm' : 'opacity-20 grayscale'}`}
+      className={`w-full h-full flex items-center justify-center transition-all active:scale-95 touch-none select-none text-white
+                ${opt.isActive ? 'bg-white/10 hover:bg-white/20 opacity-100 grayscale-0 shadow-sm' : 'bg-black/20 opacity-20 grayscale'}`}
       title="Click/Tap to Eliminate | Right-Click/Hold to Solve"
     >
-      <span className="text-4xl sm:text-6xl flex items-center justify-center pointer-events-none">
+      <span className="text-4xl sm:text-6xl flex items-center justify-center pointer-events-none drop-shadow-md">
         {opt.value}
       </span>
     </button>
@@ -70,22 +70,22 @@ const CellOptionButton = ({
 export const ZoomOverlay: React.FC<ZoomOverlayProps> = ({ cell, subColumns, onClose, onInteract }) => {
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div 
-        className="bg-white dark:bg-slate-800 p-4 sm:p-8 rounded-2xl shadow-2xl max-w-lg w-full"
+        className="bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-900 border border-white/10 p-4 sm:p-8 rounded-2xl shadow-[0_4px_30px_rgba(0,0,0,0.5)] max-w-lg w-full animate-in zoom-in-95 duration-200"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex justify-end mb-4 sm:mb-6">
-          <button onClick={onClose} className="p-2 bg-slate-100 dark:bg-slate-700 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
-            <span className="material-icons text-slate-500 dark:text-slate-300">close</span>
+          <button onClick={onClose} className="p-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors shadow-sm">
+            <span className="material-icons text-white drop-shadow-md">close</span>
           </button>
         </div>
 
         {/* Magnified SubGrid */}
         <div 
-          className="grid gap-[2px] bg-slate-200 dark:bg-slate-900 p-[2px] rounded-lg mx-auto w-full aspect-square max-h-[50vh] transition-all"
+          className="grid gap-[2px] bg-black/40 p-[2px] rounded-lg mx-auto w-full aspect-square max-h-[50vh] transition-all shadow-inner border border-white/5"
           style={{ 
             gridTemplateRows: 'repeat(2, minmax(0, 1fr))',
             gridTemplateColumns: `repeat(${subColumns}, minmax(0, 1fr))`,
@@ -97,7 +97,7 @@ export const ZoomOverlay: React.FC<ZoomOverlayProps> = ({ cell, subColumns, onCl
           ))}
         </div>
 
-        <p className="text-center text-xs text-slate-400 mt-6 uppercase tracking-widest leading-relaxed">
+        <p className="text-center text-xs text-white/50 mt-6 uppercase tracking-widest leading-relaxed">
           <span className="hidden [@media(pointer:fine)]:inline">Click to eliminate • Hold / Right-click to solve</span>
           <span className="[@media(pointer:fine)]:hidden">Tap to eliminate • Hold to solve</span>
         </p>

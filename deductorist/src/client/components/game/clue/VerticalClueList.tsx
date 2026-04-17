@@ -144,6 +144,7 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
       ref={containerRef}
       title="VerticalClueList: outer containerRef"
       className={`flex-1 w-full min-h-[0px] flex ${isDesktop ? 'px-1 py-1 overflow-y-auto overflow-x-hidden custom-scrollbar' : 'p-0 flex-col overflow-hidden'} relative`}
+      style={{ minWidth: `${clueIconSize * 1.5}px`, minHeight: `${clueIconSize * 4.0}px` }}
     >
         <SortableContext 
           items={orderedClues.map(c => c.id)}

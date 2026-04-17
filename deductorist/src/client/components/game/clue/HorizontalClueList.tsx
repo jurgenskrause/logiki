@@ -157,8 +157,9 @@ export const HorizontalClueList: React.FC<HorizontalClueListProps> = ({ clues, o
       className={`flex-1 w-full min-h-[0px] flex ${isDesktop ? 'px-1 py-1 items-center justify-center' : 'p-0 flex-col'} overflow-hidden relative`}
       style={isDesktop ? {
         width: `${actualCols * (clueIconSize * 4.0 + 2) + 4}px`,
-        maxWidth: `${actualCols * (clueIconSize * 4.0 + 2) + 4}px`
-      } : {}}
+        maxWidth: `${actualCols * (clueIconSize * 4.0 + 2) + 4}px`,
+        minHeight: `${clueIconSize * 1.5}px`
+      } : { minHeight: `${clueIconSize * 1.5}px` }}
     >
         <SortableContext 
           items={orderedClues.map(c => c.id)}

@@ -133,7 +133,7 @@ export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover,
         isHighlighted 
           ? 'animate-hard-flash z-10' 
           : 'border border-white/10'
-      } ${isBinned ? 'ring-2 ring-white/10 ring-inset scale-[0.98] opacity-50' : ''}`}
+      } ${isBinned ? 'ring-2 ring-white/10 ring-inset scale-[0.98]' : ''}`}
       onMouseEnter={() => !isBinned && onHover?.(clue)}
       onMouseLeave={() => {
         onHover?.(null);

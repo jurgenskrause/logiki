@@ -77,6 +77,7 @@ const DroppableMobileBin = ({ showBin, binnedCount, onToggle }: { showBin: boole
               ? 'bg-white/10 text-white hover:bg-white/20 shadow-sm'
               : 'bg-black/20 text-white/30 shadow-inner'
       }`}
+      disabled={binnedCount === 0 && !showBin}
       title={showBin ? "Show Active Clues" : "Show Binned Clues"}
     >
       <span className="material-icons text-xl md:text-2xl drop-shadow-md text-inherit">{showBin ? 'delete_sweep' : 'delete_outline'}</span>
