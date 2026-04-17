@@ -1393,7 +1393,7 @@ export const GamePage: React.FC = () => {
         </div>
 
         {/* Row 2 (Mobile Only): Swappable Drawer Tabs */}
-        <div className={`shrink-0 items-center justify-between px-4 py-3 bg-white/5 backdrop-blur-md border-t border-white/10 z-20 gap-2 ${isDesktop ? 'hidden col-start-1 row-start-2' : 'flex'}`}>
+        <div className={`shrink-0 items-center justify-between px-4 py-3 bg-black/20 backdrop-blur-md shadow-inner z-20 gap-2 ${isDesktop ? 'hidden col-start-1 row-start-2' : 'flex'}`}>
           
           <div className="flex gap-2 items-center">
             {!isGameWon && (
@@ -1449,9 +1449,9 @@ export const GamePage: React.FC = () => {
         {/* Row 3 (Mobile) / Col 2 Row 1-span-2 (Desktop): Horizontal Clues */}
         <div 
           title="GamePage: Horizontal Drawer Wrapper"
-          className={`min-h-[0px] flex-col ${
-          isDesktop ? 'flex-1 col-start-2 row-start-1 row-span-2 min-h-0 h-full border-t-0 border-l w-auto visible flex pointer-events-auto relative z-10' 
-                    : (activeMobileTab === 'horizontal' ? 'border-t w-full flex shrink-0 z-10 relative visible pointer-events-auto' : 'hidden')
+          className={`min-h-[0px] flex-col shadow-inner bg-black/20 ${
+          isDesktop ? 'flex-1 col-start-2 row-start-1 row-span-2 min-h-0 h-full w-auto visible flex pointer-events-auto relative z-10' 
+                    : (activeMobileTab === 'horizontal' ? 'w-full flex shrink-0 z-10 relative visible pointer-events-auto' : 'hidden')
         }`}
           style={!isDesktop ? { height: `${requiredDrawerHeight}px`, maxHeight: `${requiredDrawerHeight}px` } : {}}
         >
@@ -1481,9 +1481,9 @@ export const GamePage: React.FC = () => {
         {/* Row 3 (Mobile) / Col 1 Row 2 (Desktop): Vertical Clues */}
         <div 
           title="GamePage: Vertical Drawer Wrapper"
-          className={`min-h-[0px] flex-col ${
-          isDesktop ? 'flex-1 col-start-1 row-start-2 min-h-0 h-full border-t w-full visible flex pointer-events-auto relative z-10' 
-                    : (activeMobileTab === 'vertical' ? 'border-t w-full flex shrink-0 z-10 relative visible pointer-events-auto' : 'hidden')
+          className={`min-h-[0px] flex-col shadow-inner bg-black/20 ${
+          isDesktop ? 'flex-1 col-start-1 row-start-2 min-h-0 h-full w-full visible flex pointer-events-auto relative z-10' 
+                    : (activeMobileTab === 'vertical' ? 'w-full flex shrink-0 z-10 relative visible pointer-events-auto' : 'hidden')
         }`}
           style={!isDesktop ? { height: `${requiredDrawerHeight}px`, maxHeight: `${requiredDrawerHeight}px` } : {}}
         >
