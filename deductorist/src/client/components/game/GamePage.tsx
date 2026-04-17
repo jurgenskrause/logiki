@@ -127,6 +127,10 @@ const DevMenu = ({ puzzleId, grid }: { puzzleId?: string, grid?: Uint16Array | n
 
     /* @ts-expect-error global flag */
     window.__isResetting = true;
+    
+    // Explicitly kill any pending background auto-saves that might be lingering
+    // @ts-expect-error accessing refs dynamically or assuming standard hook behavior is safe since this is a top-level render scope
+    if (window.__pendingSyncTimer) clearTimeout(window.__pendingSyncTimer);
 
     fetch(`/api/game/dev/reset?date=${dateParam}`, { method: 'POST' })
       .then(() => {
@@ -561,6 +565,9 @@ export const GamePage: React.FC = () => {
     
     if (pendingSyncTimerRef.current) clearTimeout(pendingSyncTimerRef.current);
     pendingSyncTimerRef.current = setTimeout(() => {
+       /* @ts-expect-error global flag */
+       if (window.__isResetting) return;
+
        // eslint-disable-next-line @typescript-eslint/no-explicit-any
        const puzzleDateId = (puzzle as any).date ? `${(puzzle as any).date}-` : '';
        const payload = {
@@ -577,6 +584,9 @@ export const GamePage: React.FC = () => {
           keepalive: true
        }).catch(() => {});
     }, 3000);
+    
+    /* @ts-expect-error global tracking */
+    window.__pendingSyncTimer = pendingSyncTimerRef.current;
   }, [gameState, puzzle]);
 
   useEffect(() => {
