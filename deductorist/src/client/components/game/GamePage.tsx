@@ -1247,17 +1247,17 @@ export const GamePage: React.FC = () => {
         {/* IMMERSIVE LEFT-ALIGNED TEXT AREA (Mobile) */}
         <div className={`flex-1 min-w-0 h-full flex items-center z-[60] pointer-events-none select-none ${isDesktop ? 'justify-center' : 'justify-start'}`} style={{ containerType: 'inline-size' }}>
           {hintShowing && activeHint ? (
-            <p className="font-bold text-white/90 leading-tight line-clamp-2 px-2 py-0.5 bg-black/40 rounded shadow-md animate-in fade-in duration-200 pointer-events-auto" style={{ fontSize: 'clamp(10px, 4.5cqw, 14px)' }}>
+            <div className={`font-bold text-white drop-shadow-md leading-tight w-full h-full flex flex-col justify-center animate-in fade-in duration-200 pointer-events-auto ${isDesktop ? 'items-center text-center px-4' : 'items-start text-left px-2'}`} style={{ fontSize: isDesktop ? 'clamp(12px, 1.8vh, 18px)' : 'clamp(10px, 4.5cqw, 14px)' }}>
               {activeHint.text.split('<nl>').map((line, i) => (
-                <span key={i} className="block">{line.trim()}</span>
+                <span key={i} className={`block w-full ${isDesktop ? '' : 'truncate'}`}>{line.trim()}</span>
               ))}
-            </p>
+            </div>
           ) : hoveredClueText ? (
-            <p className="font-bold text-white/90 leading-tight line-clamp-2 px-2 py-0.5 bg-black/40 rounded shadow-md animate-in fade-in duration-200 pointer-events-auto" style={{ fontSize: 'clamp(10px, 4.5cqw, 14px)' }}>
+            <div className={`font-bold text-white drop-shadow-md leading-tight w-full h-full flex flex-col justify-center animate-in fade-in duration-200 pointer-events-auto ${isDesktop ? 'items-center text-center px-4' : 'items-start text-left px-2'}`} style={{ fontSize: isDesktop ? 'clamp(12px, 1.8vh, 18px)' : 'clamp(10px, 4.5cqw, 14px)' }}>
               {hoveredClueText.split('<nl>').map((line, i) => (
-                <span key={i} className="block">{line.trim()}</span>
+                <span key={i} className={`block w-full ${isDesktop ? '' : 'truncate'}`}>{line.trim()}</span>
               ))}
-            </p>
+            </div>
           ) : (
             <span className="text-xs md:text-sm font-black uppercase tracking-[0.3em] text-white drop-shadow-lg drop-shadow-[0_0_10px_rgba(255,255,255,0.4)]">Deductorist</span>
           )}
