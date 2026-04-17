@@ -120,8 +120,19 @@ const DevMenu = ({ puzzleId, grid }: { puzzleId?: string, grid?: Uint16Array | n
   if (!DEV_BUILD) return null;
 
   const handleReset = () => {
-    fetch('/api/game/dev/reset', { method: 'POST' })
-      .then(() => alert('Leaderboard reset command successfully dispatched.'))
+    const urlParams = new URLSearchParams(window.location.search);
+    const dateParam = urlParams.get('date') || new Date().toISOString().split('T')[0];
+
+    localStorage.clear(); // Clear all client side local browser caches natively
+
+    /* @ts-expect-error global flag */
+    window.__isResetting = true;
+
+    fetch(`/api/game/dev/reset?date=${dateParam}`, { method: 'POST' })
+      .then(() => {
+         alert('Leaderboard and local cache reset command successfully dispatched.');
+         window.location.reload();
+      })
       .catch(console.error);
   };
 
@@ -570,6 +581,9 @@ export const GamePage: React.FC = () => {
 
   useEffect(() => {
     const handleVisibility = () => {
+       /* @ts-expect-error global flag */
+       if (window.__isResetting) return;
+       
        if (document.visibilityState === 'hidden' && gameState && puzzle && !puzzle.isRandom) {
            if (pendingSyncTimerRef.current) clearTimeout(pendingSyncTimerRef.current);
            // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -96,7 +96,7 @@ export const SideMenu: React.FC<SideMenuProps> = ({
               max={new Date().toISOString().split('T')[0]}
               onChange={(e) => {
                 if (e.target.value) {
-                  window.location.href = `/?date=${e.target.value}`;
+                  window.location.search = `?date=${e.target.value}`;
                 }
               }}
             />
