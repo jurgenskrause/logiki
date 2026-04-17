@@ -5,6 +5,7 @@ import { api } from './routes/api';
 import { forms } from './routes/forms';
 import { menu } from './routes/menu';
 import { triggers } from './routes/triggers';
+import './scheduler';
 
 const app = new Hono();
 const internal = new Hono();

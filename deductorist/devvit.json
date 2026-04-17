@@ -27,16 +27,38 @@
         "endpoint": "/internal/menu/post-create"
       },
       {
-        "label": "Example form",
-        "description": "Show a simple form",
+        "label": "Admin: Nuclear Reset",
+        "description": "Purge scheduler loops and restart",
         "location": "subreddit",
         "forUserType": "moderator",
-        "endpoint": "/internal/menu/example-form"
+        "endpoint": "/internal/menu/admin-nuclear-reset"
+      },
+      {
+        "label": "Admin: Content Override",
+        "description": "Change Seed/Date for this Post",
+        "location": "subreddit",
+        "forUserType": "moderator",
+        "endpoint": "/internal/menu/admin-content-override"
+      },
+      {
+        "label": "Admin: Score Moderation",
+        "description": "Remove cheating user from Leaderboard",
+        "location": "subreddit",
+        "forUserType": "moderator",
+        "endpoint": "/internal/menu/admin-score-moderation"
+      },
+      {
+        "label": "Admin: Manual Trigger",
+        "description": "Force post next daily puzzle immediately",
+        "location": "subreddit",
+        "forUserType": "moderator",
+        "endpoint": "/internal/menu/admin-manual-trigger"
       }
     ]
   },
   "forms": {
-    "exampleForm": "/internal/form/example-submit"
+    "adminContentOverrideForm": "/internal/form/admin-override-submit",
+    "adminScoreModerationForm": "/internal/form/admin-score-submit"
   },
   "triggers": {
     "onAppInstall": "/internal/triggers/on-app-install"
