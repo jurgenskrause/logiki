@@ -1358,36 +1358,38 @@ export const GamePage: React.FC = () => {
         {/* Row 1 (Mobile) / Col 1 Row 1 (Desktop): Board */}
         <div 
           className={`w-full shrink min-h-0 min-w-0 flex items-center justify-center relative overflow-hidden ${isDesktop ? 'w-auto col-start-1 row-start-1' : 'flex-1'}`} 
-          style={{ containerType: 'size' }}
         >
-          {puzzle && gameState && (
-            <div className="relative flex items-center justify-center" style={{ aspectRatio: String(boardAspectRatio), height: `min(100cqh, 100cqw / ${boardAspectRatio})`, containerType: 'size' }}>
-              <GameBoard
-                key={gameKey}
-                rows={puzzle.rows}
-                cols={puzzle.cols}
-                subColumns={subColumns}
-                clues={puzzle.clues}
-                gameState={gameState}
-                onInteraction={(action) => {
-                  if (action === 'zoom_trigger') return;
-                  pendingSoundRef.current = action === 'solve' ? 'solve' : 'eliminate';
-                  moveLogRef.current.push({ cellIndex: 0, timeOffsetMs: Date.now() });
-                }}
-                onStateChange={() => {
-                  dismissHint();
-                  handleStateChange();
-                }}
-                hintHighlights={hintHighlights}
-                isLocked={isCascading || isGameWon}
-                flashRed={flashRed}
-                zoomEnabled={zoomEnabled}
-              />
-            </div>
-          )}
-          
-          {/* GLOBAL BIN HOVER TARGET */}
-          <GlobalDropBin activeDragId={activeDragId} />
+          {/* Padded inner bounds to provide visual breathing room */}
+          <div className="w-full h-full p-2 sm:p-4 lg:p-6 flex items-center justify-center" style={{ containerType: 'size' }}>
+            {puzzle && gameState && (
+              <div className="relative flex items-center justify-center" style={{ aspectRatio: String(boardAspectRatio), height: `min(100cqh, 100cqw / ${boardAspectRatio})`, containerType: 'size' }}>
+                <GameBoard
+                  key={gameKey}
+                  rows={puzzle.rows}
+                  cols={puzzle.cols}
+                  subColumns={subColumns}
+                  clues={puzzle.clues}
+                  gameState={gameState}
+                  onInteraction={(action) => {
+                    if (action === 'zoom_trigger') return;
+                    pendingSoundRef.current = action === 'solve' ? 'solve' : 'eliminate';
+                    moveLogRef.current.push({ cellIndex: 0, timeOffsetMs: Date.now() });
+                  }}
+                  onStateChange={() => {
+                    dismissHint();
+                    handleStateChange();
+                  }}
+                  hintHighlights={hintHighlights}
+                  isLocked={isCascading || isGameWon}
+                  flashRed={flashRed}
+                  zoomEnabled={zoomEnabled}
+                />
+              </div>
+            )}
+            
+            {/* GLOBAL BIN HOVER TARGET */}
+            <GlobalDropBin activeDragId={activeDragId} />
+          </div>
         </div>
 
         {/* Row 2 (Mobile Only): Swappable Drawer Tabs */}
