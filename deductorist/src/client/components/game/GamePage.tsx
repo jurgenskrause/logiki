@@ -1655,7 +1655,7 @@ export const GamePage: React.FC = () => {
               <button 
                 onClick={handleStartGame}
                 disabled={isLoading}
-                className={`px-10 py-5 rounded-3xl font-black text-3xl uppercase tracking-widest border border-white/20 flex flex-col items-center group overflow-hidden transition-all duration-500 bg-gradient-to-br
+                className={`relative px-10 py-5 rounded-3xl font-black text-3xl uppercase tracking-widest border border-white/20 flex flex-col items-center group overflow-hidden transition-all duration-500 bg-gradient-to-br
                   ${isLoading 
                     ? 'from-blue-600/60 to-indigo-700/60 text-white/60 cursor-not-allowed shadow-none backdrop-blur-sm' 
                     : 'from-blue-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 text-white shadow-[0_20px_50px_rgba(79,70,229,0.4)] hover:shadow-indigo-500/60 transform hover:scale-105 active:scale-95'
