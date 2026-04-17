@@ -15,14 +15,15 @@ export function seedRNG(seed: string) {
 }
 
 export async function ensurePuzzle(targetDateStr: string, difficulty: number = 1) {
-  const cacheKey = `puzzle_v1:${targetDateStr}:${difficulty}`;
+  const cacheKey = `puzzle_v2:${targetDateStr}:${difficulty}`;
   const cachedPuzzle = await redis.get(cacheKey);
 
   if (cachedPuzzle) {
     return JSON.parse(cachedPuzzle.toString());
   }
 
-  const gridSize = difficulty + 3;
+  const gridSizeMap: Record<number, number> = { 1: 4, 2: 6, 3: 8 };
+  const gridSize = gridSizeMap[difficulty] || 4;
   const seed = `${targetDateStr}-${difficulty}`;
   const rng = seedRNG(seed);
   const sieve = new StructuralSieve();

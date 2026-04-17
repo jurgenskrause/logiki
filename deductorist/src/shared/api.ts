@@ -2,6 +2,8 @@ export type InitResponse = {
   type: 'init';
   postId: string;
   username: string;
+  gameDate?: string;
+  puzzleStatus?: 'orchestrated' | 'small_ready' | 'ready' | 'legacy';
 };
 
 export type GameStartRequest = {

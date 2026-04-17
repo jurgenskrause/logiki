@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { ManifestLoader, type PuzzleManifest } from '../../../shared/engine/ManifestLoader';
 
+const DIFF_NAMES: Record<number, string> = { 1: 'Easy', 2: 'Medium', 3: 'Hard' };
+
 export const BinLoaderPage: React.FC = () => {
   const [fileInfo, setFileInfo] = useState<{ name: string; size: number } | null>(null);
   const [puzzles, setPuzzles] = useState<PuzzleManifest[]>([]);
@@ -34,7 +36,7 @@ export const BinLoaderPage: React.FC = () => {
           date.setDate(date.getDate() + d);
           const dateStr = date.toISOString().split('T')[0];
 
-          for (let level = 1; level <= 5; level++) {
+          for (let level = 1; level <= 3; level++) {
             const p = await loader.getPuzzle(dateStr, level);
             if (p) found.push(p);
           }
@@ -108,7 +110,7 @@ export const BinLoaderPage: React.FC = () => {
             <div key={i} className="p-6 bg-slate-900 border border-slate-800 rounded-3xl space-y-4 hover:border-slate-700 transition-colors">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-lg font-black text-white leading-tight">Level {p.difficulty}</h3>
+                  <h3 className="text-lg font-black text-white leading-tight">{DIFF_NAMES[p.difficulty] || `Level ${p.difficulty}`}</h3>
                   <p className="text-[10px] text-slate-500 font-mono uppercase tracking-widest">{p.rows}x{p.cols} Grid</p>
                 </div>
                 <div className="px-2 py-1 bg-slate-800 rounded-lg text-[10px] font-mono text-slate-400">

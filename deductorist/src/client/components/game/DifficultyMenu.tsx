@@ -85,15 +85,18 @@ export const DifficultyMenu: React.FC<DifficultyMenuProps> = ({ onSelect, onClos
         
         {/* Mobile optimized: flex wrap to center, perfectly sized grid chunks */}
         <div className="flex flex-wrap justify-center gap-2 sm:gap-4 w-full">
-          {[1, 2, 3, 4, 5].map((level, index) => {
-            const gridSize = level + 3; // L1=4x4, L2=5x5, L3=6x6, L4=7x7, L5=8x8
-            const isCompleted = mode === 'daily' && completedLevels.includes(level);
+          {[
+            { id: 1, name: 'Easy', size: 4, bg: 'from-emerald-400 to-teal-500 dark:from-emerald-900 dark:to-teal-950' },
+            { id: 2, name: 'Medium', size: 6, bg: 'from-blue-400 to-indigo-500 dark:from-blue-900 dark:to-indigo-950' },
+            { id: 3, name: 'Hard', size: 8, bg: 'from-orange-400 to-red-500 dark:from-orange-900 dark:to-red-950' },
+          ].map((level) => {
+            const isCompleted = mode === 'daily' && completedLevels.includes(level.id);
             
             return (
               <button
-                key={level}
-                onClick={() => onSelect(level, mode)}
-                className={`w-[calc(50%-0.3rem)] sm:w-auto sm:min-w-[130px] max-w-[150px] aspect-auto sm:aspect-[4/5] py-3 px-2 sm:p-6 rounded-2xl bg-gradient-to-br ${LEVEL_BGS[index]} 
+                key={level.id}
+                onClick={() => onSelect(level.id, mode)}
+                className={`w-[calc(50%-0.3rem)] sm:w-auto sm:min-w-[130px] max-w-[150px] aspect-auto sm:aspect-[4/5] py-3 px-2 sm:p-6 rounded-2xl bg-gradient-to-br ${level.bg} 
                   text-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 
                   transition-all duration-300 flex flex-col items-center justify-center group relative overflow-hidden
                   ${isCompleted ? 'ring-2 sm:ring-4 ring-emerald-400 ring-offset-2 ring-offset-slate-900 border-none' : 'border border-white/20'}`}
@@ -107,13 +110,13 @@ export const DifficultyMenu: React.FC<DifficultyMenuProps> = ({ onSelect, onClos
                    </div>
                 )}
                 
-                <GridIcon size={gridSize} />
+                <GridIcon size={level.size} />
                 
                 <span className="text-[10px] sm:text-sm font-bold tracking-widest uppercase opacity-90 drop-shadow-sm text-white dark:text-slate-200 mt-1 sm:mt-2 z-10 relative">
-                  Level {level}
+                  {level.name}
                 </span>
                 <span className="text-base sm:text-2xl font-black tracking-tighter drop-shadow-md text-white dark:text-slate-100 z-10 relative leading-none mt-1">
-                  {gridSize}x{gridSize}
+                  {level.size}x{level.size}
                 </span>
                 {isCompleted && (
                    <span className="mt-1.5 text-[8px] sm:text-[10px] uppercase font-black tracking-wider text-emerald-100 bg-emerald-900/40 px-1.5 py-0.5 rounded-sm sm:rounded-md shadow-inner z-10 relative">

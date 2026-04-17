@@ -34,6 +34,8 @@ import mistakeSfx from '../../assets/sounds/mistake.wav';
 import moveClueSfx from '../../assets/sounds/moveclue.wav';
 import winSfx from '../../assets/sounds/win.wav';
 
+const DIFF_NAMES: Record<number, string> = { 1: 'Easy', 2: 'Medium', 3: 'Hard' };
+
 function seedRNG(seed: string) {
   let h = 0;
   for (let i = 0; i < seed.length; i++) {
@@ -692,7 +694,8 @@ export const GamePage: React.FC = () => {
 
       try {
         if (isRandom) {
-          const gridSize = difficulty + 3;
+          const gridSizeMap: Record<number, number> = { 1: 4, 2: 6, 3: 8 };
+          const gridSize = gridSizeMap[difficulty] || 4;
           const rng = seedRNG(seedParam);
           const sieve = new StructuralSieve();
           
@@ -1572,7 +1575,7 @@ export const GamePage: React.FC = () => {
                         }
                      }
 
-                     const msg = `I just beat Deductorist Level ${selectedDifficulty} in **${formatTime(elapsedSeconds)}**!\n\n${emojiMap[winData.icon] || '🎯'} **${winData.text}**${histogramText}`;
+                     const msg = `I just beat Deductorist ${DIFF_NAMES[selectedDifficulty] || 'Puzzle'} in **${formatTime(elapsedSeconds)}**!\n\n${emojiMap[winData.icon] || '🎯'} **${winData.text}**${histogramText}`;
                      
                      setIsSharing(true);
                      fetch('/api/game/share', {
@@ -1668,7 +1671,7 @@ export const GamePage: React.FC = () => {
                 {!isLoading && (
                    <>
                      <span className="relative z-10 text-sm font-bold text-white mt-3 uppercase tracking-[0.2em]">
-                       Level {selectedDifficulty} // {puzzle?.rows}x{puzzle?.cols}
+                       {DIFF_NAMES[selectedDifficulty] || 'Puzzle'} // {puzzle?.rows}x{puzzle?.cols}
                      </span>
                      <div className="mt-4 flex gap-1 items-center opacity-60 group-hover:opacity-100 transition-opacity">
                        {[...Array(3)].map((_, i) => (
