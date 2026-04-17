@@ -67,9 +67,10 @@ export const BoardCell: React.FC<BoardCellProps> = ({
   return (
     <div 
       ref={containerRef}
-      className={`relative w-full border bg-white/5 backdrop-blur-sm
+      className={`relative w-full border backdrop-blur-sm
                   flex items-center justify-center overflow-hidden cursor-pointer
-                  hover:bg-white/10
+                  hover:bg-white/20
+                  ${col % 2 === 0 ? 'bg-white/10' : 'bg-black/10'}
                   ${highlightItems.length > 0 
                     ? 'animate-hard-flash z-10' 
                     : 'border-white/10'}`}
