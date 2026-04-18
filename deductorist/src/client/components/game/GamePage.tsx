@@ -1146,8 +1146,17 @@ export const GamePage: React.FC = () => {
        <div className="flex flex-col items-center justify-center h-screen w-screen overflow-hidden bg-slate-950 p-4">
            <DifficultyMenu 
               completedLevels={completedLevels}
-              selectedDifficulty={selectedDifficulty}
-              onSelect={(level) => {
+              enableRandom={ENABLE_RANDOM_MODE}
+              onSelect={(level, mode) => {
+                 const url = new URL(window.location.href);
+                 if (mode === 'random') {
+                   url.searchParams.set('random', 'true');
+                 } else {
+                   url.searchParams.delete('random');
+                   url.searchParams.delete('seed');
+                 }
+                 window.history.pushState({}, '', url.toString());
+
                  setSelectedDifficulty(level);
                  setInitRoutingState('playing');
                  setIsManifestLoaded(true);
