@@ -219,10 +219,49 @@ api.get('/game/state/sync', async (c) => {
 
     if (zScoreRaw !== undefined && zScoreRaw !== null) {
        console.log(`[GameState Sync] User ${username} has already completed this puzzle. Fast-forwarding to Win State.`);
+       
+       // Preload Leaderboard data natively to bypass visual loading delays on historic boards
+       let leaderboardData = undefined;
+       try {
+         const [rawLeaderboard, ghostMap, distributionRaw] = await Promise.all([
+           redis.zRange(`leaderboard:daily:${targetDate}:${gridSize}`, 0, 49, { by: 'rank' }),
+           redis.hGetAll('ghosted_users_v1'),
+           redis.hGetAll(`leaderboard:daily:${targetDate}:${gridSize}:dist`)
+         ]);
+
+         const filteredLeaderboard = rawLeaderboard.filter(entry => {
+           const baseName = entry.member.split('_')[0];
+           const isGhosted = ghostMap[baseName] === 'true';
+           if (isGhosted) {
+             return baseName === username;
+           }
+           return true;
+         });
+
+         const distribution: Record<string, number> = {};
+         let totalSolvers = 0;
+         for (const [bucket, countStr] of Object.entries(distributionRaw)) {
+            const count = parseInt(countStr, 10) || 0;
+            distribution[bucket] = count;
+            totalSolvers += count;
+         }
+
+         leaderboardData = {
+           type: 'leaderboard',
+           entries: filteredLeaderboard,
+           distribution,
+           totalSolvers
+         };
+       } catch (err) {
+         console.error('[GameState Sync] Error preloading leaderboard:', err);
+       }
+
        return c.json<GameStateSyncResponse>({
          status: 'completed',
          puzzleId,
-         elapsedSeconds: Math.floor(Number(zScoreRaw) / 1000)
+         elapsedSeconds: Math.floor(Number(zScoreRaw) / 1000),
+         // @ts-expect-error bundling extension payload
+         leaderboardData
        });
     }
 
@@ -278,13 +317,13 @@ api.get('/game/leaderboard', async (c) => {
   try {
     const username = await reddit.getCurrentUsername();
     const gridSize = c.req.query('gridSize') || '4x4';
-    // For now hardcoded daily size / structure
-    const today = new Date().toISOString().split('T')[0];
+    // Extract requested date or fallback to today
+    const targetDate = c.req.query('date') || new Date().toISOString().split('T')[0];
     
     const [rawLeaderboard, ghostMap, distributionRaw] = await Promise.all([
-      redis.zRange(`leaderboard:daily:${today}:${gridSize}`, 0, 49, { by: 'rank' }),
+      redis.zRange(`leaderboard:daily:${targetDate}:${gridSize}`, 0, 49, { by: 'rank' }),
       redis.hGetAll('ghosted_users_v1'),
-      redis.hGetAll(`leaderboard:daily:${today}:${gridSize}:dist`)
+      redis.hGetAll(`leaderboard:daily:${targetDate}:${gridSize}:dist`)
     ]);
 
     const filteredLeaderboard = rawLeaderboard.filter(entry => {

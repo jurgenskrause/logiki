@@ -280,6 +280,7 @@ export const GamePage: React.FC = () => {
   const [isGameWon, setIsGameWon] = useState(false);
   const [isSubmittingScore, setIsSubmittingScore] = useState(false);
   const [isViewingCompletedBoard, setIsViewingCompletedBoard] = useState(false);
+  const [isRecoveredWin, setIsRecoveredWin] = useState(false);
   const [completedLevels, setCompletedLevels] = useState<number[]>([]);
   const [initRoutingState, setInitRoutingState] = useState<'loading' | 'routing' | 'playing'>('loading');
 
@@ -287,6 +288,7 @@ export const GamePage: React.FC = () => {
   useEffect(() => {
     setIsGameWon(false);
     setIsViewingCompletedBoard(false);
+    setIsRecoveredWin(false);
     setUserRank(null);
     setLeaderboardData(null);
   }, [selectedDifficulty]);
@@ -782,6 +784,9 @@ export const GamePage: React.FC = () => {
                       if (stateData.elapsedSeconds !== undefined) {
                           data.loadedElapsed = stateData.elapsedSeconds;
                       }
+                      if (stateData.leaderboardData) {
+                          data.preloadedLeaderboard = stateData.leaderboardData;
+                      }
                   }
                // eslint-disable-next-line no-empty
                } catch (err) {}
@@ -816,14 +821,25 @@ export const GamePage: React.FC = () => {
     if (puzzle.isCompleted) {
         setIsGameWon(true);
         setIsGameStarted(true);
-        setIsSubmittingScore(true);
-        fetch(`/api/game/leaderboard?gridSize=${puzzle.rows}x${puzzle.cols}`)
-           .then(r => r.json())
-           .then(res => {
-              if (res.type === 'leaderboard') setLeaderboardData(res);
-           })
-           .catch(console.error)
-           .finally(() => setIsSubmittingScore(false));
+        setIsRecoveredWin(true);
+        
+        // @ts-expect-error dynamically appended payload from sync hook
+        if (puzzle.preloadedLeaderboard) {
+            // @ts-expect-error type override
+            setLeaderboardData(puzzle.preloadedLeaderboard);
+            setIsSubmittingScore(false);
+        } else {
+            setIsSubmittingScore(true);
+            // @ts-expect-error date fallback
+            const puzzleDate = puzzle.date || new Date().toISOString().split('T')[0];
+            fetch(`/api/game/leaderboard?gridSize=${puzzle.rows}x${puzzle.cols}&date=${puzzleDate}`)
+               .then(r => r.json())
+               .then(res => {
+                  if (res.type === 'leaderboard') setLeaderboardData(res);
+               })
+               .catch(console.error)
+               .finally(() => setIsSubmittingScore(false));
+        }
         return; // Halt here implicitly without overriding anything
     }
 
@@ -1585,7 +1601,7 @@ export const GamePage: React.FC = () => {
         {/* Win Celebration */}
         {isGameWon && !isViewingCompletedBoard && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/95 animate-in fade-in duration-500 p-4 transform-gpu">
-             <div className={`text-center p-4 sm:p-6 bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border-4 animate-in zoom-in-95 duration-300 max-w-sm w-full relative overflow-y-auto max-h-[95dvh] transform-gpu ${
+             <div className={`text-center p-4 sm:p-6 bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border-4 ${!isRecoveredWin ? 'animate-in zoom-in-95 duration-300' : ''} max-w-sm w-full relative overflow-y-auto max-h-[95dvh] transform-gpu ${
                  winData.isEpicInfo
                    ? 'border-amber-400 dark:border-amber-500 shadow-[0_0_50px_rgba(251,191,36,0.5)]'
                    : 'border-emerald-500 shadow-emerald-500/20'
@@ -1621,7 +1637,7 @@ export const GamePage: React.FC = () => {
                  {winData.isEpicInfo && <div className="absolute -inset-10 bg-gradient-to-tr from-amber-500/20 via-transparent to-amber-500/20 animate-spin opacity-30 transform-gpu pointer-events-none" style={{ animationDuration: '4s' }} />}
                  <div className={`w-14 h-14 sm:w-20 sm:h-20 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 mt-4 sm:mt-0 shadow-lg relative z-10 ${
                    winData.isEpicInfo
-                     ? 'bg-gradient-to-tr from-amber-300 to-amber-500 text-amber-950 shadow-[0_10px_30px_rgba(251,191,36,0.6)] animate-bounce'
+                     ? `bg-gradient-to-tr from-amber-300 to-amber-500 text-amber-950 shadow-[0_10px_30px_rgba(251,191,36,0.6)] ${!isRecoveredWin ? 'animate-bounce' : ''}`
                      : 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-500 shadow-emerald-500/20'
                  }`}>
                   <span className="material-icons text-3xl sm:text-5xl flex items-center justify-center">{winData.icon}</span>
