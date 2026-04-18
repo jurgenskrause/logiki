@@ -75,8 +75,8 @@ menu.post('/admin-score-moderation', async (c) => {
 
 menu.post('/admin-manual-trigger', async (c) => {
   try {
-    await scheduler.runJob({ name: 'daily_puzzle_post', data: {}, runAt: new Date() });
-    return c.json<UiResponse>({ showToast: { text: 'Daily Post worker queued immediately.', appearance: 'success' } }, 200);
+    await scheduler.runJob({ name: 'orchestrate_daily_puzzles', data: {}, runAt: new Date() });
+    return c.json<UiResponse>({ showToast: { text: 'Daily orchestrator queued immediately.', appearance: 'success' } }, 200);
   } catch (e) {
     return c.json<UiResponse>({ showToast: 'Failed to trigger post manually' }, 400);
   }

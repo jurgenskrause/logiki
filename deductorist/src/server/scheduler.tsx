@@ -4,11 +4,11 @@ import { reddit, redis, scheduler } from '@devvit/web/server';
 
 /**
  * STAGE 1: ORCHESTRATOR
- * Submits the post instantly so users see content immediately,
- * then kicks off the background workers.
+ * Sets up the locking mechanism and immediately kicks off
+ * the puzzle generation sequence BEFORE any Reddit post drops.
  */
 Devvit.addSchedulerJob({
-  name: 'daily_puzzle_post',
+  name: 'orchestrate_daily_puzzles',
   onRun: async (event) => {
     const targetDate = (event.data?.targetDate as string) || new Date().toISOString().split('T')[0];
     const lockKey = `daily_post_last_run:${targetDate}`;
@@ -17,19 +17,11 @@ Devvit.addSchedulerJob({
 
     try {
       await redis.set(lockKey, 'true');
-      const subreddit = await reddit.getCurrentSubreddit();
       
-      const post = await reddit.submitCustomPost({
-        title: `Deductorist Daily Puzzle - ${targetDate}`,
-        subredditName: subreddit.name,
-        postData: { gameDate: targetDate }
-      });
-
-      // Link postId to gameDate for API lookup
-      await redis.set(`post_date:${post.id}`, targetDate);
-
       // Initialize status tracking
-      await redis.set(`daily_puzzle_status:${targetDate}`, 'orchestrated');
+      await redis.set(`daily_puzzle_status:${targetDate}`, 'orchestrating');
+      
+      console.log(`[Stage 1] Pre-generation sequence initiated for ${targetDate}. Worker chained.`);
       
       // Chain to Stage 2
       await scheduler.runJob({
@@ -37,10 +29,8 @@ Devvit.addSchedulerJob({
         data: { targetDate },
         runAt: new Date()
       });
-
-      console.log(`[Stage 1] Post deployed: ${post.id}. Worker chained.`);
     } catch (e) {
-      console.error(`[Stage 1] Failed orchestrating post for ${targetDate}`, e);
+      console.error(`[Stage 1] Failed orchestrating sequence for ${targetDate}`, e);
       await redis.del(lockKey);
     }
   }
@@ -89,10 +79,50 @@ Devvit.addSchedulerJob({
       console.log(`[Stage 3] Generating Hard (8x8) for ${targetDate}...`);
       await ensurePuzzle(targetDate, 3); // Hard (8x8)
       
-      await redis.set(`daily_puzzle_status:${targetDate}`, 'ready');
-      console.log(`[Stage 3] Complete. All puzzles ready for ${targetDate}.`);
+      await redis.set(`daily_puzzle_status:${targetDate}`, 'generation_complete');
+      console.log(`[Stage 3] Complete. All puzzles ready for ${targetDate}. Chaining Publisher.`);
+
+      // Generation 100% complete. Now trigger the post explicitly.
+      await scheduler.runJob({
+        name: 'publish_daily_post',
+        data: { targetDate },
+        runAt: new Date()
+      });
     } catch (e) {
       console.error(`[Stage 3] Large worker failed for ${targetDate}`, e);
+    }
+  }
+});
+
+/**
+ * STAGE 4: PUBLISHER
+ * Finally submits the post to Reddit so users can access 
+ * the fully pre-generated and cached daily puzzles without loading.
+ */
+Devvit.addSchedulerJob({
+  name: 'publish_daily_post',
+  onRun: async (event) => {
+    const targetDate = event.data?.targetDate as string;
+    if (!targetDate) return;
+
+    try {
+      const subreddit = await reddit.getCurrentSubreddit();
+      
+      const post = await reddit.submitCustomPost({
+        title: `Deductorist Daily Puzzle - ${targetDate}`,
+        subredditName: subreddit.name,
+        postData: { gameDate: targetDate }
+      });
+
+      // Link postId to gameDate for API lookup
+      await redis.set(`post_date:${post.id}`, targetDate);
+
+      // Finalize global status
+      await redis.set(`daily_puzzle_status:${targetDate}`, 'ready');
+      
+      console.log(`[Stage 4] Custom Post deployed: ${post.id}. Fully Tethered.`);
+    } catch (e) {
+      console.error(`[Stage 4] Failed to publish post for ${targetDate}`, e);
     }
   }
 });
