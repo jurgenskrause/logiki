@@ -18,6 +18,10 @@ interface BoardCellProps {
   /** Items to highlight in this cell: id = option.id, color drives ring/bg */
   highlightItems?: { id: number; color: 'red' | 'green' }[];
   needsZoom?: boolean;
+  onHover?: (row: number, col: number) => void;
+  onLeave?: () => void;
+  isRowHovered?: boolean;
+  isColHovered?: boolean;
 }
 
 export const BoardCell: React.FC<BoardCellProps> = ({ 
@@ -31,6 +35,10 @@ export const BoardCell: React.FC<BoardCellProps> = ({
   subColumns,
   highlightItems = [],
   needsZoom = false,
+  onHover,
+  onLeave,
+  isRowHovered,
+  isColHovered,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const cellId = `${row}-${col}`;
@@ -67,10 +75,11 @@ export const BoardCell: React.FC<BoardCellProps> = ({
   return (
     <div 
       ref={containerRef}
-      className={`relative w-full border backdrop-blur-sm
+      onMouseEnter={() => onHover?.(row, col)}
+      onMouseLeave={() => onLeave?.()}
+      className={`relative w-full border backdrop-blur-sm transition-all duration-300
                   flex items-center justify-center overflow-hidden cursor-pointer
-                  hover:bg-white/20
-                  ${col % 2 === 0 ? 'bg-white/10' : 'bg-black/10'}
+                  ${col % 2 === 0 ? 'bg-white/5' : 'bg-black/5'}
                   ${highlightItems.length > 0 
                     ? 'animate-hard-flash z-10' 
                     : 'border-white/10'}`}
@@ -79,6 +88,14 @@ export const BoardCell: React.FC<BoardCellProps> = ({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       onClick={() => onInteract(cellId, -1, 'zoom_trigger' as any)}
     >
+      {/* Row/Col Hover Highlight Overlay */}
+      {(isRowHovered || isColHovered) && (
+        <div className={`absolute inset-0 pointer-events-none transition-opacity duration-300
+          ${isRowHovered && isColHovered ? 'bg-white/20' : 'bg-white/5'}
+          ${isRowHovered && isColHovered ? 'ring-1 ring-inset ring-white/40 z-10' : ''}
+        `} />
+      )}
+
       {isResolved ? (
         // Resolved State: Single large icon, centered, 1:1 aspect ratio inside the cell
         <div 

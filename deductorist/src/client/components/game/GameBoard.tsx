@@ -79,6 +79,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns, cl
 
   const [zoomTarget, setZoomTarget] = useState<string | null>(null);
   const [needsZoom, setNeedsZoom] = useState(false);
+  const [hoveredCell, setHoveredCell] = useState<{ row: number; col: number } | null>(null);
   
   // Aspect Ratio Tracking
   const containerRef = useRef<HTMLDivElement>(null);
@@ -202,6 +203,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns, cl
               cellSizeRef={handleCellSize}
               highlightItems={hl?.items ?? []}
               needsZoom={needsZoom && zoomEnabled}
+              onHover={(r, c) => setHoveredCell({ row: r, col: c })}
+              onLeave={() => setHoveredCell(null)}
+              isRowHovered={hoveredCell?.row === cell.row}
+              isColHovered={hoveredCell?.col === cell.col}
             />
           );
         })}
