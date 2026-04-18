@@ -1541,41 +1541,10 @@ export const GamePage: React.FC = () => {
                    onClick={() => {
                      if (isSharing) return;
                      const emojiMap: Record<string, string> = { "rocket_launch": "🚀", "emoji_events": "🏆", "star": "🌟", "workspace_premium": "👑", "military_tech": "🏅", "psychology": "🧠" };
-                     
-                     let histogramText = "";
-                     if (leaderboardData && leaderboardData.distribution) {
-                        const buckets = Object.keys(leaderboardData.distribution).map(k => parseInt(k, 10)).sort((a,b) => a - b);
-                        if (buckets.length > 0) {
-                           const userBucket = Math.floor(elapsedSeconds);
-                           const min = Math.min(buckets[0], userBucket);
-                           const max = Math.max(buckets[buckets.length - 1], userBucket);
-                           const range = max - min + 1;
-                           const numColumns = Math.min(10, range);
-                           const binSize = Math.max(1, Math.ceil(range / numColumns));
-                           
-                           const histData = [];
-                            let maxCount = 1;
-                            for (let start = min; start <= max; start += binSize) {
-                              let count = 0;
-                              let isUser = false;
-                              for(let i = start; i < start + binSize; i++) {
-                                 count += leaderboardData.distribution[i.toString()] || 0;
-                                 if (i === userBucket) isUser = true;
-                              }
-                              if (isUser && count === 0) count = 1;
-                              histData.push({ timeStr: formatTime(start), count, isUser });
-                              if (count > maxCount) maxCount = count;
-                            }
-                            
-                            histogramText = "\n\n**Distribution:**\n\n" + histData.map(d => {
-                               const blocks = Math.max(1, Math.floor((d.count / maxCount) * 8));
-                               const line = Array(blocks).fill(d.isUser ? "🟩" : "⬛").join("");
-                               return `\`${d.timeStr}\` ${line}${d.isUser ? ' 👈' : ''}`;
-                            }).join("\n");
-                        }
+                     let msg = `I just beat todays Deductorist in **${formatTime(elapsedSeconds)}**!`;
+                     if (winData.isEpicInfo) {
+                       msg += `\n\n${emojiMap[winData.icon] || '🎯'} **${winData.text}**`;
                      }
-
-                     const msg = `I just beat Deductorist ${DIFF_NAMES[selectedDifficulty] || 'Puzzle'} in **${formatTime(elapsedSeconds)}**!\n\n${emojiMap[winData.icon] || '🎯'} **${winData.text}**${histogramText}`;
                      
                      setIsSharing(true);
                      fetch('/api/game/share', {
