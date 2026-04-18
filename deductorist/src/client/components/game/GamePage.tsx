@@ -1203,11 +1203,11 @@ export const GamePage: React.FC = () => {
       {/* Clue Explanation Modal */}
       {explainedClue && (
         <div 
-          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" 
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/90 transform-gpu animate-in fade-in duration-200" 
           onPointerDown={() => setExplainedClue(null)}
         >
           <div 
-            className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-xl max-w-sm w-full border border-slate-200 dark:border-slate-700 animate-in zoom-in-95 duration-200" 
+            className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-xl max-w-sm w-full border border-slate-200 dark:border-slate-700 animate-in zoom-in-95 duration-200 transform-gpu" 
             onPointerDown={e => e.stopPropagation()}
             onClick={e => e.stopPropagation()}
           >
@@ -1238,7 +1238,7 @@ export const GamePage: React.FC = () => {
       )}
 
       {/* ====== MOBILE HEADER (Immersive) ====== */}
-      <header className="relative flex items-center px-2 h-16 border-b border-black/40 shadow-xl bg-gradient-to-r from-slate-900/80 via-indigo-900/60 to-slate-900/80 backdrop-blur-md z-40 shrink-0 overflow-hidden text-left text-white">
+      <header className="relative flex items-center px-2 h-16 border-b border-black/40 shadow-xl bg-gradient-to-r from-slate-900/95 via-indigo-900/90 to-slate-900/95 transform-gpu z-40 shrink-0 overflow-hidden text-left text-white">
         
         {/* LEFT MENU BUTTON */}
         <div className="flex items-center z-10 shrink-0 mr-2">
@@ -1409,7 +1409,7 @@ export const GamePage: React.FC = () => {
         </div>
 
         {/* Row 2 (Mobile Only): Swappable Drawer Tabs */}
-        <div className={`shrink-0 items-center justify-between px-4 py-3 bg-black/20 backdrop-blur-md shadow-inner z-20 gap-2 ${isDesktop ? 'hidden col-start-1 row-start-2' : 'flex'}`}>
+        <div className={`shrink-0 items-center justify-between px-4 py-3 bg-slate-900/90 shadow-inner z-20 gap-2 transform-gpu ${isDesktop ? 'hidden col-start-1 row-start-2' : 'flex'}`}>
           
           <div className="flex gap-2 items-center">
             {!isGameWon && (
@@ -1530,8 +1530,8 @@ export const GamePage: React.FC = () => {
 
         {/* Win Celebration */}
         {isGameWon && !isViewingCompletedBoard && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-500 p-4">
-             <div className={`text-center p-4 sm:p-8 bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border-4 animate-in zoom-in-95 duration-300 max-w-sm w-full relative overflow-y-auto max-h-[90dvh] custom-scrollbar ${
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/95 animate-in fade-in duration-500 p-4 transform-gpu">
+             <div className={`text-center p-4 sm:p-8 bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border-4 animate-in zoom-in-95 duration-300 max-w-sm w-full relative overflow-y-auto max-h-[90dvh] custom-scrollbar transform-gpu ${
                  winData.isEpicInfo
                    ? 'border-amber-400 dark:border-amber-500 shadow-[0_0_50px_rgba(251,191,36,0.5)] animate-pulse'
                    : 'border-emerald-500 shadow-emerald-500/20'
@@ -1564,7 +1564,7 @@ export const GamePage: React.FC = () => {
                    {isSharing ? <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 border-indigo-300 border-t-indigo-500 animate-spin" /> : <span className="material-icons sm:text-[24px] text-[20px]">share</span>}
                  </button>
 
-                 {winData.isEpicInfo && <div className="absolute -inset-10 bg-gradient-to-tr from-amber-500/20 via-transparent to-amber-500/20 animate-spin opacity-50 blur-xl pointer-events-none" style={{ animationDuration: '4s' }} />}
+                 {winData.isEpicInfo && <div className="absolute -inset-10 bg-gradient-to-tr from-amber-500/20 via-transparent to-amber-500/20 animate-spin opacity-30 transform-gpu pointer-events-none" style={{ animationDuration: '4s' }} />}
                  <div className={`w-14 h-14 sm:w-20 sm:h-20 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-6 mt-4 sm:mt-0 shadow-lg relative z-10 ${
                    winData.isEpicInfo
                      ? 'bg-gradient-to-tr from-amber-300 to-amber-500 text-amber-950 shadow-[0_10px_30px_rgba(251,191,36,0.6)] animate-bounce'
@@ -1623,14 +1623,14 @@ export const GamePage: React.FC = () => {
         {/* Unified Start Puzzle Overlay - Stays Sharp above the blurred main grid */}
         {!isGameStarted && (
           <div className="absolute inset-0 z-50 flex items-center justify-center p-4">
-             <div className="absolute inset-0 bg-slate-900/10 backdrop-blur-[2px] pointer-events-none" />
-             <div className="relative animate-form-enter">
+             <div className="absolute inset-0 bg-slate-900/60 pointer-events-none" />
+             <div className="relative animate-form-enter transform-gpu">
               <button 
                 onClick={handleStartGame}
                 disabled={isLoading}
-                className={`relative px-10 py-5 rounded-3xl font-black text-3xl uppercase tracking-widest border border-white/20 flex flex-col items-center group overflow-hidden transition-all duration-500 bg-gradient-to-br
+                className={`relative px-10 py-5 rounded-3xl font-black text-3xl uppercase tracking-widest border border-white/20 flex flex-col items-center group overflow-hidden transition-all duration-500 bg-gradient-to-br transform-gpu
                   ${isLoading 
-                    ? 'from-blue-600/60 to-indigo-700/60 text-white/60 cursor-not-allowed shadow-none backdrop-blur-sm' 
+                    ? 'from-blue-600/80 to-indigo-700/80 text-white/60 cursor-not-allowed shadow-none' 
                     : 'from-blue-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 text-white shadow-[0_20px_50px_rgba(79,70,229,0.4)] hover:shadow-indigo-500/60 transform hover:scale-105 active:scale-95'
                   }`}
               >
