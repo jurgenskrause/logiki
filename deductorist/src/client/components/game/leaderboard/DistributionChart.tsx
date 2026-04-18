@@ -10,51 +10,70 @@ export const DistributionChart: React.FC<Props> = ({ leaderboardData, userTimeMs
   const { distribution, totalSolvers } = leaderboardData;
   const userBucket = Math.floor(userTimeMs / 1000);
 
+  const formatSecs = (s: number) => {
+    const m = Math.floor(s / 60);
+    const ss = s % 60;
+    return `${m.toString().padStart(2, '0')}:${ss.toString().padStart(2, '0')}`;
+  };
+
   const { chartData, percentile, totalOthers } = useMemo(() => {
     if (!distribution || !totalSolvers) return { chartData: [], percentile: 0, betterCount: 0, totalOthers: 0 };
 
     const buckets = Object.keys(distribution).map(k => parseInt(k, 10)).sort((a, b) => a - b);
     if (buckets.length === 0) return { chartData: [], percentile: 0, betterCount: 0 };
 
-    const min = Math.min(buckets[0], userBucket);
-    const max = Math.max(buckets[buckets.length - 1], userBucket);
+    let min = Math.min(buckets[0], userBucket);
+    let originalMax = Math.max(buckets[buckets.length - 1], userBucket);
 
+    let slowerCount = 0;
+    let runningTotal = 0;
+    let cutoffMax = originalMax;
+
+    // Filter outliers logic: Drop outliers that stretch the chart needlessly
+    for (const b of buckets) {
+      runningTotal += distribution[b];
+      if (b > userBucket) slowerCount += distribution[b];
+
+      // Clip bounds at 99% of solvers
+      if (runningTotal >= totalSolvers * 0.99 && cutoffMax === originalMax) {
+         cutoffMax = Math.max(min + 60, b * 1.5); 
+      }
+    }
+
+    const max = Math.min(originalMax, cutoffMax);
     const range = max - min + 1;
     const numColumns = 14;
     const binSize = Math.max(1, Math.ceil(range / numColumns));
 
-    const data = [];
-    let slowerCount = 0;
-    
-    for (const b of buckets) {
-      if (b > userBucket) {
-        slowerCount += distribution[b];
-      }
-    }
-
     const totalOthers = Math.max(0, totalSolvers - 1);
     const perc = totalOthers > 0 ? Math.floor((slowerCount / totalOthers) * 100) : 100;
 
-    // Grouping by bins
+    const data = [];
     let maxVal = 1;
+
     for (let start = min; start <= max; start += binSize) {
       const end = start + binSize - 1;
+      const isLastBin = start + binSize > max;
+      const actualEnd = isLastBin ? Infinity : end;
+
       let count = 0;
       let isUserBin = false;
       
-      for(let i = start; i <= end; i++) {
-         count += distribution[i] || 0;
-         if (i === userBucket) isUserBin = true;
+      for (const bucket of buckets) {
+         if (bucket >= start && bucket <= actualEnd) {
+            count += distribution[bucket];
+            if (bucket === userBucket) isUserBin = true;
+         }
       }
       
       maxVal = Math.max(maxVal, count);
       
       data.push({
          timeSec: start,
-         endSec: binSize > 1 ? end : start,
+         endSec: isLastBin ? Infinity : end,
          count,
          isUser: isUserBin,
-         heightPercent: 0 // Will map scaling next loop
+         heightPercent: 0
       });
     }
 
@@ -80,8 +99,8 @@ export const DistributionChart: React.FC<Props> = ({ leaderboardData, userTimeMs
       <h3 className="text-slate-600 dark:text-slate-300 font-medium mb-1 tracking-tight">Solution Distribution</h3>
       <p className="text-[12px] text-slate-500 mb-6 font-bold">
         {totalOthers > 0 
-          ? `Your ${userBucket}s - Better than ${percentile}% of ${totalOthers} solvers`
-          : `Your ${userBucket}s - First to solve!`
+          ? `Your ${formatSecs(userBucket)}s - Better than ${percentile}% of ${totalOthers} solvers`
+          : `Your ${formatSecs(userBucket)}s - First to solve!`
         }
       </p>
 

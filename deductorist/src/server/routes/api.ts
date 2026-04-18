@@ -167,8 +167,10 @@ api.post('/game/submit', async (c) => {
           );
         }
       } else {
-        // Ghost them to preserve fast hGet checks later
-        await redis.hSet('ghosted_users_v1', { [username]: 'true' });
+        // Ghost them to preserve fast hGet checks later (skip if it was a dev script to prevent permabanning the dev)
+        if (!body.isDevBuild) {
+           await redis.hSet('ghosted_users_v1', { [username]: 'true' });
+        }
       }
       
       await Promise.all(promises);
@@ -380,5 +382,48 @@ api.post('/game/share', async (c) => {
     return c.json<ErrorResponse>({ status: 'error', message: 'Network failure communicating via reddit api' }, 500);
   }
 });
+
+api.post('/game/dev/reset', async (c) => {
+  try {
+    const user = await reddit.getCurrentUser();
+    if (!user) return c.json<ErrorResponse>({ status: 'error', message: 'Unauthorized access' }, 401);
+
+    const subreddit = await reddit.getCurrentSubreddit();
+    const moderators = await reddit.getModerators({ subredditName: subreddit.name }).all();
+    const isMod = moderators.some(m => m.username === user.username);
+    
+    if (!isMod) {
+      console.warn(`[Dev Reset] Unauthorized deletion attempt by: ${user.username}`);
+      return c.json<ErrorResponse>({ status: 'error', message: 'Moderator privileges strictly required.' }, 403);
+    }
+
+    const reqDate = c.req.query('date');
+    const targetDate = reqDate || new Date().toISOString().split('T')[0];
+
+    console.log(`[Dev Reset] Authorized explicit cache wipe for date: ${targetDate}, admin: ${user.username}`);
+
+    for (let level = 1; level <= 5; level++) {
+       const size = level + 3;
+       const puzzleId = `${targetDate}-${size}x${size}-${level}`;
+       
+       console.log(`[Dev Reset] Expurging dual-leaderboards entirely for ${size}x${size}...`);
+       
+       await redis.del(`leaderboard:daily:${targetDate}:${size}x${size}:clean`);
+       await redis.del(`leaderboard:daily:${targetDate}:${size}x${size}:dist:clean`);
+       await redis.del(`leaderboard:daily:${targetDate}:${size}x${size}:tainted`);
+       await redis.del(`leaderboard:daily:${targetDate}:${size}x${size}:dist:tainted`);
+       
+       console.log(`[Dev Reset] Deleting active gameState for ${user.username} on puzzle ${puzzleId}...`);
+       await redis.del(`gameState:${user.username}:${puzzleId}`);
+    }
+    
+    return c.json({ status: 'success', message: `Data eradicated securely for ${targetDate}` });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (e: any) {
+    console.error(`[Dev Reset UI Route] Fault:`, e?.message || e);
+    return c.json<ErrorResponse>({ status: 'error', message: 'Failed to execute secure reset' }, 500);
+  }
+});
+
 
 
