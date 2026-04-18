@@ -149,14 +149,24 @@ const DevMenu = ({ puzzleId, grid }: { puzzleId?: string, grid?: Uint16Array | n
   };
 
   const handleRandomSubmit = () => {
-    const minMs = 500; // "Impossibly good" (will trigger ghosting Sieve > 1500 limit)
-    const maxMs = 21600000; // 6 hours
-
     for (let i = 0; i < 50; i++) {
-      // Skew distribution so most scores land in reasonable human bounds (2-15 minutes), 
-      // but long tails hit the 6-hour and 500ms boundaries.
-      const randomValue = Math.pow(Math.random(), 4);
-      const devOverrideTimeMs = Math.floor(minMs + randomValue * (maxMs - minMs));
+      // Box-Muller transform for a true Normal Distribution (Bell Curve)
+      let u = 0, v = 0;
+      while (u === 0) u = Math.random(); 
+      while (v === 0) v = Math.random();
+      const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+      
+      const meanMs = 300000; // 5 minutes average
+      const stdDevMs = 120000; // 2 minutes standard deviation
+      let devOverrideTimeMs = Math.floor(z * stdDevMs + meanMs);
+
+      // Minor 2% injection chance for huge tails to simulate absolute outliers structurally
+      if (Math.random() < 0.02) {
+         devOverrideTimeMs = Math.random() > 0.5 ? 21600000 : 500; 
+      }
+
+      // Ensure standard floor is maintained logically
+      if (devOverrideTimeMs < 500) devOverrideTimeMs = 500;
 
       fetch('/api/game/submit', {
         method: 'POST',
@@ -170,7 +180,7 @@ const DevMenu = ({ puzzleId, grid }: { puzzleId?: string, grid?: Uint16Array | n
         })
       }).catch(console.error);
     }
-    console.log('50 varied mock payloads fired over network.');
+    console.log('50 payloads dispatched (Box-Muller Normal Distribution)');
   };
 
   return (
