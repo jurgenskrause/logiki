@@ -35,8 +35,11 @@ forms.post('/admin-score-submit', async (c) => {
     const dateQuery = await redis.get(`post_date:${context.postId}`);
     const actualDate = dateQuery || new Date().toISOString().split('T')[0];
 
-    // Wipe from daily leaderboard
-    await redis.zRem(`leaderboard:${actualDate}`, [username]);
+    // Wipe from all configured sizes in both cleanly and tainted lists
+    await Promise.all(['4x4', '6x6', '8x8'].flatMap(size => [
+      redis.zRem(`leaderboard:daily:${actualDate}:${size}:clean`, [username]),
+      redis.zRem(`leaderboard:daily:${actualDate}:${size}:tainted`, [username])
+    ]));
 
     return c.json<UiResponse>({ showToast: { text: `User ${username} wiped from ${actualDate} leaderboard.`, appearance: 'success' } }, 200);
   } catch (e) {
@@ -60,9 +63,11 @@ forms.post('/admin-dev-reset-submit', async (c) => {
        
        console.log(`[Dev Reset] Deleting leaderboard and distribution for ${size}x${size}...`);
        
-       // Nuke the global leaderboards completely
-       await redis.del(`leaderboard:daily:${targetDate}:${size}x${size}`);
-       await redis.del(`leaderboard:daily:${targetDate}:${size}x${size}:dist`);
+       // Nuke the global leaderboards completely from both buckets
+       await redis.del(`leaderboard:daily:${targetDate}:${size}x${size}:clean`);
+       await redis.del(`leaderboard:daily:${targetDate}:${size}x${size}:dist:clean`);
+       await redis.del(`leaderboard:daily:${targetDate}:${size}x${size}:tainted`);
+       await redis.del(`leaderboard:daily:${targetDate}:${size}x${size}:dist:tainted`);
        
        // Wipe the local testing game state
        if (username) {

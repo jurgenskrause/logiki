@@ -151,19 +151,32 @@ api.post('/game/submit', async (c) => {
       
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const promises: Promise<any>[] = [
-        redis.zAdd(`leaderboard:daily:${targetDate}:${gridSize}`, { member: effectiveUsername, score: durationMs }),
-        redis.hIncrBy(`leaderboard:daily:${targetDate}:${gridSize}:dist`, bucketSec.toString(), 1)
+        redis.zAdd(`leaderboard:daily:${targetDate}:${gridSize}:tainted`, { member: effectiveUsername, score: durationMs }),
+        redis.hIncrBy(`leaderboard:daily:${targetDate}:${gridSize}:dist:tainted`, bucketSec.toString(), 1)
       ];
       
-      if (body.isDevBuild) {
-        promises.push(redis.zAdd(`leaderboard:daily:${targetDate}:${gridSize}`, { member: username, score: durationMs }));
+      if (isVerified) {
+        promises.push(
+          redis.zAdd(`leaderboard:daily:${targetDate}:${gridSize}:clean`, { member: effectiveUsername, score: durationMs }),
+          redis.hIncrBy(`leaderboard:daily:${targetDate}:${gridSize}:dist:clean`, bucketSec.toString(), 1)
+        );
+        if (body.isDevBuild) {
+          promises.push(
+            redis.zAdd(`leaderboard:daily:${targetDate}:${gridSize}:clean`, { member: username, score: durationMs }),
+            redis.zAdd(`leaderboard:daily:${targetDate}:${gridSize}:tainted`, { member: username, score: durationMs })
+          );
+        }
+      } else {
+        // Ghost them to preserve fast hGet checks later
+        await redis.hSet('ghosted_users_v1', { [username]: 'true' });
       }
       
       await Promise.all(promises);
-      const zScore = await redis.zRank(`leaderboard:daily:${targetDate}:${gridSize}`, effectiveUsername);
+      const targetBoard = isVerified ? 'clean' : 'tainted';
+      const zScore = await redis.zRank(`leaderboard:daily:${targetDate}:${gridSize}:${targetBoard}`, effectiveUsername);
       absoluteRank = zScore !== undefined ? zScore + 1 : 0;
     } else {
-      // Ghost them
+      // Ghost them immediately during dev drops
       await redis.hSet('ghosted_users_v1', { [username]: 'true' });
     }
 
@@ -213,8 +226,11 @@ api.get('/game/state/sync', async (c) => {
     const dateMatch = puzzleId.match(/^(\d{4}-\d{2}-\d{2})/);
     const targetDate = dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0];
     
+    const isGhostRaw = await redis.hGet('ghosted_users_v1', username);
+    const targetBoard = (isGhostRaw === 'true') ? 'tainted' : 'clean';
+
     console.log(`[GameState Sync] Checking leaderboard completion for ${username} on puzzle ${puzzleId} (grid: ${gridSize})`);
-    const zScoreRaw = await redis.zScore(`leaderboard:daily:${targetDate}:${gridSize}`, username);
+    const zScoreRaw = await redis.zScore(`leaderboard:daily:${targetDate}:${gridSize}:${targetBoard}`, username);
     console.log(`[GameState Sync] zScore query result for ${username}:`, zScoreRaw);
 
     if (zScoreRaw !== undefined && zScoreRaw !== null) {
@@ -223,20 +239,10 @@ api.get('/game/state/sync', async (c) => {
        // Preload Leaderboard data natively to bypass visual loading delays on historic boards
        let leaderboardData = undefined;
        try {
-         const [rawLeaderboard, ghostMap, distributionRaw] = await Promise.all([
-           redis.zRange(`leaderboard:daily:${targetDate}:${gridSize}`, 0, 49, { by: 'rank' }),
-           redis.hGetAll('ghosted_users_v1'),
-           redis.hGetAll(`leaderboard:daily:${targetDate}:${gridSize}:dist`)
+         const [rawLeaderboard, distributionRaw] = await Promise.all([
+           redis.zRange(`leaderboard:daily:${targetDate}:${gridSize}:${targetBoard}`, 0, 49, { by: 'rank' }),
+           redis.hGetAll(`leaderboard:daily:${targetDate}:${gridSize}:dist:${targetBoard}`)
          ]);
-
-         const filteredLeaderboard = rawLeaderboard.filter(entry => {
-           const baseName = entry.member.split('_')[0];
-           const isGhosted = ghostMap[baseName] === 'true';
-           if (isGhosted) {
-             return baseName === username;
-           }
-           return true;
-         });
 
          const distribution: Record<string, number> = {};
          let totalSolvers = 0;
@@ -248,7 +254,7 @@ api.get('/game/state/sync', async (c) => {
 
          leaderboardData = {
            type: 'leaderboard',
-           entries: filteredLeaderboard,
+           entries: rawLeaderboard,
            distribution,
            totalSolvers
          };
@@ -296,8 +302,11 @@ api.get('/game/state/completed', async (c) => {
     const completedList: number[] = [];
 
     // Check only the specific configured sizes for completion
+    const isGhostRaw = await redis.hGet('ghosted_users_v1', username);
+    const targetBoard = (isGhostRaw === 'true') ? 'tainted' : 'clean';
+
     const checks = await Promise.all(
-      levels.map(level => redis.zScore(`leaderboard:daily:${requestedDate}:${level.size}`, username))
+      levels.map(level => redis.zScore(`leaderboard:daily:${requestedDate}:${level.size}:${targetBoard}`, username))
     );
 
     checks.forEach((score, index) => {
@@ -320,20 +329,13 @@ api.get('/game/leaderboard', async (c) => {
     // Extract requested date or fallback to today
     const targetDate = c.req.query('date') || new Date().toISOString().split('T')[0];
     
-    const [rawLeaderboard, ghostMap, distributionRaw] = await Promise.all([
-      redis.zRange(`leaderboard:daily:${targetDate}:${gridSize}`, 0, 49, { by: 'rank' }),
-      redis.hGetAll('ghosted_users_v1'),
-      redis.hGetAll(`leaderboard:daily:${targetDate}:${gridSize}:dist`)
-    ]);
+    const isGhostRaw = await redis.hGet('ghosted_users_v1', username);
+    const targetBoard = (isGhostRaw === 'true') ? 'tainted' : 'clean';
 
-    const filteredLeaderboard = rawLeaderboard.filter(entry => {
-      const baseName = entry.member.split('_')[0];
-      const isGhosted = ghostMap[baseName] === 'true';
-      if (isGhosted) {
-        return baseName === username;
-      }
-      return true;
-    });
+    const [rawLeaderboard, distributionRaw] = await Promise.all([
+      redis.zRange(`leaderboard:daily:${targetDate}:${gridSize}:${targetBoard}`, 0, 49, { by: 'rank' }),
+      redis.hGetAll(`leaderboard:daily:${targetDate}:${gridSize}:dist:${targetBoard}`)
+    ]);
 
     const distribution: Record<string, number> = {};
     let totalSolvers = 0;
@@ -346,7 +348,7 @@ api.get('/game/leaderboard', async (c) => {
 
     return c.json<LeaderboardResponse>({
       type: 'leaderboard',
-      entries: filteredLeaderboard,
+      entries: rawLeaderboard,
       distribution,
       totalSolvers
     });
