@@ -53,10 +53,18 @@
         "location": "subreddit",
         "forUserType": "moderator",
         "endpoint": "/internal/menu/admin-manual-trigger"
+      },
+      {
+        "label": "Admin: Global Leaderboard Reset",
+        "description": "Wipe global leaderboards for a specific date",
+        "location": "subreddit",
+        "forUserType": "moderator",
+        "endpoint": "/internal/menu/admin-dev-reset"
       }
     ]
   },
   "forms": {
+    "adminDevResetForm": "/internal/form/admin-dev-reset-submit",
     "adminContentOverrideForm": "/internal/form/admin-override-submit",
     "adminScoreModerationForm": "/internal/form/admin-score-submit"
   },

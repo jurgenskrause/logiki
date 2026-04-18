@@ -43,3 +43,37 @@ forms.post('/admin-score-submit', async (c) => {
     return c.json<UiResponse>({ showToast: 'Failed to moderate score.' }, 400);
   }
 });
+
+import { reddit } from '@devvit/web/server';
+
+forms.post('/admin-dev-reset-submit', async (c) => {
+  try {
+    const data = await c.req.json();
+    const { targetDate } = data as { targetDate: string };
+    const username = await reddit.getCurrentUsername();
+
+    console.log(`[Dev Reset] Initiating explicit cache wipe for date: ${targetDate}, admin: ${username || 'anonymous'}`);
+
+    for (let level = 1; level <= 5; level++) {
+       const size = level + 3;
+       const puzzleId = `${targetDate}-${size}x${size}-${level}`;
+       
+       console.log(`[Dev Reset] Deleting leaderboard and distribution for ${size}x${size}...`);
+       
+       // Nuke the global leaderboards completely
+       await redis.del(`leaderboard:daily:${targetDate}:${size}x${size}`);
+       await redis.del(`leaderboard:daily:${targetDate}:${size}x${size}:dist`);
+       
+       // Wipe the local testing game state
+       if (username) {
+           console.log(`[Dev Reset] Deleting active gameState for ${username} on puzzle ${puzzleId}...`);
+           await redis.del(`gameState:${username}:${puzzleId}`);
+       }
+    }
+    console.log(`[Dev Reset] Reset completed successfully for ${targetDate}`);
+    return c.json<UiResponse>({ showToast: { text: `Global leaderboards annihilated for ${targetDate}.`, appearance: 'success' } }, 200);
+  } catch (e: any) {
+    console.error(`[Dev Reset] Error during reset operation:`, e?.message || e);
+    return c.json<UiResponse>({ showToast: 'Failed to reset leaderboards.' }, 400);
+  }
+});

@@ -81,3 +81,19 @@ menu.post('/admin-manual-trigger', async (c) => {
     return c.json<UiResponse>({ showToast: 'Failed to trigger post manually' }, 400);
   }
 });
+
+menu.post('/admin-dev-reset', async (c) => {
+  return c.json<UiResponse>({ 
+    showForm: { 
+      name: 'adminDevResetForm', 
+      form: {
+        title: 'Global Leaderboard Reset',
+        acceptLabel: 'Annihilate Leaderboards',
+        fields: [
+          { type: 'string', name: 'targetDate', label: 'Game Date (YYYY-MM-DD)', required: true }
+        ]
+      },
+      data: { postId: context.postId } 
+    } 
+  }, 200);
+});

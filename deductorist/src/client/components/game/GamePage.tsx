@@ -135,12 +135,8 @@ const DevMenu = ({ puzzleId, grid }: { puzzleId?: string, grid?: Uint16Array | n
     // @ts-expect-error accessing refs dynamically or assuming standard hook behavior is safe since this is a top-level render scope
     if (window.__pendingSyncTimer) clearTimeout(window.__pendingSyncTimer);
 
-    fetch(`/api/game/dev/reset?date=${dateParam}`, { method: 'POST' })
-      .then(() => {
-         alert('Leaderboard and local cache reset command successfully dispatched.');
-         window.location.reload();
-      })
-      .catch(console.error);
+    alert('Local browser caches cleared.');
+    window.location.reload();
   };
 
   const handleRandomSubmit = () => {

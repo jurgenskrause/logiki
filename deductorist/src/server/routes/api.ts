@@ -106,7 +106,7 @@ api.post('/game/submit', async (c) => {
     } else {
       const startTime = parseInt(startTimeStr as string, 10);
       const now = Date.now();
-      durationMs = now - startTime + (body.penaltyMs || 0);
+      durationMs = now - startTime + Math.max(0, body.penaltyMs || 0);
       await redis.del(`session:start:${username}`);
     }
 
@@ -379,35 +379,4 @@ api.post('/game/share', async (c) => {
   }
 });
 
-api.post('/game/dev/reset', async (c) => {
-  try {
-    const username = await reddit.getCurrentUsername();
-    const reqDate = c.req.query('date');
-    const targetDate = reqDate || new Date().toISOString().split('T')[0];
 
-    console.log(`[Dev Reset] Initiating explicit cache wipe for date: ${targetDate}, user: ${username || 'anonymous'}`);
-
-    for (let level = 1; level <= 5; level++) {
-       const size = level + 3;
-       const puzzleId = `${targetDate}-${size}x${size}-${level}`;
-       
-       console.log(`[Dev Reset] Deleting leaderboard and distribution for ${size}x${size}...`);
-       
-       // Nuke the global leaderboards completely
-       await redis.del(`leaderboard:daily:${targetDate}:${size}x${size}`);
-       await redis.del(`leaderboard:daily:${targetDate}:${size}x${size}:dist`);
-       
-       // Wipe the local testing game state
-       if (username) {
-           console.log(`[Dev Reset] Deleting active gameState for ${username} on puzzle ${puzzleId}...`);
-           await redis.del(`gameState:${username}:${puzzleId}`);
-       }
-    }
-    console.log(`[Dev Reset] Reset completed successfully for ${targetDate}`);
-    return c.json({ status: 'success', message: 'Global leaderboards annihilated' });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (e: any) {
-    console.error(`[Dev Reset] Error during reset operation:`, e?.message || e);
-    return c.json<ErrorResponse>({ status: 'error', message: 'Failed to reset leaderboard' }, 500);
-  }
-});
