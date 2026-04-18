@@ -1633,7 +1633,7 @@ export const GamePage: React.FC = () => {
         {/* Win Celebration */}
         {isGameWon && !isViewingCompletedBoard && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/95 animate-in fade-in duration-500 p-4 transform-gpu">
-             <div className={`text-center p-4 sm:p-6 bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border-4 ${!isRecoveredWin ? 'animate-in zoom-in-95 duration-300' : ''} max-w-sm w-full relative overflow-y-auto max-h-[95dvh] transform-gpu ${
+             <div className={`text-center p-3 sm:p-4 bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border-4 ${!isRecoveredWin ? 'animate-in zoom-in-95 duration-300' : ''} max-w-sm w-full relative overflow-hidden max-h-[92dvh] transform-gpu flex flex-col justify-center ${
                  winData.isEpicInfo
                    ? 'border-amber-400 dark:border-amber-500 shadow-[0_0_50px_rgba(251,191,36,0.5)]'
                    : 'border-emerald-500 shadow-emerald-500/20'
@@ -1667,32 +1667,32 @@ export const GamePage: React.FC = () => {
                  </button>
 
                  {winData.isEpicInfo && <div className="absolute -inset-10 bg-gradient-to-tr from-amber-500/20 via-transparent to-amber-500/20 animate-spin opacity-30 transform-gpu pointer-events-none" style={{ animationDuration: '4s' }} />}
-                 <div className={`w-14 h-14 sm:w-20 sm:h-20 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 mt-4 sm:mt-0 shadow-lg relative z-10 ${
+                 <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center mx-auto mb-2 sm:mb-1 mt-2 sm:mt-0 shadow-lg relative z-10 ${
                    winData.isEpicInfo
                      ? `bg-gradient-to-tr from-amber-300 to-amber-500 text-amber-950 shadow-[0_10px_30px_rgba(251,191,36,0.6)] ${!isRecoveredWin ? 'animate-bounce' : ''}`
                      : 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-500 shadow-emerald-500/20'
                  }`}>
-                  <span className="material-icons text-3xl sm:text-5xl flex items-center justify-center">{winData.icon}</span>
+                  <span className="material-icons text-2xl sm:text-3xl flex items-center justify-center">{winData.icon}</span>
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-black flex flex-col items-center justify-center mb-1 leading-none bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent uppercase tracking-tighter">
+                <h2 className="text-xl sm:text-2xl font-black flex flex-col items-center justify-center mb-1 leading-none bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent uppercase tracking-tighter">
                   {winData.text}
                 </h2>
-                <p className="text-slate-500 dark:text-slate-400 font-bold mb-2 sm:mb-2 text-sm sm:text-base">
+                <p className="text-slate-500 dark:text-slate-400 font-bold mb-1 sm:mb-1 text-xs sm:text-sm">
                   Puzzle completed in {formatTime(elapsedSeconds)}
                 </p>
                 
                 {isSubmittingScore ? (
-                  <div className="flex flex-col items-center justify-center py-4 mb-2">
-                     <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border-4 border-slate-200 dark:border-slate-700 border-t-emerald-500 animate-spin mb-2 sm:mb-4"></div>
-                     <p className="text-slate-500 font-bold animate-pulse text-xs sm:text-sm">{puzzle?.isCompleted ? 'Loading Leaderboard...' : 'Submitting Time...'}</p>
+                  <div className="flex flex-col items-center justify-center py-2 mb-2">
+                     <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full border-4 border-slate-200 dark:border-slate-700 border-t-emerald-500 animate-spin mb-1 sm:mb-2"></div>
+                     <p className="text-slate-500 font-bold animate-pulse text-[10px] sm:text-xs">{puzzle?.isCompleted ? 'Loading Leaderboard...' : 'Submitting Time...'}</p>
                   </div>
                 ) : leaderboardData && !puzzle?.isRandom && (
-                  <div className="mb-4 sm:mb-6 text-xs sm:text-sm">
+                  <div className="mb-2 sm:mb-2 text-xs sm:text-xs">
                      <DistributionChart leaderboardData={leaderboardData} userTimeMs={elapsedSeconds * 1000} />
                   </div>
                 )}
 
-                <div className="flex flex-row gap-2 w-full mt-2 sm:mt-3">
+                <div className="flex flex-row gap-2 w-full mt-1 sm:mt-2">
                     {selectedDifficulty < 5 && (!puzzle?.isRandom) ? (
                       <button 
                         onClick={() => {

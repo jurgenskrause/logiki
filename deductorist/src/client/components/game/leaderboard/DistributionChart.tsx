@@ -95,16 +95,16 @@ export const DistributionChart: React.FC<Props> = ({ leaderboardData, userTimeMs
   if (!distribution || chartData.length === 0) return null;
 
   return (
-    <div className="w-full mt-4 flex flex-col items-center">
-      <h3 className="text-slate-600 dark:text-slate-300 font-medium mb-1 tracking-tight">Solution Distribution</h3>
-      <p className="text-[12px] text-slate-500 mb-6 font-bold">
+    <div className="w-full mt-1 flex flex-col items-center">
+      <h3 className="text-slate-600 dark:text-slate-300 font-medium mb-0.5 tracking-tight text-[11px] sm:text-[12px]">Solution Distribution</h3>
+      <p className="text-[10px] sm:text-[11px] text-slate-500 mb-2 sm:mb-3 font-bold">
         {totalOthers > 0 
           ? `Your ${formatSecs(userBucket)}s - Better than ${percentile}% of ${totalOthers} solvers`
           : `Your ${formatSecs(userBucket)}s - First to solve!`
         }
       </p>
 
-      <div className="flex items-end justify-center w-full h-32 px-1 mb-2 gap-1 isolate relative">
+      <div className="flex items-end justify-center w-full h-16 sm:h-20 px-1 mb-1 gap-1 isolate relative">
         {chartData.map((bar, idx) => (
           <div key={idx} className="flex flex-col items-center justify-end h-full flex-1 max-w-[2.5rem] relative">
             <span className={`text-[10px] font-bold opacity-80 flex flex-col items-center ${bar.isUser ? 'text-[#0ea5e9]' : 'text-slate-400'}`}>
