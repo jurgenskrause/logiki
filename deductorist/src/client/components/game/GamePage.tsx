@@ -140,20 +140,28 @@ const DevMenu = ({ puzzleId, grid }: { puzzleId?: string, grid?: Uint16Array | n
   };
 
   const handleRandomSubmit = () => {
-    const devOverrideTimeMs = Math.floor(Math.random() * 30000) + 30000;
-    fetch('/api/game/submit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        puzzleId: puzzleId || 'unknown',
-        boardState: grid ? Array.from(grid) : [],
-        moveLog: [],
-        isDevBuild: true,
-        devOverrideTimeMs
-      })
-    })
-      .then(() => console.log(`Mock time: ${devOverrideTimeMs}ms sent`))
-      .catch(console.error);
+    const minMs = 500; // "Impossibly good" (will trigger ghosting Sieve > 1500 limit)
+    const maxMs = 21600000; // 6 hours
+
+    for (let i = 0; i < 50; i++) {
+      // Skew distribution so most scores land in reasonable human bounds (2-15 minutes), 
+      // but long tails hit the 6-hour and 500ms boundaries.
+      const randomValue = Math.pow(Math.random(), 4);
+      const devOverrideTimeMs = Math.floor(minMs + randomValue * (maxMs - minMs));
+
+      fetch('/api/game/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          puzzleId: puzzleId || 'unknown',
+          boardState: grid ? Array.from(grid) : [],
+          moveLog: [],
+          isDevBuild: true,
+          devOverrideTimeMs
+        })
+      }).catch(console.error);
+    }
+    console.log('50 varied mock payloads fired over network.');
   };
 
   return (
