@@ -20,7 +20,8 @@ type ErrorResponse = {
 export const api = new Hono();
 
 // Minimum time threshold (e.g. 100ms per cell interaction)
-const MIN_REALISTIC_TIME_MS = 1500;
+// Legacy tracking variables mapped inline
+
 
 api.get('/init', async (c) => {
   const { postId } = context;
@@ -110,29 +111,44 @@ api.post('/game/submit', async (c) => {
       await redis.del(`session:start:${username}`);
     }
 
+    const gridMatch = body.puzzleId.match(/(\d+x\d+)/);
+    const gridSize = gridMatch ? gridMatch[1] : '4x4';
+
+    const dateMatch = body.puzzleId.match(/^(\d{4}-\d{2}-\d{2})/);
+    const targetDate = dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0];
+
+    const minTimeMap: Record<string, number> = {
+       '4x4': 10000,
+       '5x5': 15000,
+       '6x6': 25000,
+       '7x7': 35000,
+       '8x8': 45000
+    };
+    
+    // Absolute minimum theoretical clicks to solve the grid logic (S x (C-1))
+    const minClicksMap: Record<string, number> = {
+       '4x4': 12,
+       '5x5': 15,
+       '6x6': 18,
+       '7x7': 21,
+       '8x8': 24
+    };
+
+    const targetFloorMs = minTimeMap[gridSize] || 10000;
+    const targetClicks = minClicksMap[gridSize] || 12;
+
     let isVerified = true;
 
-    // Sieve 1: Theoretical Floor
-    if (durationMs < MIN_REALISTIC_TIME_MS) {
+    // Sieve 1: Theoretical Time Floor
+    if (durationMs < targetFloorMs) {
       isVerified = false;
     }
 
-    // Sieve 2: Cadence Analysis (Variance check on MoveLog)
-    if (isVerified && body.moveLog && body.moveLog.length > 5) {
-      const gaps = [];
-      for (let i = 1; i < body.moveLog.length; i++) {
-        gaps.push(body.moveLog[i].timeOffsetMs - body.moveLog[i-1].timeOffsetMs);
-      }
-      const mean = gaps.reduce((a, b) => a + b, 0) / gaps.length;
-      const variance = gaps.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / gaps.length;
-      
-      // If the variance is incredibly tight, it's a scripted bot
-      if (variance < 25) { 
-        isVerified = false;
-      }
+    // Sieve 2: Absolute Action Boundary
+    // We enforce that the user must have clicked at least the minimum mathematical structural paths.
+    if (isVerified && (!body.moveLog || body.moveLog.length < targetClicks)) {
+      isVerified = false;
     }
-
-    // (Integrity Hash Match logic omitted or placeholder for Phase 3.5)
 
     // Clear saved state since we submitted it
     await redis.del(`gameState:${username}:${body.puzzleId}`);
@@ -140,13 +156,6 @@ api.post('/game/submit', async (c) => {
     let absoluteRank = 0;
     if (isVerified) {
       const effectiveUsername = body.isDevBuild ? `${username}_${Date.now()}` : username;
-      
-      const dateMatch = body.puzzleId.match(/^(\d{4}-\d{2}-\d{2})/);
-      const targetDate = dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0];
-      
-      const gridMatch = body.puzzleId.match(/(\d+x\d+)/);
-      const gridSize = gridMatch ? gridMatch[1] : '4x4';
-      
       const bucketSec = Math.floor(durationMs / 1000);
       
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

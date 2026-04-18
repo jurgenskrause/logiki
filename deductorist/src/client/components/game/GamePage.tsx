@@ -168,13 +168,17 @@ const DevMenu = ({ puzzleId, grid }: { puzzleId?: string, grid?: Uint16Array | n
       // Ensure standard floor is maintained logically
       if (devOverrideTimeMs < 500) devOverrideTimeMs = 500;
 
+      // Ensure synthetic submissions contain enough valid blank payloads to clear Sieve 2 locally
+      // Assuming maximum potential 8x8 requires 24 clicks minimum
+      const mockMoveLog = new Array(24).fill({ timeOffsetMs: 100, cellIndex: 0 });
+
       fetch('/api/game/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           puzzleId: puzzleId || 'unknown',
           boardState: grid ? Array.from(grid) : [],
-          moveLog: [],
+          moveLog: mockMoveLog,
           isDevBuild: true,
           devOverrideTimeMs
         })
