@@ -37,7 +37,7 @@ export const DifficultyMenu: React.FC<DifficultyMenuProps> = ({ onSelect, onClos
 
   return (
     <div 
-      className="fixed inset-0 z-[70] flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 dark:bg-black/80 backdrop-blur-md transition-all duration-500"
+      className="fixed inset-0 z-[70] flex items-center justify-center p-2 sm:p-4 bg-slate-900/90 dark:bg-black/90 transition-all duration-500"
       onClick={onClose}
     >
       <div 

@@ -29,11 +29,11 @@ export const Splash = () => {
         </div>
 
         {/* Centerpiece: Floating 3x3 Grid */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-3 p-4 sm:p-5 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 shadow-[0_0_40px_rgba(0,0,0,0.5)]">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 p-4 sm:p-5 bg-white/5 rounded-2xl border border-white/10 shadow-[0_0_40px_rgba(0,0,0,0.5)]">
           {emojis.map((emoji, idx) => (
             <div
               key={idx}
-              className="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center text-2xl sm:text-4xl bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 shadow-inner animate-float"
+              className="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center text-2xl sm:text-4xl bg-white/10 rounded-xl border border-white/20 shadow-inner animate-float"
               style={{ animationDelay: `${(idx % 3) * 0.3 + Math.floor(idx / 3) * 0.15}s` }}
             >
               <span className="drop-shadow-lg">{emoji}</span>

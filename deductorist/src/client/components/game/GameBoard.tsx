@@ -172,7 +172,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns, cl
       className="w-full h-full flex items-center justify-center relative overflow-hidden"
     >
       <div 
-        className={`bg-white/5 backdrop-blur-md shadow-[0_0_40px_rgba(0,0,0,0.5)] overflow-hidden relative border rounded-xl flex-shrink-0 ${
+        className={`bg-white/5 shadow-[0_0_40px_rgba(0,0,0,0.5)] overflow-hidden relative border rounded-xl flex-shrink-0 ${
           flashRed ? 'border-red-500 shadow-[0_0_50px_rgba(239,68,68,0.6)]' : 'border-white/10'
         }`}
         style={{

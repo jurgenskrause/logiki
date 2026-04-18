@@ -7,7 +7,7 @@ interface HelpModalProps {
 export const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => {
   return (
     <div 
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" 
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 animate-in fade-in duration-200" 
       onClick={onClose}
     >
       <div 

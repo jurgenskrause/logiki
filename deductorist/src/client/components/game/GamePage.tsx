@@ -161,7 +161,7 @@ const DevMenu = ({ puzzleId, grid }: { puzzleId?: string, grid?: Uint16Array | n
   };
 
   return (
-    <div className="fixed bottom-4 right-4 z-[999] flex gap-2 bg-slate-900/80 backdrop-blur-md p-2 rounded-xl border border-rose-500/30 shadow-2xl">
+    <div className="fixed bottom-4 right-4 z-[999] flex gap-2 bg-slate-900/90 p-2 rounded-xl border border-rose-500/30 shadow-2xl">
       <button onClick={handleReset} className="px-3 py-2 bg-rose-600/90 hover:bg-rose-500 text-white rounded-lg font-black text-[10px] uppercase">
         💣 Reset
       </button>
