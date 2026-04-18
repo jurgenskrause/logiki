@@ -249,17 +249,21 @@ api.get('/game/state/completed', async (c) => {
     const username = await reddit.getCurrentUsername();
     if (!username) return c.json({ completed: [] }); // Graceful degradation for unauthenticated
 
-    const gridSizes = ['4x4', '5x5', '6x6', '7x7', '8x8'];
+    const levels = [
+      { id: 1, size: '4x4' },
+      { id: 2, size: '6x6' },
+      { id: 3, size: '8x8' }
+    ];
     const completedList: number[] = [];
 
-    // Concurrently check all 5 grid sizes for completion
+    // Check only the specific configured sizes for completion
     const checks = await Promise.all(
-      gridSizes.map(size => redis.zScore(`leaderboard:daily:${requestedDate}:${size}`, username))
+      levels.map(level => redis.zScore(`leaderboard:daily:${requestedDate}:${level.size}`, username))
     );
 
     checks.forEach((score, index) => {
       if (score !== undefined && score !== null) {
-        completedList.push(index + 1); // 1-indexed difficulties
+        completedList.push(levels[index].id);
       }
     });
 

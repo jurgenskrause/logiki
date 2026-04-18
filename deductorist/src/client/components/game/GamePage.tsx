@@ -1531,9 +1531,9 @@ export const GamePage: React.FC = () => {
         {/* Win Celebration */}
         {isGameWon && !isViewingCompletedBoard && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/95 animate-in fade-in duration-500 p-4 transform-gpu">
-             <div className={`text-center p-4 sm:p-8 bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border-4 animate-in zoom-in-95 duration-300 max-w-sm w-full relative overflow-y-auto max-h-[90dvh] custom-scrollbar transform-gpu ${
+             <div className={`text-center p-4 sm:p-6 bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border-4 animate-in zoom-in-95 duration-300 max-w-sm w-full relative overflow-y-auto max-h-[95dvh] transform-gpu ${
                  winData.isEpicInfo
-                   ? 'border-amber-400 dark:border-amber-500 shadow-[0_0_50px_rgba(251,191,36,0.5)] animate-pulse'
+                   ? 'border-amber-400 dark:border-amber-500 shadow-[0_0_50px_rgba(251,191,36,0.5)]'
                    : 'border-emerald-500 shadow-emerald-500/20'
                }`}>
                  
@@ -1565,17 +1565,17 @@ export const GamePage: React.FC = () => {
                  </button>
 
                  {winData.isEpicInfo && <div className="absolute -inset-10 bg-gradient-to-tr from-amber-500/20 via-transparent to-amber-500/20 animate-spin opacity-30 transform-gpu pointer-events-none" style={{ animationDuration: '4s' }} />}
-                 <div className={`w-14 h-14 sm:w-20 sm:h-20 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-6 mt-4 sm:mt-0 shadow-lg relative z-10 ${
+                 <div className={`w-14 h-14 sm:w-20 sm:h-20 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 mt-4 sm:mt-0 shadow-lg relative z-10 ${
                    winData.isEpicInfo
                      ? 'bg-gradient-to-tr from-amber-300 to-amber-500 text-amber-950 shadow-[0_10px_30px_rgba(251,191,36,0.6)] animate-bounce'
                      : 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-500 shadow-emerald-500/20'
                  }`}>
                   <span className="material-icons text-3xl sm:text-5xl flex items-center justify-center">{winData.icon}</span>
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-black flex flex-col items-center justify-center mb-1 sm:mb-2 leading-none bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent uppercase tracking-tighter">
+                <h2 className="text-2xl sm:text-3xl font-black flex flex-col items-center justify-center mb-1 leading-none bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent uppercase tracking-tighter">
                   {winData.text}
                 </h2>
-                <p className="text-slate-500 dark:text-slate-400 font-bold mb-2 sm:mb-4 text-sm sm:text-base">
+                <p className="text-slate-500 dark:text-slate-400 font-bold mb-2 sm:mb-2 text-sm sm:text-base">
                   Puzzle completed in {formatTime(elapsedSeconds)}
                 </p>
                 
@@ -1585,33 +1585,33 @@ export const GamePage: React.FC = () => {
                      <p className="text-slate-500 font-bold animate-pulse text-xs sm:text-sm">{puzzle?.isCompleted ? 'Loading Leaderboard...' : 'Submitting Time...'}</p>
                   </div>
                 ) : leaderboardData && !puzzle?.isRandom && (
-                  <div className="mb-4 sm:mb-8 text-xs sm:text-sm">
+                  <div className="mb-4 sm:mb-6 text-xs sm:text-sm">
                      <DistributionChart leaderboardData={leaderboardData} userTimeMs={elapsedSeconds * 1000} />
                   </div>
                 )}
 
-                <div className="flex flex-row gap-2 w-full mt-2 sm:mt-4">
+                <div className="flex flex-row gap-2 w-full mt-2 sm:mt-3">
                     {selectedDifficulty < 5 && (!puzzle?.isRandom) ? (
                       <button 
                         onClick={() => {
                           setIsViewingCompletedBoard(true); // Drops z-index overlay priority
                           setIsMenuOpen(true);              // Elevates difficulty modal visually
                         }}
-                        className="flex-1 py-3 sm:py-4 bg-indigo-500 hover:bg-indigo-600 text-white rounded-2xl font-black shadow-[0_10px_20px_rgba(99,102,241,0.3)] transition-all active:scale-95 uppercase tracking-widest text-[9px] sm:text-xs border border-indigo-400"
+                        className="flex-1 py-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-2xl font-black shadow-[0_10px_20px_rgba(99,102,241,0.3)] transition-all active:scale-95 uppercase tracking-widest text-[9px] sm:text-xs border border-indigo-400"
                       >
                         More Puzzles
                       </button>
                     ) : (
                       <button 
                         onClick={() => window.location.reload()}
-                        className="flex-1 py-3 sm:py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-black shadow-lg shadow-emerald-500/30 transition-all active:scale-95 uppercase tracking-widest text-[10px] sm:text-xs"
+                        className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-black shadow-lg shadow-emerald-500/30 transition-all active:scale-95 uppercase tracking-widest text-[10px] sm:text-xs"
                       >
                         {puzzle?.isRandom ? 'Next Puzzle' : 'Replay'}
                       </button>
                     )}
                     <button 
                       onClick={() => setIsViewingCompletedBoard(true)}
-                      className="flex-1 py-3 sm:py-4 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-2xl font-black shadow-lg transition-all active:scale-95 uppercase tracking-widest text-[9px] sm:text-xs"
+                      className="flex-1 py-3 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-2xl font-black shadow-lg transition-all active:scale-95 uppercase tracking-widest text-[9px] sm:text-xs"
                     >
                       View Board
                     </button>

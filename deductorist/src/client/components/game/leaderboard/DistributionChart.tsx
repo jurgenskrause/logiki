@@ -104,16 +104,6 @@ export const DistributionChart: React.FC<Props> = ({ leaderboardData, userTimeMs
         ))}
       </div>
       
-      {/* Bottom X-Axis labels mapping under baseline */}
-      <div className="flex items-start justify-center w-full px-1 gap-1 h-6">
-         {chartData.map((bar, idx) => (
-            <div key={idx} className={`flex flex-col items-center flex-1 max-w-[2.5rem] pt-1`}>
-              <span className={`text-[10px] font-extrabold ${bar.isUser ? 'text-[#0ea5e9]' : 'text-slate-400'}`}>
-                {bar.isUser ? 'You' : bar.timeSec + (bar.endSec > bar.timeSec ? '+' : '')}
-              </span>
-            </div>
-         ))}
-      </div>
     </div>
   );
 };
