@@ -281,6 +281,7 @@ export const GamePage: React.FC = () => {
   const [isSubmittingScore, setIsSubmittingScore] = useState(false);
   const [isViewingCompletedBoard, setIsViewingCompletedBoard] = useState(false);
   const [completedLevels, setCompletedLevels] = useState<number[]>([]);
+  const [initRoutingState, setInitRoutingState] = useState<'loading' | 'routing' | 'playing'>('loading');
 
   // Prevent state-bleeding across difficulty swaps
   useEffect(() => {
@@ -289,21 +290,6 @@ export const GamePage: React.FC = () => {
     setUserRank(null);
     setLeaderboardData(null);
   }, [selectedDifficulty]);
-
-  // Fetch completion states automatically to mark Difficulty selector
-  useEffect(() => {
-     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-     if (puzzle && !puzzle.isRandom && (puzzle as any).date) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        fetch(`/api/game/state/completed?date=${(puzzle as any).date}`)
-          .then(r => r.json())
-          .then(data => {
-             if (data && data.completed) {
-                setCompletedLevels(data.completed);
-             }
-          }).catch(() => {});
-     }
-  }, [puzzle, isGameWon]);
 
   useEffect(() => {
     if (puzzle) {
@@ -673,8 +659,45 @@ export const GamePage: React.FC = () => {
   // ─── Loaders ────────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    setIsManifestLoaded(true);
-    setIsLoading(false);
+    async function bootSequence() {
+      const urlParams = new URLSearchParams(window.location.search);
+      let dateParam = urlParams.get('date');
+      const isRandom = ENABLE_RANDOM_MODE && urlParams.get('random') === 'true';
+
+      if (!dateParam && !isRandom) {
+         try {
+           const initRes = await fetch('/api/init');
+           if (initRes.ok) {
+             const initData = await initRes.json();
+             dateParam = initData.gameDate;
+           }
+         } catch(e) {}
+      }
+
+      const finalDate = dateParam || 'today';
+      let hasCompletedBase = false;
+
+      if (!isRandom) {
+        try {
+          const compRes = await fetch(`/api/game/state/completed?date=${finalDate}`);
+          if (compRes.ok) {
+            const compData = await compRes.json();
+            if (compData && compData.completed) {
+              setCompletedLevels(compData.completed);
+              hasCompletedBase = compData.completed.includes(1);
+            }
+          }
+        } catch(e) {}
+      }
+
+      if (hasCompletedBase) {
+         setInitRoutingState('routing');
+      } else {
+         setInitRoutingState('playing');
+         setIsManifestLoaded(true);
+      }
+    }
+    bootSequence();
   }, []);
 
   useEffect(() => {
@@ -1090,6 +1113,37 @@ export const GamePage: React.FC = () => {
   }, [activeHint, hintShowing]);
 
   // ─── Renders ─────────────────────────────────────────────────────────────────
+
+  if (initRoutingState === 'loading') {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-slate-950 text-white p-8">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500" />
+          <p className="text-indigo-400 font-bold uppercase tracking-widest text-sm animate-pulse">Syncing App Data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (initRoutingState === 'routing') {
+     return (
+       <div className="flex flex-col items-center justify-center h-screen w-screen overflow-hidden bg-slate-950 p-4">
+           <DifficultyMenu 
+              completedLevels={completedLevels}
+              selectedDifficulty={selectedDifficulty}
+              onSelect={(level) => {
+                 setSelectedDifficulty(level);
+                 setInitRoutingState('playing');
+                 setIsManifestLoaded(true);
+              }}
+              onClose={() => {
+                 setInitRoutingState('playing');
+                 setIsManifestLoaded(true);
+              }}
+           />
+       </div>
+     );
+  }
 
   if (loadError) {
     return (
