@@ -124,13 +124,16 @@ const DevMenu = ({ puzzleId, grid }: { puzzleId?: string, grid?: Uint16Array | n
     const urlParams = new URLSearchParams(window.location.search);
     const dateParam = urlParams.get('date') || new Date().toISOString().split('T')[0];
 
-    localStorage.clear(); // Clear all client side local browser caches natively
+    const legacyKeys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('deductorist_')) legacyKeys.push(key);
+    }
+    legacyKeys.forEach(k => localStorage.removeItem(k));
 
-    /* @ts-expect-error global flag */
     window.__isResetting = true;
     
     // Explicitly kill any pending background auto-saves that might be lingering
-    // @ts-expect-error accessing refs dynamically or assuming standard hook behavior is safe since this is a top-level render scope
     if (window.__pendingSyncTimer) clearTimeout(window.__pendingSyncTimer);
 
     fetch(`/api/game/dev/reset?date=${dateParam}`, { method: 'POST' })
@@ -488,8 +491,8 @@ export const GamePage: React.FC = () => {
       }
     });
     
-    if ((puzzle as any).loadedFullState) {
-       gs.importFullState((puzzle as any).loadedFullState);
+    if (puzzle.loadedFullState) {
+       gs.importFullState(puzzle.loadedFullState);
     } else if (puzzle.loadedSnapshot) {
        gs.importSnapshot(puzzle.loadedSnapshot);
     } else {
@@ -551,7 +554,7 @@ export const GamePage: React.FC = () => {
        if (window.__isResetting) return;
 
        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-       const puzzleDateId = (puzzle as any).date ? `${(puzzle as any).date}-` : '';
+       const puzzleDateId = puzzle.date ? `${puzzle.date}-` : '';
        const payload = {
           puzzleId: puzzle.isRandom ? `random-${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}` : `${puzzleDateId}${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}`,
           boardState: gameState.exportSnapshot(),
@@ -568,19 +571,17 @@ export const GamePage: React.FC = () => {
        }).catch(() => {});
     }, 3000);
     
-    /* @ts-expect-error global tracking */
     window.__pendingSyncTimer = pendingSyncTimerRef.current;
   }, [gameState, puzzle]);
 
   useEffect(() => {
     const handleVisibility = () => {
-       /* @ts-expect-error global flag */
        if (window.__isResetting) return;
        
        if (document.visibilityState === 'hidden' && gameState && puzzle && !puzzle.isRandom) {
            if (pendingSyncTimerRef.current) clearTimeout(pendingSyncTimerRef.current);
            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-           const puzzleDateId = (puzzle as any).date ? `${(puzzle as any).date}-` : '';
+           const puzzleDateId = puzzle.date ? `${puzzle.date}-` : '';
            const payload = {
               puzzleId: puzzle.isRandom ? `random-${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}` : `${puzzleDateId}${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}`,
               boardState: gameState.exportSnapshot(),
@@ -763,7 +764,7 @@ export const GamePage: React.FC = () => {
                       (data as any).loadedFullState = stateData.fullState;
                     }
                     if (stateData.binnedClues) {
-                      (data as any).loadedBinnedClues = stateData.binnedClues;
+                      data.loadedBinnedClues = stateData.binnedClues;
                     }
                       if (stateData.elapsedSeconds !== undefined) {
                           data.loadedElapsed = stateData.elapsedSeconds;
@@ -812,14 +813,11 @@ export const GamePage: React.FC = () => {
         setIsGameStarted(true);
         setIsRecoveredWin(true);
         
-        // @ts-expect-error dynamically appended payload from sync hook
         if (puzzle.preloadedLeaderboard) {
-            // @ts-expect-error type override
             setLeaderboardData(puzzle.preloadedLeaderboard);
             setIsSubmittingScore(false);
         } else {
             setIsSubmittingScore(true);
-            // @ts-expect-error date fallback
             const puzzleDate = puzzle.date || new Date().toISOString().split('T')[0];
             fetchLeaderboard(puzzleDate, `${puzzle.rows}x${puzzle.cols}`).finally(() => {
                 setIsSubmittingScore(false);
@@ -853,7 +851,7 @@ export const GamePage: React.FC = () => {
             setIsGameWon(true);
             setIsGameStarted(true);
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const puzzleDate = (puzzle as any).date || 'today';
+            const puzzleDate = puzzle.date || 'today';
             void fetchLeaderboard(puzzleDate, `${puzzle.rows}x${puzzle.cols}`);
             return;
          }

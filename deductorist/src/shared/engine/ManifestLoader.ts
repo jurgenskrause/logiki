@@ -1,5 +1,6 @@
 import type { ActiveClue } from './Solver';
 import type { GameSnapshot } from './GameState';
+import type { LeaderboardResponse } from '../api';
 
 // --- Binary Specification Constants (Matched with Packer) ---
 const VERSION = 0x01;
@@ -46,6 +47,10 @@ export interface PuzzleManifest {
   loadedSnapshot?: GameSnapshot;
   loadedElapsed?: number;
   isCompleted?: boolean;
+  date?: string;
+  loadedFullState?: GameSnapshot;
+  preloadedLeaderboard?: LeaderboardResponse;
+  loadedBinnedClues?: string[];
 }
 
 /**
