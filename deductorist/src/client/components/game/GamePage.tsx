@@ -522,6 +522,21 @@ export const GamePage: React.FC = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leaderboardData, userRank]);
 
+  const prominentAward = useMemo(() => {
+    if (!leaderboardData || userRank === null || puzzle?.isRandom) return null;
+    const { totalSolvers } = leaderboardData;
+    const totalOthers = Math.max(0, (totalSolvers || 1) - 1);
+    const isFirst = (totalSolvers === 1);
+    const perc = totalOthers > 0 ? Math.floor((((totalSolvers || 1) - userRank) / totalOthers) * 100) : 100;
+    
+    if (isFirst) return { emoji: '🎖️', label: 'First to Solve!' };
+    if (userRank === 1) return { emoji: '👑', label: 'World Record!' };
+    if (perc >= 90) return { emoji: '🥈', label: 'Top 10% Score' };
+    if (perc >= 75) return { emoji: '🥉', label: 'Top 25% Score' };
+    return null;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leaderboardData, userRank, puzzle]);
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const binnedClueIds = gameState?.binnedClues || new Set<string>();
 
@@ -1535,28 +1550,13 @@ export const GamePage: React.FC = () => {
                }`}>
                  {/* Top Left Achievement Badge */}
                  <div className="absolute top-3 left-3 sm:top-5 sm:left-5 flex items-center justify-center z-20">
-                    {(() => {
-                       if (!leaderboardData || userRank === null || puzzle?.isRandom) return null;
-                       const { totalSolvers } = leaderboardData;
-                       const totalOthers = Math.max(0, (totalSolvers || 1) - 1);
-                       const isFirst = (totalSolvers === 1);
-                       const perc = totalOthers > 0 ? Math.floor((((totalSolvers || 1) - userRank) / totalOthers) * 100) : 100;
-                       
-                       let awardObj = null;
-                       if (isFirst) awardObj = { emoji: '🎖️', label: 'First to Solve!' };
-                       else if (userRank === 1) awardObj = { emoji: '👑', label: 'World Record!' };
-                       else if (perc >= 90) awardObj = { emoji: '🥈', label: 'Top 10% Score' };
-                       else if (perc >= 75) awardObj = { emoji: '🥉', label: 'Top 25% Score' };
-                       
-                       if (!awardObj) return null;
-                       return (
-                          <div className="flex flex-col items-center justify-center text-center group" title={awardObj.label}>
-                             <span className="text-[28px] sm:text-[34px] drop-shadow-md select-none transform transition-transform group-hover:scale-110 cursor-help" role="img" aria-label="achievement">
-                                {awardObj.emoji}
-                             </span>
-                          </div>
-                       );
-                    })()}
+                    {prominentAward && (
+                       <div className="flex flex-col items-center justify-center text-center group" title={prominentAward.label}>
+                          <span className="text-[28px] sm:text-[34px] drop-shadow-md select-none transform transition-transform group-hover:scale-110 cursor-help" role="img" aria-label="achievement">
+                             {prominentAward.emoji}
+                          </span>
+                       </div>
+                    )}
                  </div>
 
                  <button 
@@ -1566,6 +1566,9 @@ export const GamePage: React.FC = () => {
                      let msg = `I just beat todays Deductorist in **${formatTime(elapsedSeconds)}**!`;
                      if (winData.isEpicInfo) {
                        msg += `\n\n${emojiMap[winData.icon] || '🎯'} **${winData.text}**`;
+                     }
+                     if (prominentAward) {
+                       msg += `\n${prominentAward.emoji} **${prominentAward.label}**`;
                      }
                      
                      shareScore(msg);
