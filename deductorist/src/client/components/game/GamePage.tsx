@@ -550,10 +550,8 @@ export const GamePage: React.FC = () => {
     
     if (pendingSyncTimerRef.current) clearTimeout(pendingSyncTimerRef.current);
     pendingSyncTimerRef.current = setTimeout(() => {
-       /* @ts-expect-error global flag */
        if (window.__isResetting) return;
 
-       // eslint-disable-next-line @typescript-eslint/no-explicit-any
        const puzzleDateId = puzzle.date ? `${puzzle.date}-` : '';
        const payload = {
           puzzleId: puzzle.isRandom ? `random-${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}` : `${puzzleDateId}${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}`,

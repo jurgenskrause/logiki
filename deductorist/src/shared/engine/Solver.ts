@@ -19,6 +19,7 @@ export const SolverResult = {
   SOLVED: 'SOLVED',
   AMBIGUOUS: 'AMBIGUOUS',
   CONTRADICTION: 'CONTRADICTION',
+  TIMEOUT: 'TIMEOUT',
 } as const;
 
 // eslint-disable-next-line no-redeclare
@@ -52,13 +53,13 @@ export class Solver {
    * 
    * @param clues The set of Active Clues to apply.
    * @param canvas The possibility matrix to solve.
+   * @param maxIterations The safety ceiling to prevent infinite loops (Defaults to 200).
    * @returns SolverResult based on the final convergent state.
    */
-  public solve(clues: ActiveClue[], canvas: LogicCanvas): SolverResult {
+  public solve(clues: ActiveClue[], canvas: LogicCanvas, maxIterations: number = 200): SolverResult {
     let iterationCount = 0;
-    const MAX_ITERATIONS = 200; // Phase 3.3.1 Safety circuit breaker
 
-    while (iterationCount < MAX_ITERATIONS) {
+    while (iterationCount < maxIterations) {
       let hasChangedInThisPass = false;
 
       // ----------------------------------------------------------------------
@@ -103,8 +104,9 @@ export class Solver {
       iterationCount++;
     }
 
-    if (iterationCount >= MAX_ITERATIONS) {
-      console.error(`Solver timed out after ${MAX_ITERATIONS} iterations. Potential infinite loop.`);
+    if (iterationCount >= maxIterations) {
+      console.warn(`Solver exceeded structural bounds (${maxIterations} iterations). Flagging TIMEOUT.`);
+      return SolverResult.TIMEOUT;
     }
 
     // Determine final state
