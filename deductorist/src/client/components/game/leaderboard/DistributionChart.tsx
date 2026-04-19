@@ -104,15 +104,15 @@ export const DistributionChart: React.FC<Props> = ({ leaderboardData, userTimeMs
         }
       </p>
 
-      <div className="flex items-end justify-center w-full h-16 sm:h-20 px-1 mb-1 gap-1 isolate relative">
+      <div className="flex items-end justify-center w-full h-32 sm:h-44 px-1 pb-1 mb-2 gap-1 isolate relative">
         {chartData.map((bar, idx) => (
           <div key={idx} className="flex flex-col items-center justify-end h-full flex-1 max-w-[2.5rem] relative">
-            <span className={`text-[10px] font-bold opacity-80 flex flex-col items-center ${bar.isUser ? 'text-[#0ea5e9]' : 'text-slate-400'}`}>
-              {bar.isUser && percentile >= 90 && <span className="material-icons text-[14px] text-amber-500 transform translate-y-1 z-10 filter drop-shadow">emoji_events</span>}
+            <span className={`text-[10px] sm:text-xs font-bold opacity-80 flex flex-col items-center ${bar.isUser ? 'text-[#0ea5e9]' : 'text-slate-400'}`}>
+              {bar.isUser && percentile >= 90 && <span className="material-icons text-[14px] sm:text-base text-amber-500 transform translate-y-1 z-10 filter drop-shadow">emoji_events</span>}
               <span className="mb-1">{bar.count > 0 ? bar.count : ''}</span>
             </span>
             <div 
-              className={`w-full rounded-t-sm transition-all duration-1000 ${bar.isUser ? 'bg-[#0ea5e9]' : 'bg-[#22c55e]'}`}
+              className={`w-full rounded-t-sm transition-all duration-[1200ms] ease-out shadow-inner ${bar.isUser ? 'bg-gradient-to-t from-sky-400 to-sky-500' : 'bg-gradient-to-t from-emerald-400 to-emerald-500'}`}
               style={{ height: `${bar.heightPercent}%` }}
             />
             {/* Native zero-point visual horizontal baseline tracking identical to wireframe */}

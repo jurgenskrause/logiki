@@ -125,13 +125,13 @@ api.post('/game/submit', async (c) => {
        '8x8': 45000
     };
     
-    // Absolute minimum theoretical clicks to solve the grid logic (S x (C-1))
+    // Absolute minimum theoretical clicks factoring in aggressive cascade auto-solves
     const minClicksMap: Record<string, number> = {
-       '4x4': 12,
-       '5x5': 15,
-       '6x6': 18,
-       '7x7': 21,
-       '8x8': 24
+       '4x4': 3,
+       '5x5': 4,
+       '6x6': 5,
+       '7x7': 6,
+       '8x8': 7
     };
 
     const targetFloorMs = minTimeMap[gridSize] || 10000;

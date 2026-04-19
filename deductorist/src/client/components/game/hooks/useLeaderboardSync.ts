@@ -18,7 +18,6 @@ export function useLeaderboardSync({ DEV_BUILD, puzzle, gameState, moveLogRef, p
   const [isSharing, setIsSharing] = useState(false);
 
   const fetchLeaderboard = useCallback(async (puzzleDate: string, sizeStr: string) => {
-    if (DEV_BUILD) return;
     try {
       const r = await fetch(`/api/game/leaderboard?gridSize=${sizeStr}&date=${puzzleDate}`);
       if (r.ok) {

@@ -1528,12 +1528,37 @@ export const GamePage: React.FC = () => {
         {/* Win Celebration */}
         {isGameWon && !isViewingCompletedBoard && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/95 animate-in fade-in duration-500 p-4 transform-gpu">
-             <div className={`text-center p-3 sm:p-4 bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border-4 ${!isRecoveredWin ? 'animate-in zoom-in-95 duration-300' : ''} max-w-sm w-full relative overflow-hidden max-h-[92dvh] transform-gpu flex flex-col justify-center ${
+             <div className={`text-center p-3 sm:p-5 bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border-4 ${!isRecoveredWin ? 'animate-in zoom-in-95 duration-300' : ''} max-w-md w-full relative overflow-hidden max-h-[92dvh] transform-gpu flex flex-col justify-center ${
                  winData.isEpicInfo
                    ? 'border-amber-400 dark:border-amber-500 shadow-[0_0_50px_rgba(251,191,36,0.5)]'
                    : 'border-emerald-500 shadow-emerald-500/20'
                }`}>
-                 
+                 {/* Top Left Achievement Badge */}
+                 <div className="absolute top-3 left-3 sm:top-5 sm:left-5 flex items-center justify-center z-20">
+                    {(() => {
+                       if (!leaderboardData || userRank === null || puzzle?.isRandom) return null;
+                       const { totalSolvers } = leaderboardData;
+                       const totalOthers = Math.max(0, (totalSolvers || 1) - 1);
+                       const isFirst = (totalSolvers === 1);
+                       const perc = totalOthers > 0 ? Math.floor((((totalSolvers || 1) - userRank) / totalOthers) * 100) : 100;
+                       
+                       let awardObj = null;
+                       if (isFirst) awardObj = { emoji: '🎖️', label: 'First to Solve!' };
+                       else if (userRank === 1) awardObj = { emoji: '👑', label: 'World Record!' };
+                       else if (perc >= 90) awardObj = { emoji: '🥈', label: 'Top 10% Score' };
+                       else if (perc >= 75) awardObj = { emoji: '🥉', label: 'Top 25% Score' };
+                       
+                       if (!awardObj) return null;
+                       return (
+                          <div className="flex flex-col items-center justify-center text-center group" title={awardObj.label}>
+                             <span className="text-[28px] sm:text-[34px] drop-shadow-md select-none transform transition-transform group-hover:scale-110 cursor-help" role="img" aria-label="achievement">
+                                {awardObj.emoji}
+                             </span>
+                          </div>
+                       );
+                    })()}
+                 </div>
+
                  <button 
                    onClick={() => {
                      if (isSharing) return;
