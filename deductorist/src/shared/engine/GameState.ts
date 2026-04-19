@@ -176,6 +176,14 @@ export class GameState {
     this._history = this._history.slice(0, this._cursor + 1);
     // Push current state
     this._history.push(this._createSnapshot());
+    
+    // Protect raw memory bounds to prevent uncapped long-session allocations
+    const MAX_HISTORY_CAP = 100;
+    if (this._history.length > MAX_HISTORY_CAP) {
+       this._history.shift();
+       this._lastGoodIndex = Math.max(-1, this._lastGoodIndex - 1);
+    }
+    
     this._cursor = this._history.length - 1;
     // Safety: if lastGoodIndex was in trimmed range, clamp it
     if (this._lastGoodIndex >= this._history.length) {

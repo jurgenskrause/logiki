@@ -28,11 +28,9 @@ import { VerticalClueUI } from './clue/VerticalClueUI';
 import { buildTopologyLibrary } from '../../../shared/engine/PermutationGenerator';
 import { TieringService } from '../../../shared/engine/TieringService';
 import { StructuralSieve } from '../../../shared/engine/StructuralSieve';
-import eliminateSfx from '../../assets/sounds/eliminate.wav';
-import solveSfx from '../../assets/sounds/solve.wav';
-import mistakeSfx from '../../assets/sounds/mistake.wav';
-import moveClueSfx from '../../assets/sounds/moveclue.wav';
-import winSfx from '../../assets/sounds/win.wav';
+import { useGameAudio } from './hooks/useGameAudio';
+import { useLeaderboardSync } from './hooks/useLeaderboardSync';
+import { useActionQueue } from './hooks/useActionQueue';
 
 const DIFF_NAMES: Record<number, string> = { 1: 'Easy', 2: 'Medium', 3: 'Hard' };
 
@@ -221,91 +219,17 @@ export const GamePage: React.FC = () => {
     elapsedSecondsRef.current = elapsedSeconds;
   }, [elapsedSeconds]);
 
-  // Sound system
-  const [isSoundEnabled, setIsSoundEnabled] = useState(true);
-  const [leaderboardData, setLeaderboardData] = useState<LeaderboardResponse | null>(null);
-  const [userRank, setUserRank] = useState<number | null>(null);
-  const [isSharing, setIsSharing] = useState(false);
-
-  const winData = useMemo(() => {
-    if (puzzle?.isRandom) return { text: "Logic Mastered", icon: "psychology", isEpicInfo: false };
-    if (!leaderboardData || userRank === null) return { text: "Logic Mastered", icon: "psychology", isEpicInfo: false };
-    const { totalSolvers } = leaderboardData;
-    if ((totalSolvers || 0) <= 1) return { text: "First to Solve!", icon: "rocket_launch", isEpicInfo: true };
-    if (userRank === 1) return { text: "World Record!", icon: "emoji_events", isEpicInfo: true };
-    if (userRank <= 10) return { text: `Global Top ${userRank}!`, icon: "star", isEpicInfo: true };
-    const totalOthers = Math.max(0, (totalSolvers || 1) - 1);
-    const perc = totalOthers > 0 ? Math.floor((((totalSolvers || 1) - userRank) / totalOthers) * 100) : 100;
-    if (perc >= 99) return { text: "Top 1% Worldwide!", icon: "workspace_premium", isEpicInfo: true };
-    if (perc >= 95) return { text: "Top 5% Worldwide!", icon: "military_tech", isEpicInfo: true };
-    if (perc >= 90) return { text: "Top 10% Worldwide!", icon: "military_tech", isEpicInfo: true };
-    return { text: "Logic Mastered", icon: "psychology", isEpicInfo: false };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [leaderboardData, userRank]);
-
-  const eliminateAudioRef = useRef<HTMLAudioElement | null>(null);
-  const solveAudioRef = useRef<HTMLAudioElement | null>(null);
-  const mistakeAudioRef = useRef<HTMLAudioElement | null>(null);
-  const moveClueAudioRef = useRef<HTMLAudioElement | null>(null);
-  const winAudioRef = useRef<HTMLAudioElement | null>(null);
-  const pendingSoundRef = useRef<'solve' | 'eliminate' | null>(null);
-
-  // Anti-Cheat Telemetry
-  const moveLogRef = useRef<{ cellIndex: number; timeOffsetMs: number }[]>([]);
-  const penaltyMsRef = useRef<number>(0);
-
-  useEffect(() => {
-    eliminateAudioRef.current = new Audio(eliminateSfx);
-    solveAudioRef.current = new Audio(solveSfx);
-    mistakeAudioRef.current = new Audio(mistakeSfx);
-    moveClueAudioRef.current = new Audio(moveClueSfx);
-    winAudioRef.current = new Audio(winSfx);
-  }, []);
+  // Sound system isolated to prevent global DOM ref clutter
+  const { isSoundEnabled, setIsSoundEnabled, internalPlayInteractionSound, pendingSoundRef } = useGameAudio();
 
   const playInteractionSound = useCallback((action?: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
     dismissHint();
-    if (!isSoundEnabled) return;
-
-    if (action === 'win') {
-      if (winAudioRef.current) {
-        winAudioRef.current.currentTime = 0;
-        winAudioRef.current.play().catch(() => {});
-      }
-      return;
-    }
-
-    if (action === 'mistake') {
-      if (mistakeAudioRef.current) {
-        mistakeAudioRef.current.currentTime = 0;
-        mistakeAudioRef.current.play().catch(() => {});
-      }
-      return;
-    }
-
-    if (action === 'moveclue') {
-      if (moveClueAudioRef.current) {
-        moveClueAudioRef.current.currentTime = 0;
-        moveClueAudioRef.current.play().catch(() => {});
-      }
-      return;
-    }
-
-    if (action === 'solve') {
-      if (solveAudioRef.current) {
-        solveAudioRef.current.currentTime = 0;
-        solveAudioRef.current.play().catch(() => {});
-      }
-    } else {
-      if (eliminateAudioRef.current) {
-        eliminateAudioRef.current.currentTime = 0;
-        eliminateAudioRef.current.play().catch(() => {});
-      }
-    }
+    if (action) internalPlayInteractionSound(action as any);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSoundEnabled]);
+  }, [internalPlayInteractionSound]);
 
   const [isGameWon, setIsGameWon] = useState(false);
-  const [isSubmittingScore, setIsSubmittingScore] = useState(false);
   const [isViewingCompletedBoard, setIsViewingCompletedBoard] = useState(false);
   const [isRecoveredWin, setIsRecoveredWin] = useState(false);
   const [completedLevels, setCompletedLevels] = useState<number[]>([]);
@@ -369,7 +293,7 @@ export const GamePage: React.FC = () => {
   const [hintShowing, setHintShowing] = useState(false);
   const [hoveredClueText, setHoveredClueText] = useState<string | null>(null);
   const [isCascading, setIsCascading] = useState(false);
-  const cascadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { enqueue, clearQueue } = useActionQueue();
   
   // Warning System & Hint Counter
   const [warningsEnabled, setWarningsEnabled] = useState(false);
@@ -574,6 +498,29 @@ export const GamePage: React.FC = () => {
     }
     return gs;
   }, [puzzle]);
+
+  // Anti-Cheat Telemetry
+  const moveLogRef = useRef<{ cellIndex: number; timeOffsetMs: number }[]>([]);
+  const penaltyMsRef = useRef<number>(0);
+
+  // Sync Abstraction
+  const { leaderboardData, setLeaderboardData, userRank, setUserRank, isSubmittingScore, setIsSubmittingScore, isSharing, submitScore, shareScore, fetchLeaderboard } = useLeaderboardSync({ DEV_BUILD, puzzle, gameState, moveLogRef, penaltyMsRef });
+
+  const winData = useMemo(() => {
+    if (puzzle?.isRandom) return { text: "Logic Mastered", icon: "psychology", isEpicInfo: false };
+    if (!leaderboardData || userRank === null) return { text: "Logic Mastered", icon: "psychology", isEpicInfo: false };
+    const { totalSolvers } = leaderboardData;
+    if ((totalSolvers || 0) <= 1) return { text: "First to Solve!", icon: "rocket_launch", isEpicInfo: true };
+    if (userRank === 1) return { text: "World Record!", icon: "emoji_events", isEpicInfo: true };
+    if (userRank <= 10) return { text: `Global Top ${userRank}!`, icon: "star", isEpicInfo: true };
+    const totalOthers = Math.max(0, (totalSolvers || 1) - 1);
+    const perc = totalOthers > 0 ? Math.floor((((totalSolvers || 1) - userRank) / totalOthers) * 100) : 100;
+    if (perc >= 99) return { text: "Top 1% Worldwide!", icon: "workspace_premium", isEpicInfo: true };
+    if (perc >= 95) return { text: "Top 5% Worldwide!", icon: "military_tech", isEpicInfo: true };
+    if (perc >= 90) return { text: "Top 10% Worldwide!", icon: "military_tech", isEpicInfo: true };
+    return { text: "Logic Mastered", icon: "psychology", isEpicInfo: false };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leaderboardData, userRank]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const binnedClueIds = gameState?.binnedClues || new Set<string>();
@@ -859,13 +806,9 @@ export const GamePage: React.FC = () => {
             setIsSubmittingScore(true);
             // @ts-expect-error date fallback
             const puzzleDate = puzzle.date || new Date().toISOString().split('T')[0];
-            fetch(`/api/game/leaderboard?gridSize=${puzzle.rows}x${puzzle.cols}&date=${puzzleDate}`)
-               .then(r => r.json())
-               .then(res => {
-                  if (res.type === 'leaderboard') setLeaderboardData(res);
-               })
-               .catch(console.error)
-               .finally(() => setIsSubmittingScore(false));
+            fetchLeaderboard(puzzleDate, `${puzzle.rows}x${puzzle.cols}`).finally(() => {
+                setIsSubmittingScore(false);
+            });
         }
         return; // Halt here implicitly without overriding anything
     }
@@ -894,16 +837,9 @@ export const GamePage: React.FC = () => {
          if (isWin) {
             setIsGameWon(true);
             setIsGameStarted(true);
-            setIsSubmittingScore(true);
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const puzzleDate = (puzzle as any).date || 'today';
-            fetch(`/api/game/leaderboard?gridSize=${puzzle.rows}x${puzzle.cols}&date=${puzzleDate}`)
-               .then(r => r.json())
-               .then(res => {
-                  if (res.type === 'leaderboard') setLeaderboardData(res);
-               })
-               .catch(console.error)
-               .finally(() => setIsSubmittingScore(false));
+            void fetchLeaderboard(puzzleDate, `${puzzle.rows}x${puzzle.cols}`);
             return;
          }
       }
@@ -938,58 +874,7 @@ export const GamePage: React.FC = () => {
       setIsGameWon(true);
       playInteractionSound('win');
       
-      if (puzzle.isRandom) {
-         setIsSubmittingScore(false);
-         setUserRank(null);
-         return;
-      }
-
-      const todayLocal = new Date().toISOString().split('T')[0];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const puzzleDate = (puzzle as any).date || todayLocal;
-      const isHistorical = puzzleDate !== todayLocal && puzzleDate !== 'today';
-
-      setIsSubmittingScore(true);
-
-      if (isHistorical) {
-          fetch(`/api/game/leaderboard?gridSize=${puzzle.rows}x${puzzle.cols}&date=${puzzleDate}`)
-              .then(r => r.json())
-              .then(res => {
-                  if (res.type === 'leaderboard') setLeaderboardData(res);
-              })
-              .catch(console.error)
-              .finally(() => setIsSubmittingScore(false));
-      } else {
-          fetch('/api/game/submit', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              puzzleId: `${puzzleDate}-${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}`,
-              boardState: Array.from(gameState.grid),
-              moveLog: moveLogRef.current,
-              isDevBuild: DEV_BUILD,
-              penaltyMs: penaltyMsRef.current
-            })
-          })
-          .then(r => r.json())
-          .then(res => {
-             if (res.status === 'verified' || DEV_BUILD) {
-                 if (res.rank !== undefined) {
-                     setUserRank(res.rank);
-                 }
-                 return fetch(`/api/game/leaderboard?gridSize=${puzzle.rows}x${puzzle.cols}&date=${puzzleDate}`);
-             }
-             throw new Error('Not verified');
-          })
-          .then(r => r.json())
-          .then(res => {
-             if (res.type === 'leaderboard') {
-                setLeaderboardData(res);
-             }
-          })
-          .catch(console.error)
-          .finally(() => setIsSubmittingScore(false));
-      }
+      submitScore();
     }
   }, [gameState, puzzle, isGameWon, playInteractionSound]);
 
@@ -1007,8 +892,11 @@ export const GamePage: React.FC = () => {
       }
 
       setTick(t => t + 1); // Force board re-render
-      // Schedule next step with a delay for visual satisfaction
-      cascadeTimerRef.current = setTimeout(runCascade, 250);
+      // Schedule next step through a native ActionQueue instead of browser timers
+      enqueue(async () => {
+        await new Promise(res => setTimeout(res, 250));
+        runCascade();
+      });
     } else {
       setIsCascading(false);
       // Cascade complete — save this equilibrium state to history
@@ -1044,7 +932,7 @@ export const GamePage: React.FC = () => {
   const handleStateChange = useCallback(() => {
     if (isGameWon) return;
     
-    if (cascadeTimerRef.current) clearTimeout(cascadeTimerRef.current);
+    clearQueue();
     
     // Warning System: Prevent moves that make the puzzle unsolvable
     if (warningsEnabled && gameState && puzzle) {
@@ -1071,8 +959,11 @@ export const GamePage: React.FC = () => {
     setIsCascading(true);
     triggerSave();
     // Start the chain reaction
-    cascadeTimerRef.current = setTimeout(runCascade, 250);
-  }, [runCascade, warningsEnabled, gameState, puzzle, binnedClueIds, triggerRedFlash, playInteractionSound, triggerSave, isGameWon]);
+    enqueue(async () => {
+      await new Promise(res => setTimeout(res, 250));
+      runCascade();
+    });
+  }, [runCascade, warningsEnabled, gameState, puzzle, binnedClueIds, triggerRedFlash, triggerSave, isGameWon, clearQueue, enqueue, playInteractionSound]);
 
   // ─── Hint Button Logic ───────────────────────────────────────────────────────
 
@@ -1652,16 +1543,7 @@ export const GamePage: React.FC = () => {
                        msg += `\n\n${emojiMap[winData.icon] || '🎯'} **${winData.text}**`;
                      }
                      
-                     setIsSharing(true);
-                     fetch('/api/game/share', {
-                       method: 'POST',
-                       headers: { 'Content-Type': 'application/json' },
-                       body: JSON.stringify({ message: msg })
-                     }).then(async r => {
-                        const data = await r.json();
-                        if (data.status === 'success') alert('Score shared structurally to thread!');
-                        else alert('Failed to share: ' + data.message);
-                     }).catch(console.error).finally(() => setIsSharing(false));
+                     shareScore(msg);
                    }}
                    disabled={isSharing}
                    className={`absolute top-3 right-3 sm:top-4 sm:right-4 p-2 rounded-full transition-colors flex items-center justify-center z-20 ${isSharing ? 'text-indigo-300 bg-indigo-50 dark:bg-indigo-900/20' : 'text-slate-400 dark:text-slate-500 hover:text-indigo-500 hover:bg-slate-100 dark:hover:bg-slate-700 active:scale-95'}`}
