@@ -6,7 +6,7 @@ export interface HintAction {
   row: number;
   col: number;
   itemIndex: number;
-  type: 'eliminate' | 'confirm';
+  type: 'eliminate' | 'confirm' | 'RESTORE';
 }
 
 /**
