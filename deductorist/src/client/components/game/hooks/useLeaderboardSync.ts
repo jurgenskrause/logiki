@@ -39,8 +39,7 @@ export function useLeaderboardSync({ DEV_BUILD, puzzle, gameState, moveLogRef, p
     }
 
     const todayLocal = new Date().toISOString().split('T')[0];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const puzzleDate = (puzzle as any).date || todayLocal;
+    const puzzleDate = puzzle.date || todayLocal;
     const isHistorical = puzzleDate !== todayLocal && puzzleDate !== 'today';
     const sizeStr = `${puzzle.rows}x${puzzle.cols}`;
 

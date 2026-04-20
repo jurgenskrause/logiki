@@ -116,8 +116,7 @@ function App() {
                     <span className="text-emerald-400">Mask: {mask}</span>
                   </div>
                   <div className="flex gap-1 flex-wrap">
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    {trace.map((t: any, i: number) => (
+                    {trace.map((t: { type: string }, i: number) => (
                       <span key={i} className={`text-[8px] px-1 rounded ${t.type === 'CONFIRM' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-blue-500/20 text-blue-400'}`}>
                         {t.type}
                       </span>
@@ -210,11 +209,8 @@ function App() {
                 
                  
                 for(let i=0; i<64; i++) {
-                   
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  const r = Math.floor(i/8) as any;
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  const c = (i%8) as any;
+                  const r = Math.floor(i/8);
+                  const c = (i%8);
                   state.confirmCell(r, c, i % 8);
                 }
                 const win = state.isPuzzleComplete();

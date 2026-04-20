@@ -138,8 +138,7 @@ export function StructuralSandboxUI() {
       setPrevMasks(currentMasks);
 
      
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (e: any) {
+    } catch (e: unknown) {
       if (e instanceof ContradictionError) {
         const cellList = e.deadCells.map(c => `R${c.row}:C${c.col}`).join(', ');
         setEvents(prev => [...prev, {
@@ -147,8 +146,8 @@ export function StructuralSandboxUI() {
           entry: e.offendingEntry,
           isContradiction: true,
           deadCells: e.deadCells,
-        } as LogEvent]);
-      } else {
+        }]);
+      } else if (e instanceof Error) {
         setEvents(prev => [...prev, { msg: `CRITICAL ERROR: ${e.message}` }]);
       }
     } finally {
@@ -354,10 +353,8 @@ export function StructuralSandboxUI() {
  
 
                  
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                if ((ev as any).isContradiction && ev.entry) {
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  const deadCells: { row: number; col: number }[] = (ev as any).deadCells ?? [];
+                if (ev.isContradiction && ev.entry) {
+                  const deadCells = ev.deadCells ?? [];
                   return (
                     <div key={i} className="shrink-0 rounded-lg border border-red-900/50 bg-red-950/20 border-l-[3px] border-l-red-500 overflow-hidden">
                       <div className="flex items-center gap-2 px-2 pt-2 pb-1">
