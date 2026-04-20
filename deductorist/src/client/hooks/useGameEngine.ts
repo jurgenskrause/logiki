@@ -1,9 +1,9 @@
 import { useState, useCallback } from 'react';
-import { analyzeState } from '../../../../shared/engine/HintService';
-import type { HintResult } from '../../../../shared/engine/HintService';
-import { ManifestLoader } from '../../../../shared/engine/ManifestLoader';
-import type { PuzzleManifest } from '../../../../shared/engine/ManifestLoader';
-import type { GameState } from '../../../../shared/engine/GameState';
+import { analyzeState } from '../../shared/engine/HintService';
+import type { HintResult } from '../../shared/engine/HintService';
+import { ManifestLoader } from '../../shared/engine/ManifestLoader';
+import type { PuzzleManifest } from '../../shared/engine/ManifestLoader';
+import type { GameState } from '../../shared/engine/GameState';
 
 const loader = new ManifestLoader();
 

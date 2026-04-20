@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
-import type { PuzzleManifest } from '../../../../shared/engine/ManifestLoader';
-import { GameState } from '../../../../shared/engine/GameState';
-import { StructuralSieve } from '../../../../shared/engine/StructuralSieve';
-import { buildTopologyLibrary } from '../../../../shared/engine/PermutationGenerator';
-import { TieringService } from '../../../../shared/engine/TieringService';
-import type { HintResult } from '../../../../shared/engine/HintService';
+import type { PuzzleManifest } from '../../shared/engine/ManifestLoader';
+import { GameState } from '../../shared/engine/GameState';
+import { StructuralSieve } from '../../shared/engine/StructuralSieve';
+import { buildTopologyLibrary } from '../../shared/engine/PermutationGenerator';
+import { TieringService } from '../../shared/engine/TieringService';
+import type { HintResult } from '../../shared/engine/HintService';
 
 function seedRNG(seed: string) {
   let h = 0;

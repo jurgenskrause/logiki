@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { PuzzleManifest } from '../../../../shared/engine/ManifestLoader';
+import type { PuzzleManifest } from '../../shared/engine/ManifestLoader';
 
 export function useBoardLayout(
   puzzle: PuzzleManifest | null,

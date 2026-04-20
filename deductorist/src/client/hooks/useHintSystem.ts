@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
-import { applyHint } from '../../../../shared/engine/HintService';
-import type { HintResult } from '../../../../shared/engine/HintService';
-import type { GameState } from '../../../../shared/engine/GameState';
+import { applyHint } from '../../shared/engine/HintService';
+import type { HintResult } from '../../shared/engine/HintService';
+import type { GameState } from '../../shared/engine/GameState';
 
 interface UseHintSystemProps {
   gameState: GameState | null;

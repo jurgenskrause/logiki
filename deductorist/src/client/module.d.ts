@@ -10,6 +10,7 @@ declare module '*.jpg' {
 
 interface Window {
   __isResetting?: boolean;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  __pendingSyncTimer?: any;
+  __pendingSyncTimer?: ReturnType<typeof setTimeout> | number;
 }
+
+declare const DEV_BUILD: boolean;

@@ -43,9 +43,8 @@ export const BinLoaderPage: React.FC = () => {
         }
 
         setPuzzles(found);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (err: any) {
-        setError(err.message || 'Failed to process binary file.');
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : String(err) || 'Failed to process binary file.');
       } finally {
         setIsProcessing(false);
       }

@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
-import type { LeaderboardResponse } from '../../../../shared/api';
-import type { PuzzleManifest } from '../../../../shared/engine/ManifestLoader';
-import type { GameState } from '../../../../shared/engine/GameState';
+import type { LeaderboardResponse } from '../../shared/api';
+import type { PuzzleManifest } from '../../shared/engine/ManifestLoader';
+import type { GameState } from '../../shared/engine/GameState';
 
 interface UseLeaderboardSyncProps {
   DEV_BUILD: boolean;

@@ -41,8 +41,8 @@ export async function ensurePuzzle(targetDateStr: string, difficulty: number = 1
       rng
   );
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const solGrid = (telemetry.solution as any).getRawSolution(gridSize, gridSize);
+  // Extract solution grid (SolutionGrid provides getRawSolution method)
+  const solGrid = (telemetry.solution!).getRawSolution(gridSize, gridSize);
   
   // Use a simple buffer for hashing if web crypto isn't available in specific workers, 
   // but as it worked in API we keep it for consistency.
@@ -53,8 +53,7 @@ export async function ensurePuzzle(targetDateStr: string, difficulty: number = 1
     rows: gridSize,
     cols: gridSize,
     difficulty,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    clues: telemetry.clues.map((clue: any) => sieve.toActiveClue(clue, telemetry.solution as any)),
+    clues: telemetry.clues.map((clue) => sieve.toActiveClue(clue, telemetry.solution!)),
     integrityHash,
     date: targetDateStr
   };

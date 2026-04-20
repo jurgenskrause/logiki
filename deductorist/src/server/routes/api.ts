@@ -81,9 +81,9 @@ api.get('/game/puzzle', async (c) => {
 
     const puzzleData = await ensurePuzzle(targetDateStr, difficulty);
     return c.json(puzzleData);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (e: any) {
-    console.error(`[API] Puzzle hit error: ${e.message}`);
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error(`[API] Puzzle hit error: ${msg}`);
     return c.json<ErrorResponse>({ status: 'error', message: 'Failed to retrieve puzzle' }, 500);
   }
 });
@@ -160,8 +160,7 @@ api.post('/game/submit', async (c) => {
       const effectiveUsername = body.isDevBuild ? `${username}_${Date.now()}` : username;
       const bucketSec = Math.floor(durationMs / 1000);
       
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const promises: Promise<any>[] = [
+      const promises: Promise<unknown>[] = [
         redis.zAdd(`leaderboard:daily:${targetDate}:${gridSize}:tainted`, { member: effectiveUsername, score: durationMs }),
         redis.hIncrBy(`leaderboard:daily:${targetDate}:${gridSize}:dist:tainted`, bucketSec.toString(), 1)
       ];
@@ -436,9 +435,9 @@ api.post('/game/dev/reset', async (c) => {
     await Promise.all(resetPromises);
     
     return c.json({ status: 'success', message: `Data eradicated securely for ${targetDate}` });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (e: any) {
-    console.error(`[Dev Reset UI Route] Fault:`, e?.message || e);
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error(`[Dev Reset UI Route] Fault:`, msg);
     return c.json<ErrorResponse>({ status: 'error', message: 'Failed to execute secure reset' }, 500);
   }
 });

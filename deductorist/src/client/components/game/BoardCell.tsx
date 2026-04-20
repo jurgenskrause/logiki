@@ -13,7 +13,7 @@ interface BoardCellProps {
   isResolved: boolean;
   resolvedValue?: string;
   cellSizeRef?: (size: { width: number, height: number, cellId: string }) => void;
-  onInteract: (cellId: string, possibilityId: number, action: 'eliminate' | 'solve') => void;
+  onInteract: (cellId: string, possibilityId: number, action: 'eliminate' | 'solve' | 'zoom_trigger') => void;
   subColumns: number;
   /** Items to highlight in this cell: id = option.id, color drives ring/bg */
   highlightItems?: { id: number; color: 'red' | 'green' }[];
@@ -85,8 +85,7 @@ export const BoardCell: React.FC<BoardCellProps> = ({
                     : 'border-white/10'}`}
       style={aspectStyle}
        
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      onClick={() => onInteract(cellId, -1, 'zoom_trigger' as any)}
+      onClick={() => onInteract(cellId, -1, 'zoom_trigger')}
     >
       {/* Row/Col Hover Highlight Overlay */}
       {(isRowHovered || isColHovered) && (
