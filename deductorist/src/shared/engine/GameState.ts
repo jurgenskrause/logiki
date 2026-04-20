@@ -123,10 +123,10 @@ export class GameState {
     };
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public importFullState(state: any): void {
+  type SerializedHistoryState = { grid?: Record<string, number>; confirmed?: Record<string, number>; noAutoSolve?: Record<string, number>; previousMask?: Record<string, number>; binnedClues?: string[] };
+  public importFullState(state: { history?: SerializedHistoryState[]; cursor?: number; lastGoodIndex?: number; isError?: boolean; }): void {
     if (!state || !state.history || state.history.length === 0) return;
-    this._history = state.history.map((s: any) => ({
+    this._history = state.history.map((s: SerializedHistoryState) => ({
         // Support pulling straight from JSON mapping objects if UintArray parsing is wonky
         grid: new Uint16Array(Object.values(s.grid || {})),
         confirmed: new Uint8Array(Object.values(s.confirmed || {})),
@@ -376,16 +376,14 @@ export class GameState {
     // 1. Naked Singles
     for (let r = 0; r < this._rows; r++) {
       for (let c = 0; c < this._cols; c++) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const idx = this._getIndex(r as any, c as any);
+        const idx = this._getIndex(r as CategoryIndex, c as ColumnIndex);
         if (this._confirmed[idx]) continue;
         if (this._noAutoSolve[idx]) continue;
         
         const mask = this._grid[idx];
         if (this._getPossibleCountFromMask(mask) === 1) {
           const item = Math.log2(mask) as ItemIndex;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          this._applyConfirmation(r as any, c as any, item, traces);
+          this._applyConfirmation(r as CategoryIndex, c as ColumnIndex, item, traces);
           return traces;
         }
       }
@@ -398,8 +396,7 @@ export class GameState {
         const possibleCols: number[] = [];
         let confirmedCol: number = -1;
         for (let c = 0; c < this._cols; c++) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const idx = this._getIndex(r as any, c as any);
+          const idx = this._getIndex(r as CategoryIndex, c as ColumnIndex);
           if (this._grid[idx] & bit) {
             possibleCols.push(c);
             if (this._confirmed[idx]) confirmedCol = c;
@@ -407,12 +404,10 @@ export class GameState {
         }
         if (possibleCols.length === 1 && confirmedCol === -1) {
           const targetCol = possibleCols[0];
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const targetIdx = this._getIndex(r as any, targetCol as any);
+          const targetIdx = this._getIndex(r as CategoryIndex, targetCol as ColumnIndex);
           if (this._noAutoSolve[targetIdx]) continue;
           
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          this._applyConfirmation(r as any, targetCol as any, item as any, traces);
+          this._applyConfirmation(r as CategoryIndex, targetCol as ColumnIndex, item as ItemIndex, traces);
           return traces;
         }
       }

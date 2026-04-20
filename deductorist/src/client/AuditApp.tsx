@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { seedHash, seededRandom } from '../shared/utils/random';
 import { getAsset } from '../shared/utils/themeRegistry';
 import { GameState } from '../shared/engine/GameState';
@@ -51,7 +51,7 @@ function App() {
             {/* Determinism */}
             <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800">
               <span className="text-[10px] font-bold text-slate-500 mb-2 block uppercase">Deterministic Sequence</span>
-              {(() => {
+              {useMemo(() => {
                 const h = seedHash('V-TEST');
                 const r1 = seededRandom(h)();
                 const r2 = seededRandom(h)();
@@ -61,7 +61,7 @@ function App() {
                     <span className="bg-green-500/10 text-green-400 text-[10px] px-2 py-0.5 rounded-full font-bold">MATCHED</span>
                   </div>
                 );
-              })()}
+              }, [auditTick])}
             </div>
 
             {/* Asset Mapping */}
@@ -84,7 +84,7 @@ function App() {
           </h2>
           
           <div className="grid grid-cols-2 gap-4">
-             {(() => {
+             {useMemo(() => {
                const s6 = new GameState(6, 6);
                const s8 = new GameState(8, 8);
                return (
@@ -99,12 +99,12 @@ function App() {
                    </div>
                  </>
                );
-             })()}
+             }, [auditTick])}
           </div>
 
           <div className="mt-6 p-4 bg-slate-950 rounded-2xl border border-slate-800">
             <span className="text-[10px] text-slate-500 uppercase block mb-2">Intent & Mutation Trace Proof</span>
-            {(() => {
+            {useMemo(() => {
               const state = new GameState(6, 6);
               const trace = state.confirmCell(0, 0, 1);
               const mask = state.grid[0];
@@ -125,7 +125,7 @@ function App() {
                   </div>
                 </div>
               );
-            })()}
+            }, [auditTick])}
           </div>
         </section>
 
@@ -141,7 +141,7 @@ function App() {
             {/* Snapshot Integrity */}
             <div className="space-y-3">
               <span className="text-[10px] font-bold text-slate-500 uppercase">Snapshot Integrity</span>
-              {(() => {
+              {useMemo(() => {
                 const state = new GameState(6, 6);
                 state.confirmCell(0, 0, 1); // prunes 5
                 state.undo();
@@ -152,13 +152,13 @@ function App() {
                     <p className="text-[10px] text-slate-500 mt-1">Single-step revert verified.</p>
                   </div>
                 );
-              })()}
+              }, [auditTick])}
             </div>
 
             {/* Redo Invalidation */}
             <div className="space-y-3">
               <span className="text-[10px] font-bold text-slate-500 uppercase">Redo Invalidation</span>
-              {(() => {
+              {useMemo(() => {
                 const state = new GameState(6, 6);
                 state.pushHistory(); // Initial state
                 state.toggleBit(0, 0, 1);
@@ -175,13 +175,13 @@ function App() {
                     <p className="text-[10px] text-slate-500 mt-1">Stack cleared on new action.</p>
                   </div>
                 );
-              })()}
+              }, [auditTick])}
             </div>
 
             {/* Commit Requirement */}
             <div className="space-y-3">
               <span className="text-[10px] font-bold text-slate-500 uppercase">Commit Requirement</span>
-              {(() => {
+              {useMemo(() => {
                 const state = new GameState(4, 4);
                 const sol = new Uint8Array(16);
                 sol[0] = 3;
@@ -196,13 +196,13 @@ function App() {
                     <p className="text-[10px] text-slate-500 mt-1">Validation requires confirmation.</p>
                   </div>
                 );
-              })()}
+              }, [auditTick])}
             </div>
 
             {/* 8x8 Scale Check */}
             <div className="space-y-3">
               <span className="text-[10px] font-bold text-slate-500 uppercase">8x8 Scale Check</span>
-              {(() => {
+              {useMemo(() => {
                 const state = new GameState(8, 8);
                 const sol = new Uint8Array(64);
                 for(let i=0; i<64; i++) sol[i] = i % 8;
@@ -224,7 +224,7 @@ function App() {
                     <p className="text-[10px] text-slate-500 mt-1">Full 8-bit mask verified. AuditTick: {auditTick}</p>
                   </div>
                 );
-              })()}
+              }, [auditTick])}
             </div>
 
           </div>

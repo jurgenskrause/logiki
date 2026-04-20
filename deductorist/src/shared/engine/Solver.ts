@@ -196,15 +196,6 @@ export class Solver {
    * @param canvas The logic canvas to prune.
    * @returns true if any bits were pruned.
    */
-  /**
-   * Phase 3.3.3: Internal Inference Handlers
-   * 
-   * These logic patterns represent the "Rules of the Universe" for a logic grid.
-   * They scan the LogicCanvas for bitmask patterns across category rows.
-   * 
-   * @param canvas The logic canvas to prune.
-   * @returns true if any bits were pruned.
-   */
   private applyInferences(canvas: LogicCanvas): boolean {
     let hasChanged = false;
 

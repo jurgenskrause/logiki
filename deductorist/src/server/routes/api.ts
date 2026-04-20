@@ -97,7 +97,9 @@ api.post('/game/submit', async (c) => {
     const startTimeStr = await redis.get(`session:start:${username}`);
     if (!startTimeStr && !body.isDevBuild) {
       // Missing start session (ghosted to prevent direct API injects)
-      await redis.hSet('ghosted_users_v1', { [username]: 'true' });
+      const fallbackDate = new Date().toISOString().split('T')[0];
+      await redis.hSet(`ghosted_users:${fallbackDate}`, { [username]: 'true' });
+      await redis.expire(`ghosted_users:${fallbackDate}`, 86400 * 7);
       return c.json<GameSubmitResponse>({ status: 'ghosted', message: 'Invalid session' });
     }
 
@@ -178,7 +180,8 @@ api.post('/game/submit', async (c) => {
       } else {
         // Ghost them to preserve fast hGet checks later (skip if it was a dev script to prevent permabanning the dev)
         if (!body.isDevBuild) {
-           await redis.hSet('ghosted_users_v1', { [username]: 'true' });
+           await redis.hSet(`ghosted_users:${targetDate}`, { [username]: 'true' });
+           await redis.expire(`ghosted_users:${targetDate}`, 86400 * 7);
         }
       }
       
@@ -188,7 +191,8 @@ api.post('/game/submit', async (c) => {
       absoluteRank = zScore !== undefined ? zScore + 1 : 0;
     } else {
       // Ghost them immediately during dev drops
-      await redis.hSet('ghosted_users_v1', { [username]: 'true' });
+      await redis.hSet(`ghosted_users:${targetDate}`, { [username]: 'true' });
+      await redis.expire(`ghosted_users:${targetDate}`, 86400 * 7);
     }
 
     return c.json<GameSubmitResponse>({
@@ -237,7 +241,8 @@ api.get('/game/state/sync', async (c) => {
     const dateMatch = puzzleId.match(/^(\d{4}-\d{2}-\d{2})/);
     const targetDate = dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0];
     
-    const isGhostRaw = await redis.hGet('ghosted_users_v1', username);
+    let isGhostRaw = await redis.hGet(`ghosted_users:${targetDate}`, username);
+    if (!isGhostRaw) isGhostRaw = await redis.hGet('ghosted_users_v1', username);
     const targetBoard = (isGhostRaw === 'true') ? 'tainted' : 'clean';
 
     console.log(`[GameState Sync] Checking leaderboard completion for ${username} on puzzle ${puzzleId} (grid: ${gridSize})`);
@@ -313,7 +318,8 @@ api.get('/game/state/completed', async (c) => {
     const completedList: number[] = [];
 
     // Check only the specific configured sizes for completion
-    const isGhostRaw = await redis.hGet('ghosted_users_v1', username);
+    let isGhostRaw = await redis.hGet(`ghosted_users:${requestedDate}`, username);
+    if (!isGhostRaw) isGhostRaw = await redis.hGet('ghosted_users_v1', username);
     const targetBoard = (isGhostRaw === 'true') ? 'tainted' : 'clean';
 
     const checks = await Promise.all(
@@ -340,7 +346,8 @@ api.get('/game/leaderboard', async (c) => {
     // Extract requested date or fallback to today
     const targetDate = c.req.query('date') || new Date().toISOString().split('T')[0];
     
-    const isGhostRaw = await redis.hGet('ghosted_users_v1', username);
+    let isGhostRaw = await redis.hGet(`ghosted_users:${targetDate}`, username);
+    if (!isGhostRaw) isGhostRaw = await redis.hGet('ghosted_users_v1', username);
     const targetBoard = (isGhostRaw === 'true') ? 'tainted' : 'clean';
 
     const [rawLeaderboard, distributionRaw] = await Promise.all([
@@ -411,20 +418,22 @@ api.post('/game/dev/reset', async (c) => {
 
     console.log(`[Dev Reset] Authorized explicit cache wipe for date: ${targetDate}, admin: ${user.username}`);
 
+    const resetPromises: Promise<unknown>[] = [];
     for (let level = 1; level <= 5; level++) {
        const size = level + 3;
        const puzzleId = `${targetDate}-${size}x${size}-${level}`;
        
        console.log(`[Dev Reset] Expurging dual-leaderboards entirely for ${size}x${size}...`);
        
-       await redis.del(`leaderboard:daily:${targetDate}:${size}x${size}:clean`);
-       await redis.del(`leaderboard:daily:${targetDate}:${size}x${size}:dist:clean`);
-       await redis.del(`leaderboard:daily:${targetDate}:${size}x${size}:tainted`);
-       await redis.del(`leaderboard:daily:${targetDate}:${size}x${size}:dist:tainted`);
-       
-       console.log(`[Dev Reset] Deleting active gameState for ${user.username} on puzzle ${puzzleId}...`);
-       await redis.del(`gameState:${user.username}:${puzzleId}`);
+       resetPromises.push(
+         redis.del(`leaderboard:daily:${targetDate}:${size}x${size}:clean`),
+         redis.del(`leaderboard:daily:${targetDate}:${size}x${size}:dist:clean`),
+         redis.del(`leaderboard:daily:${targetDate}:${size}x${size}:tainted`),
+         redis.del(`leaderboard:daily:${targetDate}:${size}x${size}:dist:tainted`),
+         redis.del(`gameState:${user.username}:${puzzleId}`)
+       );
     }
+    await Promise.all(resetPromises);
     
     return c.json({ status: 'success', message: `Data eradicated securely for ${targetDate}` });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
