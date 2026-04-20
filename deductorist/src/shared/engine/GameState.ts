@@ -123,10 +123,11 @@ export class GameState {
     };
   }
 
-  type SerializedHistoryState = { grid?: Record<string, number>; confirmed?: Record<string, number>; noAutoSolve?: Record<string, number>; previousMask?: Record<string, number>; binnedClues?: string[] };
-  public importFullState(state: { history?: SerializedHistoryState[]; cursor?: number; lastGoodIndex?: number; isError?: boolean; }): void {
-    if (!state || !state.history || state.history.length === 0) return;
-    this._history = state.history.map((s: SerializedHistoryState) => ({
+  public importFullState(state: unknown): void {
+    if (!state || typeof state !== 'object' || !('history' in state)) return;
+    const typedState = state as { history?: { grid?: Record<string, number>; confirmed?: Record<string, number>; noAutoSolve?: Record<string, number>; previousMask?: Record<string, number>; binnedClues?: string[] }[]; cursor?: number; lastGoodIndex?: number; isError?: boolean; };
+    if (!typedState.history || typedState.history.length === 0) return;
+    this._history = typedState.history.map((s) => ({
         // Support pulling straight from JSON mapping objects if UintArray parsing is wonky
         grid: new Uint16Array(Object.values(s.grid || {})),
         confirmed: new Uint8Array(Object.values(s.confirmed || {})),
@@ -134,9 +135,9 @@ export class GameState {
         previousMask: new Uint16Array(Object.values(s.previousMask || {})),
         binnedClues: [...(s.binnedClues || [])]
     }));
-    this._cursor = state.cursor ?? 0;
-    this._lastGoodIndex = state.lastGoodIndex ?? 0;
-    this._isError = state.isError ?? false;
+    this._cursor = typedState.cursor ?? 0;
+    this._lastGoodIndex = typedState.lastGoodIndex ?? 0;
+    this._isError = typedState.isError ?? false;
     
     if (this._cursor >= 0 && this._cursor < this._history.length) {
       this._loadSnapshot(this._history[this._cursor]);
