@@ -50,6 +50,7 @@ export interface PuzzleManifest {
   date?: string;
   loadedFullState?: GameSnapshot;
   preloadedLeaderboard?: LeaderboardResponse;
+  preloadedUserRank?: number | null;
   loadedBinnedClues?: string[];
 }
 

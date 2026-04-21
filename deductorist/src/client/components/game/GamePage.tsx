@@ -236,12 +236,28 @@ export const GamePage: React.FC = () => {
 
   useEffect(() => {
     if (puzzle) {
-      setIsGameStarted(false);
-      setElapsedSeconds(0);
+      if (puzzle.isCompleted) {
+        setIsGameStarted(true);
+        setIsGameWon(true);
+        setIsRecoveredWin(true);
+        setElapsedSeconds(puzzle.loadedElapsed || 0);
+
+        // Populate leaderboard data from preloaded manifest to ensure awards show immediately
+        if (puzzle.preloadedLeaderboard) {
+          setLeaderboardData(puzzle.preloadedLeaderboard);
+        }
+        if (puzzle.preloadedUserRank !== undefined) {
+          setUserRank(puzzle.preloadedUserRank);
+        }
+      } else {
+        setIsGameStarted(false);
+        setElapsedSeconds(0);
+        setIsGameWon(false);
+        setIsRecoveredWin(false);
+        if (gameState) setTimeout(runAnalysis, 50);
+      }
       setIsLoading(false);
       setShowBinRef.current(false);
-      if (gameState) setTimeout(runAnalysis, 50);
-      setIsGameWon(false);
       setIsViewingCompletedBoard(false);
       moveLogRef.current = [];
       penaltyMsRef.current = 0;
@@ -251,7 +267,7 @@ export const GamePage: React.FC = () => {
 
   // Victory Celebration: Fireworks
   useEffect(() => {
-    if (isGameWon) {
+    if (isGameWon && !isRecoveredWin) {
       const duration = 5 * 1000;
       const animationEnd = Date.now() + duration;
       const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 110 };
@@ -1144,7 +1160,12 @@ export const GamePage: React.FC = () => {
         ) : null}
       </DragOverlay>
 
-      <DevMenu puzzleId={puzzle ? `${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}` : undefined} grid={gameState?.grid} isDev={DEV_BUILD} />
+      <DevMenu 
+        puzzleId={puzzle ? `${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}` : undefined} 
+        grid={gameState?.grid} 
+        isDev={DEV_BUILD} 
+        date={puzzle?.date}
+      />
       </div>
     </div>
     </DndContext>

@@ -2,12 +2,12 @@ import React from 'react';
 
 // DEV_BUILD is injected by Vite/vite-env.d.ts or similar globals.
 
-export const DevMenu = ({ puzzleId, grid, isDev }: { puzzleId?: string, grid?: Uint16Array | number[], isDev?: boolean }) => {
+export const DevMenu = ({ puzzleId, grid, isDev, date }: { puzzleId?: string, grid?: Uint16Array | number[], isDev?: boolean, date?: string }) => {
   if (!isDev) return null;
 
   const handleReset = () => {
     const urlParams = new URLSearchParams(window.location.search);
-    const dateParam = urlParams.get('date') || new Date().toISOString().split('T')[0];
+    const dateParam = date || urlParams.get('date') || new Date().toISOString().split('T')[0];
 
     const legacyKeys = [];
     for (let i = 0; i < localStorage.length; i++) {

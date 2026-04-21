@@ -271,6 +271,25 @@ api.post('/game/state/sync', async (c) => {
     const username = await reddit.getCurrentUsername();
     if (!username) return c.json<ErrorResponse>({ status: 'error', message: 'Unauthorized' }, 401);
 
+    // Reinforce Immutability: If users have a score, they cannot update the state anymore.
+    if (!body.puzzleId.startsWith('random-')) {
+        const gridMatch = body.puzzleId.match(/(\d+x\d+)/);
+        const gridSize = gridMatch ? gridMatch[1] : '4x4';
+        const dateMatch = body.puzzleId.match(/^(\d{4}-\d{2}-\d{2})/);
+        const targetDate = dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0];
+
+        // We check clean/tainted board both to ensure they can't bypass via one or the other once settled
+        const [cleanScore, taintedScore] = await Promise.all([
+            redis.zScore(`leaderboard:daily:${targetDate}:${gridSize}:clean`, username),
+            redis.zScore(`leaderboard:daily:${targetDate}:${gridSize}:tainted`, username)
+        ]);
+
+        if ((cleanScore !== null && cleanScore !== undefined) || (taintedScore !== null && taintedScore !== undefined)) {
+            console.log(`[GameState Sync POST] Sync rejected for ${username} (Puzzle Already Completed: ${body.puzzleId})`);
+            return c.json<ErrorResponse>({ status: 'error', message: 'Puzzle state is now immutable.' }, 403);
+        }
+    }
+
     console.log(`[GameState Sync POST] Saving ${JSON.stringify(body).length} bytes for ${username} on puzzle ${body.puzzleId}`);
 
     await redis.set(
@@ -304,44 +323,49 @@ api.get('/game/state/sync', async (c) => {
     const targetBoard = (isGhostRaw === 'true') ? 'tainted' : 'clean';
 
     console.log(`[GameState Sync] Checking leaderboard completion for ${username} on puzzle ${puzzleId} (grid: ${gridSize})`);
+    const isRandom = puzzleId.startsWith('random-');
     const zScoreRaw = await redis.zScore(`leaderboard:daily:${targetDate}:${gridSize}:${targetBoard}`, username);
-    console.log(`[GameState Sync] zScore query result for ${username}:`, zScoreRaw);
 
-    if (zScoreRaw !== undefined && zScoreRaw !== null) {
+    if (!isRandom && zScoreRaw !== undefined && zScoreRaw !== null) {
        console.log(`[GameState Sync] User ${username} has already completed this puzzle. Fast-forwarding to Win State.`);
        
-       // Preload Leaderboard data natively to bypass visual loading delays on historic boards
-       let leaderboardData = undefined;
-       try {
-         const [rawLeaderboard, distributionRaw] = await Promise.all([
-           redis.zRange(`leaderboard:daily:${targetDate}:${gridSize}:${targetBoard}`, 0, 49, { by: 'rank' }),
-           redis.hGetAll(`leaderboard:daily:${targetDate}:${gridSize}:dist:${targetBoard}`)
-         ]);
+        // Preload Leaderboard data natively to bypass visual loading delays on historic boards
+        let leaderboardData = undefined;
+        let userRank = null;
+        try {
+          const [rawLeaderboard, distributionRaw, rank] = await Promise.all([
+            redis.zRange(`leaderboard:daily:${targetDate}:${gridSize}:${targetBoard}`, 0, 49, { by: 'rank' }),
+            redis.hGetAll(`leaderboard:daily:${targetDate}:${gridSize}:dist:${targetBoard}`),
+            redis.zRank(`leaderboard:daily:${targetDate}:${gridSize}:${targetBoard}`, username)
+          ]);
 
-         const distribution: Record<string, number> = {};
-         let totalSolvers = 0;
-         for (const [bucket, countStr] of Object.entries(distributionRaw)) {
-            const count = parseInt(countStr, 10) || 0;
-            distribution[bucket] = count;
-            totalSolvers += count;
-         }
+          userRank = rank !== undefined ? rank + 1 : null;
 
-         leaderboardData = {
-           type: 'leaderboard',
-           entries: rawLeaderboard,
-           distribution,
-           totalSolvers
-         };
-       } catch (err) {
-         console.error('[GameState Sync] Error preloading leaderboard:', err);
-       }
+          const distribution: Record<string, number> = {};
+          let totalSolvers = 0;
+          for (const [bucket, countStr] of Object.entries(distributionRaw)) {
+             const count = parseInt(countStr, 10) || 0;
+             distribution[bucket] = count;
+             totalSolvers += count;
+          }
+
+          leaderboardData = {
+            type: 'leaderboard',
+            entries: rawLeaderboard,
+            distribution,
+            totalSolvers
+          };
+        } catch (err) {
+          console.error('[GameState Sync] Error preloading leaderboard:', err);
+        }
 
        // eslint-disable-next-line @typescript-eslint/no-explicit-any
        const responsePayload: any = {
          status: 'completed',
          puzzleId,
          elapsedSeconds: Math.floor(Number(zScoreRaw) / 1000),
-         leaderboardData
+         leaderboardData,
+         userRank
        };
 
        try {

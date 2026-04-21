@@ -166,10 +166,8 @@ export function useGameStateHydration({
                     if (stateData.elapsedSeconds !== undefined) {
                       data.loadedElapsed = stateData.elapsedSeconds;
                     }
-                  } else if (stateData.status === 'completed') {
-                      data.isCompleted = true;
-                      
                       if (stateData.solution) {
+                          data.isCompleted = true;
                           const length = data.rows * data.cols;
                           const grid = new Uint16Array(length);
                           const confirmed = new Uint8Array(length);
@@ -195,6 +193,9 @@ export function useGameStateHydration({
                       }
                       if (stateData.leaderboardData) {
                           data.preloadedLeaderboard = stateData.leaderboardData;
+                      }
+                      if (stateData.userRank !== undefined) {
+                          data.preloadedUserRank = stateData.userRank;
                       }
                   }
                // eslint-disable-next-line no-empty
