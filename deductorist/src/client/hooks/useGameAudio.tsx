@@ -5,6 +5,7 @@ import solveSfx from '../../../assets/sounds/solve.wav';
 import mistakeSfx from '../../../assets/sounds/mistake.wav';
 import moveClueSfx from '../../../assets/sounds/moveclue.wav';
 import winSfx from '../../../assets/sounds/win.wav';
+import applauseSfx from '../../../assets/sounds/applause.wav';
 
 export function useGameAudio() {
   const eliminateAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -12,6 +13,7 @@ export function useGameAudio() {
   const mistakeAudioRef = useRef<HTMLAudioElement | null>(null);
   const moveClueAudioRef = useRef<HTMLAudioElement | null>(null);
   const winAudioRef = useRef<HTMLAudioElement | null>(null);
+  const applauseAudioRef = useRef<HTMLAudioElement | null>(null);
   const pendingSoundRef = useRef<'solve' | 'eliminate' | null>(null);
 
   const [isSoundEnabled, setIsSoundEnabled] = useState(true);
@@ -22,9 +24,10 @@ export function useGameAudio() {
     mistakeAudioRef.current = new Audio(mistakeSfx);
     moveClueAudioRef.current = new Audio(moveClueSfx);
     winAudioRef.current = new Audio(winSfx);
+    applauseAudioRef.current = new Audio(applauseSfx);
   }, []);
 
-  const internalPlayInteractionSound = useCallback((type: 'solve' | 'eliminate' | 'mistake' | 'moveclue' | 'win', force: boolean = false) => {
+  const internalPlayInteractionSound = useCallback((type: 'solve' | 'eliminate' | 'mistake' | 'moveclue' | 'win' | 'APPLAUSE', force: boolean = false) => {
     if (!force && !isSoundEnabled) return;
     
     let audio: HTMLAudioElement | null = null;
@@ -34,6 +37,7 @@ export function useGameAudio() {
       case 'mistake': audio = mistakeAudioRef.current; break;
       case 'moveclue': audio = moveClueAudioRef.current; break;
       case 'win': audio = winAudioRef.current; break;
+      case 'APPLAUSE': audio = applauseAudioRef.current; break;
     }
     
     if (audio) {

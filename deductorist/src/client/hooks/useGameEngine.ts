@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { analyzeState } from '../../shared/engine/HintService';
 import type { HintResult } from '../../shared/engine/HintService';
 import { ManifestLoader } from '../../shared/engine/ManifestLoader';
@@ -37,6 +37,18 @@ export function useGameEngine({
   setActiveHint, setHintShowing, submitScore, fetchLeaderboard
 }: UseGameEngineProps) {
   const [isCascading, setIsCascading] = useState(false);
+  const cascadeStartSolveCountRef = useRef<number>(0);
+
+  const countConfirmed = useCallback(() => {
+    let count = 0;
+    if (!gameState || !puzzle) return 0;
+    for (let r = 0; r < puzzle.rows; r++) {
+      for (let c = 0; c < puzzle.cols; c++) {
+        if (gameState.isConfirmed(r, c)) count++;
+      }
+    }
+    return count;
+  }, [gameState, puzzle]);
 
   const runAnalysis = useCallback(() => {
     if (!gameState || !puzzle) return;
@@ -119,8 +131,13 @@ export function useGameEngine({
       gameState.pushHistory();
       void checkWin(); 
       setTimeout(runAnalysis, 50);
+
+      const delta = countConfirmed() - cascadeStartSolveCountRef.current;
+      if (delta >= 2) {
+         playInteractionSound('APPLAUSE');
+      }
     }
-  }, [gameState, runAnalysis, playInteractionSound, checkWin, setTick, enqueue]);
+  }, [gameState, runAnalysis, playInteractionSound, checkWin, setTick, enqueue, countConfirmed]);
 
   const handleStateChange = useCallback(() => {
     if (isGameWon) return;
@@ -140,6 +157,8 @@ export function useGameEngine({
         return; 
       }
     }
+    
+    cascadeStartSolveCountRef.current = countConfirmed();
 
     if (pendingSoundRef.current) {
       playInteractionSound(pendingSoundRef.current);
