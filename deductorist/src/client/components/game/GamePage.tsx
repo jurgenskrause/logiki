@@ -1129,7 +1129,7 @@ export const GamePage: React.FC = () => {
         ) : null}
       </DragOverlay>
 
-      <DevMenu puzzleId={puzzle ? `${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}` : undefined} grid={gameState?.grid} />
+      <DevMenu puzzleId={puzzle ? `${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}` : undefined} grid={gameState?.grid} isDev={DEV_BUILD} />
       </div>
     </div>
     </DndContext>
