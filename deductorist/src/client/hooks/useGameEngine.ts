@@ -104,9 +104,7 @@ export function useGameEngine({
       setIsGameWon(true);
       setIsGameStarted(true);
       playInteractionSound('win');
-      submitScore();
-      const puzzleDate = puzzle.date || 'today';
-      void fetchLeaderboard(puzzleDate, `${puzzle.rows}x${puzzle.cols}`);
+      submitScore(); // submitScore internally handles the leaderboard sync
     }
   }, [gameState, puzzle, isGameWon, playInteractionSound, submitScore, setIsGameWon, setIsGameStarted, fetchLeaderboard]);
 

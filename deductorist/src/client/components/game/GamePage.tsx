@@ -331,6 +331,9 @@ export const GamePage: React.FC = () => {
   // Sync Abstraction
   const { leaderboardData, setLeaderboardData, userRank, setUserRank, isSubmittingScore, setIsSubmittingScore, isSharing, submitScore, shareScore, fetchLeaderboard } = useLeaderboardSync({ DEV_BUILD, puzzle, gameState, moveLogRef, penaltyMsRef });
 
+  submitScoreRef.current = submitScore;
+  fetchLeaderboardRef.current = fetchLeaderboard;
+
   // Prevent state-bleeding across difficulty swaps (moved down here to safely capture references)
   useEffect(() => {
     setIsGameWon(false);
