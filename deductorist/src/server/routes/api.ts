@@ -96,7 +96,9 @@ api.get('/game/puzzle', async (c) => {
     }
 
     const puzzleData = await ensurePuzzle(targetDateStr, difficulty);
-    return c.json(puzzleData);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { solution, ...safeData } = puzzleData;
+    return c.json(safeData);
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error(`[API] Puzzle hit error: ${msg}`);
@@ -334,13 +336,24 @@ api.get('/game/state/sync', async (c) => {
          console.error('[GameState Sync] Error preloading leaderboard:', err);
        }
 
-       return c.json<GameStateSyncResponse>({
+       // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       const responsePayload: any = {
          status: 'completed',
          puzzleId,
          elapsedSeconds: Math.floor(Number(zScoreRaw) / 1000),
-         // @ts-expect-error bundling extension payload
          leaderboardData
-       });
+       };
+
+       try {
+           const difficultyMatch = puzzleId.match(/-(\d+)$/);
+           const difficulty = difficultyMatch ? parseInt(difficultyMatch[1], 10) : 1;
+           const puzzleData = await ensurePuzzle(targetDate, difficulty);
+           responsePayload.solution = puzzleData.solution;
+       } catch (err) {
+           console.error('[GameState Sync] Error fetching puzzle for solution hydration:', err);
+       }
+
+       return c.json<GameStateSyncResponse>(responsePayload);
     }
 
     const raw = await redis.get(`gameState:${username}:${puzzleId}`);

@@ -168,6 +168,28 @@ export function useGameStateHydration({
                     }
                   } else if (stateData.status === 'completed') {
                       data.isCompleted = true;
+                      
+                      if (stateData.solution) {
+                          const length = data.rows * data.cols;
+                          const grid = new Uint16Array(length);
+                          const confirmed = new Uint8Array(length);
+                          const previousMask = new Uint16Array(length);
+                          for (let i = 0; i < length; i++) {
+                              const itemIndex = stateData.solution[i];
+                              grid[i] = 1 << itemIndex;
+                              confirmed[i] = itemIndex + 1;
+                              previousMask[i] = (1 << data.cols) - 1;
+                          }
+                          data.loadedSnapshot = {
+                              grid,
+                              confirmed,
+                              noAutoSolve: new Uint8Array(length),
+                              previousMask,
+                              binnedClues: []
+                          };
+                          data.loadedFullState = undefined;
+                      }
+
                       if (stateData.elapsedSeconds !== undefined) {
                           data.loadedElapsed = stateData.elapsedSeconds;
                       }

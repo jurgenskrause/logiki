@@ -55,7 +55,8 @@ export async function ensurePuzzle(targetDateStr: string, difficulty: number = 1
     difficulty,
     clues: telemetry.clues.map((clue) => sieve.toActiveClue(clue, telemetry.solution!)),
     integrityHash,
-    date: targetDateStr
+    date: targetDateStr,
+    solution: Array.from(solGrid)
   };
 
   await redis.set(cacheKey, JSON.stringify(puzzleData));
