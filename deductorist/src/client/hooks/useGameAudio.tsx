@@ -1,12 +1,12 @@
 /* eslint-disable react-hooks/immutability */
 import { useRef, useState, useCallback, useEffect } from 'react';
 
-import eliminateSfx from '../../../assets/sounds/eliminate.wav';
-import solveSfx from '../../../assets/sounds/solve.wav';
-import mistakeSfx from '../../../assets/sounds/mistake.wav';
-import moveClueSfx from '../../../assets/sounds/moveclue.wav';
-import winSfx from '../../../assets/sounds/win.wav';
-import applauseSfx from '../../../assets/sounds/applause.wav';
+import eliminateSfx from '../assets/sounds/eliminate.wav';
+import solveSfx from '../assets/sounds/solve.wav';
+import mistakeSfx from '../assets/sounds/mistake.wav';
+import moveClueSfx from '../assets/sounds/moveclue.wav';
+import winSfx from '../assets/sounds/win.wav';
+import applauseSfx from '../assets/sounds/applause.wav';
 
 export function useGameAudio() {
   const eliminateAudioRef = useRef<HTMLAudioElement | null>(null);
