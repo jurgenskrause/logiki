@@ -2,9 +2,8 @@ import React from 'react';
 
 // DEV_BUILD is injected by Vite/vite-env.d.ts or similar globals.
 
-export const DevMenu = ({ puzzleId, grid }: { puzzleId?: string, grid?: Uint16Array | number[] }) => {
-  // eslint-disable-next-line no-undef
-  if (!DEV_BUILD) return null;
+export const DevMenu = ({ puzzleId, grid, isDev }: { puzzleId?: string, grid?: Uint16Array | number[], isDev?: boolean }) => {
+  if (!isDev) return null;
 
   const handleReset = () => {
     const urlParams = new URLSearchParams(window.location.search);

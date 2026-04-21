@@ -131,12 +131,19 @@ export function useGameStateHydration({
           setPuzzle(puzzleData);
         } else {
           const dateParam = urlParams.get('date') || 'today';
+          if (import.meta.env.DEV) {
+             console.log(`[Hydration] Initiating puzzle load for date: ${dateParam}, diff: ${difficulty}`);
+          }
           try {
             const res = await fetch(`/api/game/puzzle?date=${dateParam}&difficulty=${difficulty}`);
             const data: PuzzleManifest & { status?: string, message?: string } = await res.json();
             if (res.ok && data && !data.status) {
                const puzzleDate = data.date || dateParam;
                const p = `${puzzleDate}-${data.rows}x${data.cols}-${data.difficulty}`;
+               if (import.meta.env.DEV) {
+                  console.log(`[Hydration] Found puzzle manifest successfully. ID: ${p}`);
+                  console.log(`[Hydration] Attempting to hydration state from database...`);
+               }
                try {
                   const stateRes = await fetch(`/api/game/state/sync?puzzleId=${p}`);
                   const stateData = await stateRes.json();
@@ -177,6 +184,7 @@ export function useGameStateHydration({
           }
         }
       } catch (err) {
+        if (import.meta.env.DEV) console.error(`[Hydration] Fatal try-catch fault:`, err);
         setLoadError('Error fetching puzzle.');
       } finally {
         setIsLoading(false);
@@ -204,6 +212,8 @@ export function useGameStateHydration({
        gs.pushHistory();
        gs.saveGoodState();
     }
+    
+    if (import.meta.env.DEV) console.log(`[Hydration] GameState structured safely in memory.`);
     return gs;
   }, [puzzle]);
 
