@@ -37,6 +37,7 @@ export function useGameStateHydration({
   
   const [initRoutingState, setInitRoutingState] = useState<'loading' | 'routing' | 'playing'>('loading');
   const [completedLevels, setCompletedLevels] = useState<number[]>([]);
+  const [puzzleDate, setPuzzleDate] = useState<string | null>(null);
 
   useEffect(() => {
     async function bootSequence() {
@@ -55,6 +56,8 @@ export function useGameStateHydration({
       }
 
       const finalDate = dateParam || 'today';
+      if (!isRandom) setPuzzleDate(finalDate);
+      
       let hasCompletedBase = false;
 
       if (!isRandom) {
@@ -82,6 +85,10 @@ export function useGameStateHydration({
 
   useEffect(() => {
     if (!isManifestLoaded) return;
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const isRandom = ENABLE_RANDOM_MODE && urlParams.get('random') === 'true';
+    if (!isRandom && !puzzleDate) return;
 
     // Immediately hide the board when starting a load or change
     setIsLoading(true);
@@ -89,8 +96,6 @@ export function useGameStateHydration({
     const t = setTimeout(async () => {
       const difficulty = selectedDifficulty === 0 ? 1 : selectedDifficulty;
 
-      const urlParams = new URLSearchParams(window.location.search);
-      const isRandom = ENABLE_RANDOM_MODE && urlParams.get('random') === 'true';
       const seedParam = urlParams.get('seed') || Math.random().toString(36).substring(2, 9);
 
       try {
@@ -130,7 +135,7 @@ export function useGameStateHydration({
           setHintShowing(false);
           setPuzzle(puzzleData);
         } else {
-          const dateParam = urlParams.get('date') || 'today';
+          const dateParam = puzzleDate || 'today';
           if (import.meta.env.DEV) {
              console.log(`[Hydration] Initiating puzzle load for date: ${dateParam}, diff: ${difficulty}`);
           }
@@ -192,7 +197,7 @@ export function useGameStateHydration({
     }, 150);
 
     return () => clearTimeout(t);
-  }, [selectedDifficulty, isManifestLoaded, generationTrigger, ENABLE_RANDOM_MODE, setActiveHint, setHintShowing]);
+  }, [selectedDifficulty, isManifestLoaded, generationTrigger, ENABLE_RANDOM_MODE, setActiveHint, setHintShowing, puzzleDate]);
 
   const gameState = useMemo(() => {
     if (!puzzle) return null;

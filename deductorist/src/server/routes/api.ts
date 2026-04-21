@@ -26,6 +26,7 @@ export const api = new Hono();
 
 api.get('/init', async (c) => {
   const { postId } = context;
+  console.log(`[API INIT] Invoked! Context postId is: ${postId}`);
 
   if (!postId) {
     return c.json<ErrorResponse>({ status: 'error', message: 'Missing postId in devvit context' }, 400);
@@ -33,8 +34,21 @@ api.get('/init', async (c) => {
 
   try {
     const username = await reddit.getCurrentUsername() ?? 'anonymous';
-    const gameDate = await redis.get(`post_date:${postId}`) || new Date().toISOString().split('T')[0];
-    const puzzleStatus = (await redis.get(`daily_puzzle_status:${gameDate}`)) || 'ready';
+    const redisResult = await redis.get(`post_date:${postId}`);
+    console.log(`[API INIT] Lookup for post_date:${postId} returned: ${redisResult}`);
+
+    let gameDate = redisResult;
+
+    if (!gameDate) {
+       // Fallback for manually generated development posts or purged Redis sets
+       const parentPost = await reddit.getPostById(postId);
+       gameDate = parentPost.createdAt.toISOString().split('T')[0];
+       console.log(`[API INIT] Fallback engaged! Pulled creation date from Reddit Post: ${gameDate}`);
+    }
+
+    const puzzleStatus = ((await redis.get(`daily_puzzle_status:${gameDate}`)) || 'ready') as InitResponse['puzzleStatus'];
+
+    console.log(`[API INIT] Final gameDate payload sending: ${gameDate}`);
 
     return c.json<InitResponse>({
       type: 'init',
@@ -44,6 +58,7 @@ api.get('/init', async (c) => {
       puzzleStatus
     });
   } catch (error) {
+    console.error(`[API INIT] Crashed during init fetch:`, error);
     return c.json<ErrorResponse>({ status: 'error', message: 'Initialization failed' }, 400);
   }
 });

@@ -1,12 +1,28 @@
 import './index.css';
 
 import { requestExpandedMode } from '@devvit/web/client';
-import { StrictMode } from 'react';
+import { StrictMode, useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 
 const emojis = ['🍎', '🐕', '🏠', '⚽', '💎', '🎹', '⏰', '🎸', '🚀'];
 
 export const Splash = () => {
+  const [buttonText, setButtonText] = useState('PLAY DAILY PUZZLE');
+
+  useEffect(() => {
+    fetch('/api/init')
+      .then(res => res.json())
+      .then(data => {
+        if (data.gameDate) {
+          const today = new Date().toISOString().split('T')[0];
+          if (data.gameDate !== today) {
+            setButtonText(`PLAY ${data.gameDate} PUZZLE`);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <div className="flex relative flex-col justify-center items-center h-screen w-screen bg-slate-950 overflow-hidden font-sans">
       {/* Dynamic Background Gradient */}
@@ -48,7 +64,7 @@ export const Splash = () => {
         >
           <span className="flex items-center gap-2">
             <span className="material-icons text-xl sm:text-2xl drop-shadow-md">play_arrow</span>
-            PLAY DAILY PUZZLE
+            {buttonText}
           </span>
         </button>
 
