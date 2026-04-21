@@ -107,10 +107,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns, cl
       setNeedsZoom(false);
     }
   };
+  const stateRef = useRef({ isLocked, onInteraction, clues, gameState, needsZoom, onStateChange });
+  stateRef.current = { isLocked, onInteraction, clues, gameState, needsZoom, onStateChange };
 
   const handleInteract = (cellId: string, possibilityId: number, action: 'eliminate' | 'solve' | 'zoom_trigger') => {
-    onInteraction?.(action);
-    if (isLocked) return;
+    const refs = stateRef.current;
+    
+    refs.onInteraction?.(action);
+    if (refs.isLocked) return;
 
     // 1. MUST parse coordinates first as they are needed for BOTH zoom and actual interaction
     const [rStr, cStr] = cellId.split('-');
@@ -118,33 +122,33 @@ export const GameBoard: React.FC<GameBoardProps> = ({ rows, cols, subColumns, cl
     const c = parseInt(cStr, 10);
 
     // 2. Check immutability immediately
-    const isImmutable = clues.some(clue => 
+    const isImmutable = refs.clues.some(clue => 
       clue.type === 'ANCHOR' && clue.targetCol === c && clue.params[0]?.row === r
     );
     if (isImmutable) return;
 
     // 3. Check for REVERT action (any click on a confirmed cell)
-    const isActuallyResolved = gameState.isConfirmed(r, c);
+    const isActuallyResolved = refs.gameState.isConfirmed(r, c);
     if (isActuallyResolved) {
-      gameState.unconfirmCell(r, c);
-      onStateChange();
+      refs.gameState.unconfirmCell(r, c);
+      refs.onStateChange();
       return;
     }
 
     // 4. Handle Zoom logic for unconfirmed cells
     if (action === 'zoom_trigger') {
-      if (needsZoom) setZoomTarget(cellId);
+      if (refs.needsZoom) setZoomTarget(cellId);
       return;
     }
 
     // 5. Normal interaction
     if (action === 'eliminate') {
-      gameState.toggleBit(r, c, possibilityId);
+      refs.gameState.toggleBit(r, c, possibilityId);
     } else if (action === 'solve') {
-      gameState.confirmCell(r, c, possibilityId);
+      refs.gameState.confirmCell(r, c, possibilityId);
     }
     
-    onStateChange();
+    refs.onStateChange();
   };
 
   const currentZoomCell = cells.find(c => c.id === zoomTarget);
