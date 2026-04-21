@@ -249,6 +249,13 @@ export const GamePage: React.FC = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [puzzle]);
 
+  // Eagerly update puzzle select completion map
+  useEffect(() => {
+    if (isGameWon && selectedDifficulty < 5 && puzzle && !puzzle.isRandom) {
+       setCompletedLevels((prev: number[]) => Array.from(new Set([...prev, selectedDifficulty])));
+    }
+  }, [isGameWon, selectedDifficulty, puzzle, setCompletedLevels]);
+
   // Victory Celebration: Fireworks
   useEffect(() => {
     if (isGameWon) {
@@ -258,14 +265,17 @@ export const GamePage: React.FC = () => {
 
       const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
 
+      const isMobile = window.matchMedia('(max-width: 768px)').matches;
+      const amount = isMobile ? 15 : 50;
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const interval: any = setInterval(function() {
         if (animationEnd - Date.now() <= 0) return clearInterval(interval);
         // eslint-disable-next-line @typescript-eslint/no-floating-promises
-        confetti({ ...defaults, particleCount: 50, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.1 } });
+        confetti({ ...defaults, particleCount: amount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.1 } });
         // eslint-disable-next-line @typescript-eslint/no-floating-promises
-        confetti({ ...defaults, particleCount: 50, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.1 } });
-      }, 250);
+        confetti({ ...defaults, particleCount: amount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.1 } });
+      }, isMobile ? 500 : 250);
       
       return () => clearInterval(interval);
     }
