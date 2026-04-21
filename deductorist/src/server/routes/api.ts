@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { z } from 'zod';
 import { ensurePuzzle } from '../core/puzzle';
 import { context, redis, reddit } from '@devvit/web/server';
 import type {
@@ -88,9 +89,27 @@ api.get('/game/puzzle', async (c) => {
   }
 });
 
+const GameSubmitSchema = z.object({
+  puzzleId: z.string(),
+  boardState: z.array(z.number()),
+  moveLog: z.array(z.object({
+    cellIndex: z.number(),
+    timeOffsetMs: z.number()
+  })),
+  isDevBuild: z.boolean().optional(),
+  devOverrideTimeMs: z.number().optional(),
+  penaltyMs: z.number().optional()
+});
+
 api.post('/game/submit', async (c) => {
   try {
-    const body: GameSubmitRequest = await c.req.json();
+    const bodyRaw = await c.req.json();
+    let body: z.infer<typeof GameSubmitSchema>;
+    try {
+      body = GameSubmitSchema.parse(bodyRaw);
+    } catch(err) {
+      return c.json<ErrorResponse>({ status: 'error', message: 'Payload schema invalid' }, 400);
+    }
     const username = await reddit.getCurrentUsername();
     if (!username) return c.json<ErrorResponse>({ status: 'error', message: 'Unauthorized' }, 401);
 
@@ -148,8 +167,31 @@ api.post('/game/submit', async (c) => {
 
     // Sieve 2: Absolute Action Boundary
     // We enforce that the user must have clicked at least the minimum mathematical structural paths.
-    if (isVerified && (!body.moveLog || body.moveLog.length < targetClicks)) {
+    if (isVerified && body.moveLog.length < targetClicks) {
       isVerified = false;
+    }
+
+    // Sieve 3: Deterministic Structural Replay (Hash Match)
+    if (isVerified) {
+      const difficultyMatch = body.puzzleId.match(/-(\d+)$/);
+      const difficulty = difficultyMatch ? parseInt(difficultyMatch[1], 10) : 1;
+      
+      try {
+        const puzzleData = await ensurePuzzle(targetDate, difficulty);
+        const submittedBuffer = new Uint16Array(body.boardState).buffer as ArrayBuffer;
+        const hashBuffer = await crypto.subtle.digest('SHA-256', submittedBuffer);
+        const calculatedHash = Array.from(new Uint8Array(hashBuffer));
+        
+        const isHashMatched = calculatedHash.length === puzzleData.integrityHash.length &&
+          calculatedHash.every((val: number, index: number) => val === puzzleData.integrityHash[index]);
+
+        if (!isHashMatched && !body.isDevBuild) {
+            isVerified = false;
+            console.error(`[API] Integrity hash fault for ${username}.`);
+        }
+      } catch (err) {
+        isVerified = false;
+      }
     }
 
     // Clear saved state since we submitted it

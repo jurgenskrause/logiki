@@ -24,7 +24,7 @@ interface BoardCellProps {
   isColHovered?: boolean;
 }
 
-export const BoardCell: React.FC<BoardCellProps> = ({ 
+const BoardCellComponent: React.FC<BoardCellProps> = ({ 
   row, 
   col, 
   options, 
@@ -156,3 +156,39 @@ export const BoardCell: React.FC<BoardCellProps> = ({
     </div>
   );
 };
+
+const areEqual = (prevProps: BoardCellProps, nextProps: BoardCellProps) => {
+  if (
+    prevProps.isResolved !== nextProps.isResolved ||
+    prevProps.resolvedValue !== nextProps.resolvedValue ||
+    prevProps.isRowHovered !== nextProps.isRowHovered ||
+    prevProps.isColHovered !== nextProps.isColHovered ||
+    prevProps.needsZoom !== nextProps.needsZoom ||
+    prevProps.subColumns !== nextProps.subColumns 
+  ) return false;
+
+  const pLen = prevProps.options.length;
+  if (pLen !== nextProps.options.length) return false;
+  
+  for (let i = 0; i < pLen; i++) {
+    if (prevProps.options[i].isActive !== nextProps.options[i].isActive) return false;
+  }
+
+  const prevHL = prevProps.highlightItems;
+  const nextHL = nextProps.highlightItems;
+  const phLen = prevHL?.length || 0;
+  const nhLen = nextHL?.length || 0;
+  
+  if (phLen !== nhLen) return false;
+  if (prevHL && nextHL && phLen > 0) {
+    for (let i = 0; i < phLen; i++) {
+      if (prevHL[i].id !== nextHL[i].id || prevHL[i].color !== nextHL[i].color) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+};
+
+export const BoardCell = React.memo(BoardCellComponent, areEqual);

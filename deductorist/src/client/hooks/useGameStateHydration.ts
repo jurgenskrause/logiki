@@ -95,35 +95,36 @@ export function useGameStateHydration({
 
       try {
         if (isRandom) {
-          const gridSizeMap: Record<number, number> = { 1: 4, 2: 6, 3: 8 };
-          const gridSize = gridSizeMap[difficulty] || 4;
-          const rng = seedRNG(seedParam);
-          const sieve = new StructuralSieve();
-          
-          const topoReport = buildTopologyLibrary(gridSize, gridSize, false);
-          const tiering = new TieringService(topoReport.library);
-          tiering.shuffle(rng);
-          
-          const telemetry = await sieve.generateAsync(
-            tiering, 
-            gridSize, 
-            gridSize, 
-            async () => {}, // Sync UI progress hook omitted for performance
-            rng
-          );
-
-          const solGrid = telemetry.solution.getRawSolution(gridSize, gridSize);
-          const hashBuffer = await window.crypto.subtle.digest('SHA-256', solGrid.buffer as ArrayBuffer);
-          const integrityHash = new Uint8Array(hashBuffer);
-
-          const puzzleData: PuzzleManifest = {
-            rows: gridSize,
-            cols: gridSize,
-            difficulty: difficulty,
-            clues: telemetry.clues.map(c => sieve.toActiveClue(c, telemetry.solution)),
-            integrityHash,
-            isRandom: true
-          };
+          const puzzleData = await new Promise<PuzzleManifest>((resolve, reject) => {
+            const worker = new Worker(new URL('../workers/sieve.worker.ts', import.meta.url), {
+              type: 'module'
+            });
+            
+            worker.onmessage = (e) => {
+              const data = e.data;
+              if (data.status === 'success') {
+                const payload = data.payload;
+                resolve({
+                  rows: payload.rows,
+                  cols: payload.cols,
+                  difficulty: payload.difficulty,
+                  clues: payload.clues,
+                  integrityHash: new Uint8Array(payload.integrityHash),
+                  isRandom: true
+                });
+              } else {
+                reject(new Error(data.message));
+              }
+              worker.terminate();
+            };
+            
+            worker.onerror = (err) => {
+              reject(err);
+              worker.terminate();
+            };
+            
+            worker.postMessage({ seedParam, difficulty });
+          });
 
           setActiveHint(null);
           setHintShowing(false);
