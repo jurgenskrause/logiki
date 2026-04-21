@@ -85,8 +85,8 @@ export function useBoardLayout(
              const panelVH = rowsV * vH; 
              const pureUnhinderedPanelMaxHeight = Math.max(panelHH, panelVH) + 16;
              
-             const maxB_scale = candidateIc / (1.5 * C1);
-             const B = Math.min(maxAllowedWidth, maxB_scale); 
+             // Maximize mobile board to screen bounds
+             const B = maxAllowedWidth; 
              
              const physicalBoardHeight = B / boardAspectRatio;
              const availableDrawerHeight = viewport.height - 130 - physicalBoardHeight;
