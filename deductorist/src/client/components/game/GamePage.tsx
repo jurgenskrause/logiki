@@ -271,6 +271,18 @@ export const GamePage: React.FC = () => {
     }
   }, [isGameWon]);
 
+  // Synchronize completed levels locally when a puzzle is finished
+  useEffect(() => {
+    if (isGameWon && puzzle && !puzzle.isRandom) {
+      setCompletedLevels(prev => {
+        if (!prev.includes(puzzle.difficulty)) {
+          return [...prev, puzzle.difficulty];
+        }
+        return prev;
+      });
+    }
+  }, [isGameWon, puzzle, setCompletedLevels]);
+
   // Warning System
   const [zoomEnabled, setZoomEnabled] = useState(true);
   const [flashRed, setFlashRed] = useState(false);
