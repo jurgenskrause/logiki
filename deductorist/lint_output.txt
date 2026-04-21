@@ -1,0 +1,169 @@
+
+/home/jurgens/Development/Logiki0.1/deductorist/src/client/AuditApp.tsx
+   64:18  warning  React Hook useMemo has an unnecessary dependency: 'auditTick'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+  102:17  warning  React Hook useMemo has an unnecessary dependency: 'auditTick'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+  127:16  warning  React Hook useMemo has an unnecessary dependency: 'auditTick'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+  154:18  warning  React Hook useMemo has an unnecessary dependency: 'auditTick'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+  177:18  warning  React Hook useMemo has an unnecessary dependency: 'auditTick'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+  198:18  warning  React Hook useMemo has an unnecessary dependency: 'auditTick'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/jurgens/Development/Logiki0.1/deductorist/src/client/components/game/DevMenu.tsx
+  6:8  error  'DEV_BUILD' is not defined  no-undef
+
+/home/jurgens/Development/Logiki0.1/deductorist/src/client/components/game/GamePage.tsx
+   153:3   warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps')
+   188:5   error    Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free                                                 @typescript-eslint/ban-ts-comment
+   190:5   error    Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free                                                 @typescript-eslint/ban-ts-comment
+   192:6   warning  React Hook useEffect has missing dependencies: 'setLeaderboardData' and 'setUserRank'. Either include them or remove the dependency array                           react-hooks/exhaustive-deps
+   372:3   warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps')
+   404:6   warning  React Hook useCallback has a missing dependency: 'elapsedSecondsRef'. Either include it or remove the dependency array                                              react-hooks/exhaustive-deps
+   412:12  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+   432:6   warning  React Hook useEffect has a missing dependency: 'elapsedSecondsRef'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+  1003:22  error    Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+
+/home/jurgens/Development/Logiki0.1/deductorist/src/client/components/game/leaderboard/DistributionChart.tsx
+  25:9  error  'min' is never reassigned. Use 'const' instead          prefer-const
+  26:9  error  'originalMax' is never reassigned. Use 'const' instead  prefer-const
+
+/home/jurgens/Development/Logiki0.1/deductorist/src/client/hooks/useActionQueue.ts
+  36:5  error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+
+/home/jurgens/Development/Logiki0.1/deductorist/src/client/hooks/useBoardLayout.ts
+  120:6  warning  React Hook useMemo has an unnecessary dependency: 'activeMobileTab'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/jurgens/Development/Logiki0.1/deductorist/src/client/hooks/useGameAudio.tsx
+  44:7  error  Error: This value cannot be modified
+
+Modifying a value used previously in an effect function or as an effect dependency is not allowed. Consider moving the modification before calling useEffect().
+
+/home/jurgens/Development/Logiki0.1/deductorist/src/client/hooks/useGameAudio.tsx:44:7
+  42 |     
+  43 |     if (audio) {
+> 44 |       audio.currentTime = 0;
+     |       ^^^^^ `solveAudioRef` cannot be modified
+  45 |       audio.play().catch(() => {});
+  46 |     }
+  47 |   }, [isSoundEnabled]);      react-hooks/immutability
+  44:7  error  Error: This value cannot be modified
+
+Modifying a value used previously in an effect function or as an effect dependency is not allowed. Consider moving the modification before calling useEffect().
+
+/home/jurgens/Development/Logiki0.1/deductorist/src/client/hooks/useGameAudio.tsx:44:7
+  42 |     
+  43 |     if (audio) {
+> 44 |       audio.currentTime = 0;
+     |       ^^^^^ `eliminateAudioRef` cannot be modified
+  45 |       audio.play().catch(() => {});
+  46 |     }
+  47 |   }, [isSoundEnabled]);  react-hooks/immutability
+  44:7  error  Error: This value cannot be modified
+
+Modifying a value used previously in an effect function or as an effect dependency is not allowed. Consider moving the modification before calling useEffect().
+
+/home/jurgens/Development/Logiki0.1/deductorist/src/client/hooks/useGameAudio.tsx:44:7
+  42 |     
+  43 |     if (audio) {
+> 44 |       audio.currentTime = 0;
+     |       ^^^^^ `mistakeAudioRef` cannot be modified
+  45 |       audio.play().catch(() => {});
+  46 |     }
+  47 |   }, [isSoundEnabled]);    react-hooks/immutability
+  44:7  error  Error: This value cannot be modified
+
+Modifying a value used previously in an effect function or as an effect dependency is not allowed. Consider moving the modification before calling useEffect().
+
+/home/jurgens/Development/Logiki0.1/deductorist/src/client/hooks/useGameAudio.tsx:44:7
+  42 |     
+  43 |     if (audio) {
+> 44 |       audio.currentTime = 0;
+     |       ^^^^^ `moveClueAudioRef` cannot be modified
+  45 |       audio.play().catch(() => {});
+  46 |     }
+  47 |   }, [isSoundEnabled]);   react-hooks/immutability
+  44:7  error  Error: This value cannot be modified
+
+Modifying a value used previously in an effect function or as an effect dependency is not allowed. Consider moving the modification before calling useEffect().
+
+/home/jurgens/Development/Logiki0.1/deductorist/src/client/hooks/useGameAudio.tsx:44:7
+  42 |     
+  43 |     if (audio) {
+> 44 |       audio.currentTime = 0;
+     |       ^^^^^ `winAudioRef` cannot be modified
+  45 |       audio.play().catch(() => {});
+  46 |     }
+  47 |   }, [isSoundEnabled]);        react-hooks/immutability
+  44:7  error  Error: This value cannot be modified
+
+Modifying a value used previously in an effect function or as an effect dependency is not allowed. Consider moving the modification before calling useEffect().
+
+/home/jurgens/Development/Logiki0.1/deductorist/src/client/hooks/useGameAudio.tsx:44:7
+  42 |     
+  43 |     if (audio) {
+> 44 |       audio.currentTime = 0;
+     |       ^^^^^ `applauseAudioRef` cannot be modified
+  45 |       audio.play().catch(() => {});
+  46 |     }
+  47 |   }, [isSoundEnabled]);   react-hooks/immutability
+
+/home/jurgens/Development/Logiki0.1/deductorist/src/client/hooks/useGameEngine.ts
+   21:20  error    'React' is not defined                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                no-undef
+   22:17  error    'React' is not defined                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                no-undef
+   22:32  error    'React' is not defined                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                no-undef
+   23:12  error    'React' is not defined                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                no-undef
+   23:27  error    'React' is not defined                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                no-undef
+  127:9   error    Error: Cannot access variable before it is declared
+
+`runCascade` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+/home/jurgens/Development/Logiki0.1/deductorist/src/client/hooks/useGameEngine.ts:127:9
+  125 |       enqueue(async () => {
+  126 |         await new Promise(res => setTimeout(res, 250));
+> 127 |         runCascade();
+      |         ^^^^^^^^^^ `runCascade` accessed before it is declared
+  128 |       });
+  129 |     } else {
+  130 |       setIsCascading(false);
+
+/home/jurgens/Development/Logiki0.1/deductorist/src/client/hooks/useGameEngine.ts:113:3
+  111 |   }, [gameState, puzzle, isGameWon, playInteractionSound, submitScore, setIsGameWon, setIsGameStarted, fetchLeaderboard]);
+  112 |
+> 113 |   const runCascade = useCallback(() => {
+      |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 114 |     if (!gameState) return;
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 115 |     
+      …
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 139 |     }
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 140 |   }, [gameState, runAnalysis, playInteractionSound, checkWin, setTick, enqueue, countConfirmed]);
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `runCascade` is declared here
+  141 |
+  142 |   const handleStateChange = useCallback(() => {
+  143 |     if (isGameWon) return;  react-hooks/immutability
+  175:6   warning  React Hook useCallback has a missing dependency: 'countConfirmed'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   react-hooks/exhaustive-deps
+
+/home/jurgens/Development/Logiki0.1/deductorist/src/client/hooks/useGameStateHydration.ts
+   54:21  error    Empty block statement                                                                                                                                               no-empty
+   70:20  error    Empty block statement                                                                                                                                               no-empty
+   80:5   error    Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  136:13  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-unsafe-assignment')
+
+/home/jurgens/Development/Logiki0.1/deductorist/src/client/hooks/useHintSystem.ts
+  16:22  error  'React' is not defined  no-undef
+  16:37  error  'React' is not defined  no-undef
+  17:17  error  'React' is not defined  no-undef
+  20:20  error  'React' is not defined  no-undef
+
+/home/jurgens/Development/Logiki0.1/deductorist/src/client/hooks/useLeaderboardSync.ts
+  30:6  warning  React Hook useCallback has an unnecessary dependency: 'DEV_BUILD'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/jurgens/Development/Logiki0.1/deductorist/src/server/routes/api.ts
+  37:81  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/jurgens/Development/Logiki0.1/deductorist/src/server/routes/forms.ts
+  80:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 44 problems (28 errors, 16 warnings)
+  2 errors and 4 warnings potentially fixable with the `--fix` option.
+

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { analyzeState } from '../../shared/engine/HintService';
 import type { HintResult } from '../../shared/engine/HintService';
 import { ManifestLoader } from '../../shared/engine/ManifestLoader';
@@ -110,6 +110,8 @@ export function useGameEngine({
     }
   }, [gameState, puzzle, isGameWon, playInteractionSound, submitScore, setIsGameWon, setIsGameStarted, fetchLeaderboard]);
 
+  const runCascadeRef = useRef<(() => void) | null>(null);
+
   const runCascade = useCallback(() => {
     if (!gameState) return;
     
@@ -124,7 +126,7 @@ export function useGameEngine({
       setTick(t => t + 1); 
       enqueue(async () => {
         await new Promise(res => setTimeout(res, 250));
-        runCascade();
+        runCascadeRef.current?.();
       });
     } else {
       setIsCascading(false);
@@ -138,6 +140,10 @@ export function useGameEngine({
       }
     }
   }, [gameState, runAnalysis, playInteractionSound, checkWin, setTick, enqueue, countConfirmed]);
+
+  useEffect(() => {
+    runCascadeRef.current = runCascade;
+  }, [runCascade]);
 
   const handleStateChange = useCallback(() => {
     if (isGameWon) return;
@@ -170,9 +176,9 @@ export function useGameEngine({
     triggerSave();
     enqueue(async () => {
       await new Promise(res => setTimeout(res, 250));
-      runCascade();
+      runCascadeRef.current?.();
     });
-  }, [runCascade, warningsEnabled, gameState, puzzle, binnedClueIds, triggerRedFlash, triggerSave, isGameWon, clearQueue, enqueue, playInteractionSound, pendingSoundRef, setHintCount, setTick]);
+  }, [warningsEnabled, gameState, puzzle, binnedClueIds, triggerRedFlash, triggerSave, isGameWon, clearQueue, enqueue, playInteractionSound, pendingSoundRef, setHintCount, setTick, countConfirmed]);
 
   return { isCascading, setIsCascading, handleStateChange, runAnalysis, checkWin };
 }

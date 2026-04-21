@@ -150,7 +150,6 @@ export const GamePage: React.FC = () => {
     dismissHintRef.current();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (action) internalPlayInteractionSound(action as any);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [internalPlayInteractionSound]);
 
   // Sync Abstraction dependencies
@@ -180,16 +179,7 @@ export const GamePage: React.FC = () => {
 
   const binnedClueIds = gameState?.binnedClues || new Set<string>();
 
-  // Prevent state-bleeding across difficulty swaps
-  useEffect(() => {
-    setIsGameWon(false);
-    setIsViewingCompletedBoard(false);
-    setIsRecoveredWin(false);
-    // @ts-ignore
-    if (typeof setUserRank === 'function') setUserRank(null);
-    // @ts-ignore
-    if (typeof setLeaderboardData === 'function') setLeaderboardData(null);
-  }, [selectedDifficulty]);
+  // (Moved state-bleeding prevention logic beneath leaderboard hook definition)
 
   // Hint & Engine hooks (Forward references hooked via refs to avoid cycles)
   const [hintCount, setHintCount] = useState(0);
@@ -341,6 +331,15 @@ export const GamePage: React.FC = () => {
   // Sync Abstraction
   const { leaderboardData, setLeaderboardData, userRank, setUserRank, isSubmittingScore, setIsSubmittingScore, isSharing, submitScore, shareScore, fetchLeaderboard } = useLeaderboardSync({ DEV_BUILD, puzzle, gameState, moveLogRef, penaltyMsRef });
 
+  // Prevent state-bleeding across difficulty swaps (moved down here to safely capture references)
+  useEffect(() => {
+    setIsGameWon(false);
+    setIsViewingCompletedBoard(false);
+    setIsRecoveredWin(false);
+    setUserRank(null);
+    setLeaderboardData(null);
+  }, [selectedDifficulty, setUserRank, setLeaderboardData, setIsGameWon]);
+
   const winData = useMemo(() => {
     if (puzzle?.isRandom) return { text: "Logic Mastered", icon: "psychology", isEpicInfo: false };
     if (!leaderboardData || userRank === null) return { text: "Logic Mastered", icon: "psychology", isEpicInfo: false };
@@ -354,8 +353,7 @@ export const GamePage: React.FC = () => {
     if (perc >= 95) return { text: "Top 5% Worldwide!", icon: "military_tech", isEpicInfo: true };
     if (perc >= 90) return { text: "Top 10% Worldwide!", icon: "military_tech", isEpicInfo: true };
     return { text: "Logic Mastered", icon: "psychology", isEpicInfo: false };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [leaderboardData, userRank]);
+  }, [leaderboardData, userRank, puzzle?.isRandom]);
 
   const prominentAward = useMemo(() => {
     if (!leaderboardData || userRank === null || puzzle?.isRandom) return null;
@@ -369,7 +367,6 @@ export const GamePage: React.FC = () => {
     if (perc >= 90) return { emoji: '🥈', label: 'Top 10% Score' };
     if (perc >= 75) return { emoji: '🥉', label: 'Top 25% Score' };
     return null;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leaderboardData, userRank, puzzle]);
 
   // binnedClueIds defined above
@@ -401,7 +398,7 @@ export const GamePage: React.FC = () => {
     }, 3000);
     
     window.__pendingSyncTimer = pendingSyncTimerRef.current;
-  }, [gameState, puzzle]);
+  }, [gameState, puzzle, elapsedSecondsRef]);
 
   useEffect(() => {
     const handleVisibility = () => {
@@ -409,7 +406,6 @@ export const GamePage: React.FC = () => {
        
        if (document.visibilityState === 'hidden' && gameState && puzzle && !puzzle.isRandom) {
            if (pendingSyncTimerRef.current) clearTimeout(pendingSyncTimerRef.current);
-           // eslint-disable-next-line @typescript-eslint/no-explicit-any
            const puzzleDateId = puzzle.date ? `${puzzle.date}-` : '';
            const payload = {
               puzzleId: puzzle.isRandom ? `random-${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}` : `${puzzleDateId}${puzzle.rows}x${puzzle.cols}-${puzzle.difficulty}`,
@@ -429,7 +425,7 @@ export const GamePage: React.FC = () => {
     };
     window.addEventListener('visibilitychange', handleVisibility);
     return () => window.removeEventListener('visibilitychange', handleVisibility);
-  }, [gameState, puzzle]);
+  }, [gameState, puzzle, elapsedSecondsRef]);
   // ─── Analysis ───────────────────────────────────────────────────────────────
 
 
@@ -1000,7 +996,7 @@ export const GamePage: React.FC = () => {
                        msg += `\n${prominentAward.emoji} **${prominentAward.label}**`;
                      }
                      
-                     shareScore(msg);
+                     void shareScore(msg);
                    }}
                    disabled={isSharing}
                    className={`absolute top-3 right-3 sm:top-4 sm:right-4 p-2 rounded-full transition-colors flex items-center justify-center z-20 ${isSharing ? 'text-indigo-300 bg-indigo-50 dark:bg-indigo-900/20' : 'text-slate-400 dark:text-slate-500 hover:text-indigo-500 hover:bg-slate-100 dark:hover:bg-slate-700 active:scale-95'}`}

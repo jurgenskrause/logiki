@@ -34,7 +34,7 @@ api.get('/init', async (c) => {
   try {
     const username = await reddit.getCurrentUsername() ?? 'anonymous';
     const gameDate = await redis.get(`post_date:${postId}`) || new Date().toISOString().split('T')[0];
-    const puzzleStatus = (await redis.get(`daily_puzzle_status:${gameDate}`) as any) || 'ready';
+    const puzzleStatus = (await redis.get(`daily_puzzle_status:${gameDate}`)) || 'ready';
 
     return c.json<InitResponse>({
       type: 'init',

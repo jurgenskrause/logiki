@@ -51,7 +51,7 @@ export function useGameStateHydration({
              const initData = await initRes.json();
              dateParam = initData.gameDate;
            }
-         } catch(e) {}
+         } catch(e) { /* ignore */ }
       }
 
       const finalDate = dateParam || 'today';
@@ -67,7 +67,7 @@ export function useGameStateHydration({
               hasCompletedBase = compData.completed.includes(1);
             }
           }
-        } catch(e) {}
+        } catch(e) { /* ignore */ }
       }
 
       if (hasCompletedBase) {
@@ -77,7 +77,7 @@ export function useGameStateHydration({
          setIsManifestLoaded(true);
       }
     }
-    bootSequence();
+    void bootSequence();
   }, [ENABLE_RANDOM_MODE]);
 
   useEffect(() => {
@@ -133,7 +133,6 @@ export function useGameStateHydration({
           const dateParam = urlParams.get('date') || 'today';
           try {
             const res = await fetch(`/api/game/puzzle?date=${dateParam}&difficulty=${difficulty}`);
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             const data: PuzzleManifest & { status?: string, message?: string } = await res.json();
             if (res.ok && data && !data.status) {
                const puzzleDate = data.date || dateParam;

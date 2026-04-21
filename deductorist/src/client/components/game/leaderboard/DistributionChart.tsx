@@ -22,8 +22,9 @@ export const DistributionChart: React.FC<Props> = ({ leaderboardData, userTimeMs
     const buckets = Object.keys(distribution).map(k => parseInt(k, 10)).sort((a, b) => a - b);
     if (buckets.length === 0) return { chartData: [], percentile: 0, betterCount: 0 };
 
-    let min = Math.min(buckets[0], userBucket);
-    let originalMax = Math.max(buckets[buckets.length - 1], userBucket);
+    const allTimes = [...buckets, userBucket];
+    const min = Math.min(...allTimes);
+    const originalMax = Math.max(...allTimes);
 
     let slowerCount = 0;
     let runningTotal = 0;

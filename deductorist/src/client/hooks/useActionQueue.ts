@@ -33,7 +33,7 @@ export function useActionQueue() {
 
   const enqueue = useCallback((action: () => Promise<void> | void) => {
     queueRef.current.push(async () => { await action(); });
-    processQueue();
+    void processQueue();
   }, [processQueue]);
 
   const clearQueue = useCallback(() => {

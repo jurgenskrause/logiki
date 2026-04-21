@@ -3,6 +3,7 @@ import React from 'react';
 // DEV_BUILD is injected by Vite/vite-env.d.ts or similar globals.
 
 export const DevMenu = ({ puzzleId, grid }: { puzzleId?: string, grid?: Uint16Array | number[] }) => {
+  // eslint-disable-next-line no-undef
   if (!DEV_BUILD) return null;
 
   const handleReset = () => {

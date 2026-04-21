@@ -77,8 +77,8 @@ forms.post('/admin-dev-reset-submit', async (c) => {
     }
     console.log(`[Dev Reset] Reset completed successfully for ${targetDate}`);
     return c.json<UiResponse>({ showToast: { text: `Global leaderboards annihilated for ${targetDate}.`, appearance: 'success' } }, 200);
-  } catch (e: any) {
-    console.error(`[Dev Reset] Error during reset operation:`, e?.message || e);
+  } catch (e: unknown) {
+    console.error(`[Dev Reset] Error during reset operation:`, e instanceof Error ? e.message : e);
     return c.json<UiResponse>({ showToast: 'Failed to reset leaderboards.' }, 400);
   }
 });

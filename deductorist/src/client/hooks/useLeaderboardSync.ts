@@ -27,7 +27,7 @@ export function useLeaderboardSync({ DEV_BUILD, puzzle, gameState, moveLogRef, p
     } catch (e) {
       console.error(e);
     }
-  }, [DEV_BUILD]);
+  }, []);
 
   const submitScore = useCallback(async () => {
     if (!puzzle || !gameState) return;
