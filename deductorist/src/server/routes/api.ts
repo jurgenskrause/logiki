@@ -247,16 +247,43 @@ api.post('/game/submit', async (c) => {
       const targetBoard = isVerified ? 'clean' : 'tainted';
       const zScore = await redis.zRank(`leaderboard:daily:${targetDate}:${gridSize}:${targetBoard}`, effectiveUsername);
       absoluteRank = zScore !== undefined ? zScore + 1 : 0;
+
+      // Award Logic
+      const todayString = new Date().toISOString().split('T')[0];
+      if (targetDate === todayString && isVerified && absoluteRank > 0) {
+          const totalSolvers = await redis.zCard(`leaderboard:daily:${targetDate}:${gridSize}:${targetBoard}`);
+          const totalOthers = Math.max(0, (totalSolvers || 1) - 1);
+          const isFirst = (totalSolvers === 1);
+          const perc = totalOthers > 0 ? Math.floor((((totalSolvers || 1) - absoluteRank) / totalOthers) * 100) : 100;
+          
+          let awardObj = null;
+          if (isFirst) awardObj = { emoji: '🎖️', label: 'First to Solve!' };
+          else if (absoluteRank === 1) awardObj = { emoji: '👑', label: 'World Record!' };
+          else if (perc >= 90) awardObj = { emoji: '🥈', label: 'Top 10% Score' };
+          else if (perc >= 75) awardObj = { emoji: '🥉', label: 'Top 25% Score' };
+          
+          if (awardObj) {
+             await redis.hSet(`awards:daily:${targetDate}:${gridSize}`, { [effectiveUsername]: JSON.stringify(awardObj) });
+          }
+      }
     } else {
       // Ghost them immediately during dev drops
       await redis.hSet(`ghosted_users:${targetDate}`, { [username]: 'true' });
       await redis.expire(`ghosted_users:${targetDate}`, 86400 * 7);
     }
 
-    return c.json<GameSubmitResponse>({
+    let returnedAward = undefined;
+    if (isVerified) {
+       const effectiveUsername = body.isDevBuild ? `${username}_${Date.now()}` : username;
+       const awardStr = await redis.hGet(`awards:daily:${targetDate}:${gridSize}`, effectiveUsername);
+       if (awardStr) returnedAward = JSON.parse(awardStr);
+    }
+
+    return c.json<GameSubmitResponse & { award?: any }>({
       status: isVerified ? 'verified' : 'ghosted',
       elapsedTimeMs: durationMs,
-      rank: isVerified ? absoluteRank : undefined
+      rank: isVerified ? absoluteRank : undefined,
+      award: returnedAward
     });
     
   } catch (e) {
@@ -332,14 +359,17 @@ api.get('/game/state/sync', async (c) => {
         // Preload Leaderboard data natively to bypass visual loading delays on historic boards
         let leaderboardData = undefined;
         let userRank = null;
+        let userAward = null;
         try {
-          const [rawLeaderboard, distributionRaw, rank] = await Promise.all([
+          const [rawLeaderboard, distributionRaw, rank, awardStr] = await Promise.all([
             redis.zRange(`leaderboard:daily:${targetDate}:${gridSize}:${targetBoard}`, 0, 49, { by: 'rank' }),
             redis.hGetAll(`leaderboard:daily:${targetDate}:${gridSize}:dist:${targetBoard}`),
-            redis.zRank(`leaderboard:daily:${targetDate}:${gridSize}:${targetBoard}`, username)
+            redis.zRank(`leaderboard:daily:${targetDate}:${gridSize}:${targetBoard}`, username),
+            redis.hGet(`awards:daily:${targetDate}:${gridSize}`, username)
           ]);
 
           userRank = rank !== undefined ? rank + 1 : null;
+          if (awardStr) userAward = JSON.parse(awardStr);
 
           const distribution: Record<string, number> = {};
           let totalSolvers = 0;
@@ -359,13 +389,13 @@ api.get('/game/state/sync', async (c) => {
           console.error('[GameState Sync] Error preloading leaderboard:', err);
         }
 
-       // eslint-disable-next-line @typescript-eslint/no-explicit-any
        const responsePayload: any = {
          status: 'completed',
          puzzleId,
          elapsedSeconds: Math.floor(Number(zScoreRaw) / 1000),
          leaderboardData,
-         userRank
+         userRank,
+         award: userAward
        };
 
        try {

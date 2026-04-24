@@ -9,9 +9,10 @@ interface UseLeaderboardSyncProps {
   gameState: GameState | null;
   moveLogRef: React.MutableRefObject<{ cellIndex: number; timeOffsetMs: number }[]>;
   penaltyMsRef: React.MutableRefObject<number>;
+  setSubmittedAward?: (award: { emoji: string; label: string } | null) => void;
 }
 
-export function useLeaderboardSync({ DEV_BUILD, puzzle, gameState, moveLogRef, penaltyMsRef }: UseLeaderboardSyncProps) {
+export function useLeaderboardSync({ DEV_BUILD, puzzle, gameState, moveLogRef, penaltyMsRef, setSubmittedAward }: UseLeaderboardSyncProps) {
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardResponse | null>(null);
   const [userRank, setUserRank] = useState<number | null>(null);
   const [isSubmittingScore, setIsSubmittingScore] = useState(false);
@@ -65,6 +66,7 @@ export function useLeaderboardSync({ DEV_BUILD, puzzle, gameState, moveLogRef, p
             
             if (submitData.status === 'verified' || DEV_BUILD) {
                if (submitData.rank !== undefined) setUserRank(submitData.rank);
+               if (submitData.award !== undefined && setSubmittedAward) setSubmittedAward(submitData.award);
                await fetchLeaderboard(puzzleDate, sizeStr);
             }
         } catch (e) {

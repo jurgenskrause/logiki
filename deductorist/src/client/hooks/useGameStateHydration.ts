@@ -197,6 +197,9 @@ export function useGameStateHydration({
                       if (stateData.userRank !== undefined) {
                           data.preloadedUserRank = stateData.userRank;
                       }
+                      if (stateData.award !== undefined) {
+                          data.loadedAward = stateData.award;
+                      }
                   }
                // eslint-disable-next-line no-empty
                } catch (err) {}

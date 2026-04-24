@@ -51,6 +51,7 @@ export interface PuzzleManifest {
   loadedFullState?: GameSnapshot;
   preloadedLeaderboard?: LeaderboardResponse;
   preloadedUserRank?: number | null;
+  loadedAward?: { emoji: string; label: string } | null;
   loadedBinnedClues?: string[];
 }
 

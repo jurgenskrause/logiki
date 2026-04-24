@@ -356,8 +356,10 @@ export const GamePage: React.FC = () => {
 
   // Anti-Cheat Telemetry handled by hooks
 
+  const [submittedAward, setSubmittedAward] = useState<{ emoji: string; label: string } | null>(null);
+
   // Sync Abstraction
-  const { leaderboardData, setLeaderboardData, userRank, setUserRank, isSubmittingScore, setIsSubmittingScore, isSharing, submitScore, shareScore, fetchLeaderboard } = useLeaderboardSync({ DEV_BUILD, puzzle, gameState, moveLogRef, penaltyMsRef });
+  const { leaderboardData, setLeaderboardData, userRank, setUserRank, isSubmittingScore, setIsSubmittingScore, isSharing, submitScore, shareScore, fetchLeaderboard } = useLeaderboardSync({ DEV_BUILD, puzzle, gameState, moveLogRef, penaltyMsRef, setSubmittedAward });
 
   submitScoreRef.current = submitScore;
   fetchLeaderboardRef.current = fetchLeaderboard;
@@ -385,20 +387,12 @@ export const GamePage: React.FC = () => {
     if (perc >= 90) return { text: "Top 10% Worldwide!", icon: "military_tech", isEpicInfo: true };
     return { text: "Logic Mastered", icon: "psychology", isEpicInfo: false };
   }, [leaderboardData, userRank, puzzle?.isRandom]);
-
   const prominentAward = useMemo(() => {
-    if (!leaderboardData || userRank === null || puzzle?.isRandom) return null;
-    const { totalSolvers } = leaderboardData;
-    const totalOthers = Math.max(0, (totalSolvers || 1) - 1);
-    const isFirst = (totalSolvers === 1);
-    const perc = totalOthers > 0 ? Math.floor((((totalSolvers || 1) - userRank) / totalOthers) * 100) : 100;
-    
-    if (isFirst) return { emoji: '🎖️', label: 'First to Solve!' };
-    if (userRank === 1) return { emoji: '👑', label: 'World Record!' };
-    if (perc >= 90) return { emoji: '🥈', label: 'Top 10% Score' };
-    if (perc >= 75) return { emoji: '🥉', label: 'Top 25% Score' };
+    if (puzzle?.isRandom) return null;
+    if (submittedAward) return submittedAward;
+    if (puzzle?.loadedAward) return puzzle.loadedAward;
     return null;
-  }, [leaderboardData, userRank, puzzle]);
+  }, [puzzle, submittedAward]);
 
   // binnedClueIds defined above
 
