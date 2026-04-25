@@ -46,34 +46,29 @@ export function useLeaderboardSync({ DEV_BUILD, puzzle, gameState, moveLogRef, p
 
     setIsSubmittingScore(true);
 
-    if (isHistorical) {
-        await fetchLeaderboard(puzzleDate, sizeStr);
-        setIsSubmittingScore(false);
-    } else {
-        try {
-            const submitResponse = await fetch('/api/game/submit', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                puzzleId: `${puzzleDate}-${sizeStr}-${puzzle.difficulty}`,
-                boardState: Array.from(gameState.grid),
-                moveLog: moveLogRef.current,
-                isDevBuild: DEV_BUILD,
-                penaltyMs: penaltyMsRef.current
-              })
-            });
-            const submitData = await submitResponse.json();
-            
-            if (submitData.status === 'verified' || DEV_BUILD) {
-               if (submitData.rank !== undefined) setUserRank(submitData.rank);
-               if (submitData.award !== undefined && setSubmittedAward) setSubmittedAward(submitData.award);
-               await fetchLeaderboard(puzzleDate, sizeStr);
-            }
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setIsSubmittingScore(false);
+    try {
+        const submitResponse = await fetch('/api/game/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            puzzleId: `${puzzleDate}-${sizeStr}-${puzzle.difficulty}`,
+            boardState: Array.from(gameState.grid),
+            moveLog: moveLogRef.current,
+            isDevBuild: DEV_BUILD,
+            penaltyMs: penaltyMsRef.current
+          })
+        });
+        const submitData = await submitResponse.json();
+        
+        if (submitData.status === 'verified' || DEV_BUILD) {
+           if (submitData.rank !== undefined) setUserRank(submitData.rank);
+           if (submitData.award !== undefined && setSubmittedAward) setSubmittedAward(submitData.award);
+           await fetchLeaderboard(puzzleDate, sizeStr);
         }
+    } catch (e) {
+        console.error(e);
+    } finally {
+        setIsSubmittingScore(false);
     }
   }, [puzzle, gameState, moveLogRef, penaltyMsRef, DEV_BUILD, fetchLeaderboard]);
 
