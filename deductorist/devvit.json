@@ -69,7 +69,25 @@
     "adminScoreModerationForm": "/internal/form/admin-score-submit"
   },
   "triggers": {
-    "onAppInstall": "/internal/triggers/on-app-install"
+    "onAppInstall": "/internal/triggers/on-app-install",
+    "onAppUpgrade": "/internal/triggers/on-app-upgrade"
+  },
+  "scheduler": {
+    "tasks": {
+      "orchestrate_daily_puzzles": {
+        "endpoint": "/internal/scheduler/orchestrate",
+        "cron": "0 0 * * *"
+      },
+      "generate_small_puzzles": {
+        "endpoint": "/internal/scheduler/generate-small"
+      },
+      "generate_large_puzzles": {
+        "endpoint": "/internal/scheduler/generate-large"
+      },
+      "publish_daily_post": {
+        "endpoint": "/internal/scheduler/publish-daily"
+      }
+    }
   },
   "scripts": {
     "dev": "vite build --watch",
