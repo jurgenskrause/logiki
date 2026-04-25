@@ -997,18 +997,19 @@ export const GamePage: React.FC = () => {
           * large opaque overlay backgrounds combined with internal scaled GPU transforms.
           * DO NOT REVERT THIS OR REMOVE THESE STYLES.
           */}
-        {/* Win Celebration */}
+        {/* 
+          Win Celebration 
+          NOTE: Do not use transform-gpu or forced hardware acceleration (like translateZ, backfaceVisibility) 
+          on these wrappers. It causes a known white screen transparency bug on iOS/Safari within the Reddit app.
+        */}
         {isGameWon && !isViewingCompletedBoard && (
           <div 
             className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/95 animate-in fade-in duration-500 p-4" 
             style={{ 
-              WebkitTapHighlightColor: 'transparent', 
-              transform: 'translateZ(0)', 
-              backfaceVisibility: 'hidden', 
-              isolation: 'isolate' 
+              WebkitTapHighlightColor: 'transparent'
             }}
           >
-             <div className={`text-center p-3 sm:p-5 bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border-4 ${!isRecoveredWin ? 'animate-in zoom-in-95 duration-300' : ''} max-w-md w-full relative overflow-hidden max-h-[92dvh] transform-gpu flex flex-col justify-center ${
+             <div className={`text-center p-3 sm:p-5 bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border-4 ${!isRecoveredWin ? 'animate-in zoom-in-95 duration-300' : ''} max-w-md w-full relative overflow-hidden max-h-[92dvh] flex flex-col justify-center ${
                  winData.isEpicInfo
                    ? 'border-amber-400 dark:border-amber-500 shadow-[0_0_50px_rgba(251,191,36,0.5)]'
                    : 'border-emerald-500 shadow-emerald-500/20'
@@ -1045,7 +1046,7 @@ export const GamePage: React.FC = () => {
                    {isSharing ? <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 border-indigo-300 border-t-indigo-500 animate-spin" /> : <span className="material-icons sm:text-[24px] text-[20px]">share</span>}
                  </button>
 
-                 {winData.isEpicInfo && <div className="absolute -inset-10 bg-gradient-to-tr from-amber-500/20 via-transparent to-amber-500/20 animate-spin opacity-30 transform-gpu pointer-events-none" style={{ animationDuration: '4s' }} />}
+                 {winData.isEpicInfo && <div className="absolute -inset-10 bg-gradient-to-tr from-amber-500/20 via-transparent to-amber-500/20 animate-spin opacity-30 pointer-events-none" style={{ animationDuration: '4s' }} />}
                  <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center mx-auto mb-2 sm:mb-1 mt-2 sm:mt-0 shadow-lg relative z-10 ${
                    winData.isEpicInfo
                      ? `bg-gradient-to-tr from-amber-300 to-amber-500 text-amber-950 shadow-[0_10px_30px_rgba(251,191,36,0.6)] ${!isRecoveredWin ? 'animate-bounce' : ''}`
