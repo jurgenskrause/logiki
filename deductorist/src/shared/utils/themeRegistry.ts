@@ -16,7 +16,7 @@ export function getAsset(themeName: string, catIndex: number, itemIndex: number)
  */
 export const FALLBACK_THEME: string[][] = [
   // 0: Characters / Occupations
-  ['👨🏻‍🌾', '👩🏾‍⚕️', '👨🏼‍🍳', '👩🏿‍🔬', '👨🏽‍🔧', '👩🏻‍🚒', '👨🏾‍✈️', '👩🏼‍⚖️'],
+  ['👨🏻‍🌾', '👩🏾‍⚕️', '👨🏼‍🍳', '👩🏿‍🚀', '👨🏽‍🔧', '👩🏻‍🚒', '👨🏾‍✈️', '👩🏼‍⚖️'],
   // 1: Houses
   ['🏠', '🏛️', '🏰', '🏯', '🏢', '🏚', '⛺', '🛖'],
   // 2: Pets
