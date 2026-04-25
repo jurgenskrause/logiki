@@ -990,9 +990,24 @@ export const GamePage: React.FC = () => {
 
       </main>
 
+        {/*
+          * CRITICAL FIX: Android WebView Transparency Bug
+          * The style applying `transform: translateZ(0)`, `backfaceVisibility: hidden`, and `isolation: isolate`
+          * is MANDATORY to prevent a severe white-screen flashing fault in Android WebViews when animating
+          * large opaque overlay backgrounds combined with internal scaled GPU transforms.
+          * DO NOT REVERT THIS OR REMOVE THESE STYLES.
+          */}
         {/* Win Celebration */}
         {isGameWon && !isViewingCompletedBoard && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/95 animate-in fade-in duration-500 p-4" style={{ WebkitTapHighlightColor: 'transparent' }}>
+          <div 
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/95 animate-in fade-in duration-500 p-4" 
+            style={{ 
+              WebkitTapHighlightColor: 'transparent', 
+              transform: 'translateZ(0)', 
+              backfaceVisibility: 'hidden', 
+              isolation: 'isolate' 
+            }}
+          >
              <div className={`text-center p-3 sm:p-5 bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border-4 ${!isRecoveredWin ? 'animate-in zoom-in-95 duration-300' : ''} max-w-md w-full relative overflow-hidden max-h-[92dvh] transform-gpu flex flex-col justify-center ${
                  winData.isEpicInfo
                    ? 'border-amber-400 dark:border-amber-500 shadow-[0_0_50px_rgba(251,191,36,0.5)]'
