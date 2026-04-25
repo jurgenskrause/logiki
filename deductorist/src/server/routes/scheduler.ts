@@ -22,9 +22,9 @@ schedulerRoutes.post('/orchestrate', async (c) => {
     
     const lockKey = `daily_post_last_run:${targetDate}`;
     
-    // TEMPORARY BYPASS FOR PLAYTESTING
     if (await redis.get(lockKey) === 'true') {
-        console.log(`[Stage 1] Warning: ${targetDate} was already locked, but bypassing for Devvit testing...`);
+        console.log(`[Stage 1] Notice: ${targetDate} was already locked. Skipping duplicate post generation during playtest.`);
+        return c.json({ status: 'skipped', message: 'Already generated for today' }, 200);
     }
 
     try {
