@@ -7,20 +7,9 @@ import { createRoot } from 'react-dom/client';
 const emojis = ['🍎', '🐕', '🏠', '⚽', '💎', '🎹', '⏰', '🎸', '🚀'];
 
 export const Splash = () => {
-  const [buttonText, setButtonText] = useState('PLAY DAILY PUZZLE');
-
   useEffect(() => {
-    fetch('/api/init')
-      .then(res => res.json())
-      .then(data => {
-        if (data.gameDate) {
-          const today = new Date().toISOString().split('T')[0];
-          if (data.gameDate !== today) {
-            setButtonText(`PLAY ${data.gameDate} PUZZLE`);
-          }
-        }
-      })
-      .catch(() => {});
+    // Fire-and-forget init to optionally warm up routing or analytics
+    fetch('/api/init').catch(() => {});
   }, []);
 
   return (
@@ -64,7 +53,7 @@ export const Splash = () => {
         >
           <span className="flex items-center gap-2">
             <span className="material-icons text-xl sm:text-2xl drop-shadow-md">play_arrow</span>
-            {buttonText}
+            PLAY
           </span>
         </button>
 
