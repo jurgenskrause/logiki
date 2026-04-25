@@ -64,7 +64,7 @@ function useMediaQuery(query: string) {
 
 
 
-const DEV_BUILD = true;
+const DEV_BUILD = import.meta.env.DEV;
 export const ENABLE_RANDOM_MODE = true;
 
 const DroppableMobileBin = ({ showBin, binnedCount, onToggle }: { showBin: boolean; binnedCount: number; onToggle: () => void }) => {
