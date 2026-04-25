@@ -152,7 +152,7 @@ export function useGameStateHydration({
                try {
                   const stateRes = await fetch(`/api/game/state/sync?puzzleId=${p}`);
                   const stateData = await stateRes.json();
-                  if (stateData.status === 'success' && stateData.boardState) {
+                  if (stateData.status === 'success' || stateData.status === 'completed') {
                     if (stateData.boardState) {
                       data.loadedSnapshot = stateData.boardState;
                     }
@@ -175,7 +175,7 @@ export function useGameStateHydration({
                           for (let i = 0; i < length; i++) {
                               const itemIndex = stateData.solution[i];
                               grid[i] = 1 << itemIndex;
-                              confirmed[i] = itemIndex + 1;
+                              confirmed[i] = 1;
                               previousMask[i] = (1 << data.cols) - 1;
                           }
                           data.loadedSnapshot = {
