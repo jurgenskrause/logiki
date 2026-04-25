@@ -161,7 +161,6 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
                      clue={item.clue} 
                      onHover={isDragging ? undefined : onClueHover} 
                      isHighlighted={highlightedClue === item.clue} 
-                     onDiscard={onClueToggleBin}
                      isBinned={binnedIds?.has(item.clue.id)}
                      onDoubleTap={onClueDoubleTap}
                   />
@@ -196,7 +195,6 @@ export const VerticalClueList: React.FC<VerticalClueListProps> = ({ clues, onClu
                           clue={item.clue} 
                           onHover={isDragging ? undefined : onClueHover} 
                           isHighlighted={highlightedClue === item.clue} 
-                          onDiscard={onClueToggleBin}
                           isBinned={binnedIds?.has(item.clue.id)}
                           onDoubleTap={onClueDoubleTap}
                        />

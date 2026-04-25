@@ -21,14 +21,13 @@ interface HorizontalClueProps {
   clue: ActiveClue;
   onHover?: (clue: ActiveClue | null) => void;
   isHighlighted?: boolean;
-  onDiscard?: (clueId: string) => void;
   isBinned?: boolean;
   onDoubleTap?: (clue: ActiveClue) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   dragHandleProps?: any;
 }
 
-export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover, isHighlighted, onDiscard, isBinned, onDoubleTap, dragHandleProps, isDesktop = false, clueIconSize = 24, hasMouse = false }) => {
+export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover, isHighlighted, isBinned, onDoubleTap, dragHandleProps, isDesktop = false, clueIconSize = 24, hasMouse = false }) => {
   const { type, params } = clue;
   const isFinePointer = useMediaQuery('(pointer: fine)');
 
@@ -129,7 +128,7 @@ export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover,
   return (
     <div 
       style={{ width: `calc(${clueIconSize}px * 4.0)`, height: `calc(${clueIconSize}px * 1.5)`, fontSize: `${clueIconSize}px` }}
-      className={`shrink-0 bg-white/5 rounded-lg shadow-[0_0_15px_rgba(0,0,0,0.2)] hover:bg-white/10 group flex items-center justify-center select-none ${
+      className={`shrink-0 bg-white/5 rounded-lg shadow-[0_0_15px_rgba(0,0,0,0.2)] hover:bg-white/10 group flex items-center justify-center select-none touch-none cursor-grab active:cursor-grabbing ${
         isHighlighted 
           ? 'animate-hard-flash z-10' 
           : 'border border-white/10'
@@ -138,33 +137,11 @@ export const HorizontalClueUI: React.FC<HorizontalClueProps> = ({ clue, onHover,
       onMouseLeave={() => {
         onHover?.(null);
       }}
-      onContextMenu={(e) => {
-        e.preventDefault();
-        onDiscard?.(clue.id);
-      }}
       onPointerDown={handlePointerDown}
-      {...(hasMouse && dragHandleProps ? dragHandleProps : {})}
+      {...dragHandleProps}
     >
       <div className="text-slate-700 dark:text-slate-200 w-full h-full pointer-events-none">
          {renderContent()}
-      </div>
-
-      <div 
-        {...(!hasMouse && dragHandleProps ? dragHandleProps : {})}
-        className={`absolute right-0 inset-y-0 w-8 flex flex-col items-center justify-center gap-1.5 cursor-grab active:cursor-grabbing hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-r-lg transition-colors group/handle touch-none ${hasMouse || isFinePointer ? "hidden" : "flex"}`}
-      >
-        <div className="flex gap-1">
-          <div className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full" />
-          <div className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full" />
-        </div>
-        <div className="flex gap-1">
-          <div className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full" />
-          <div className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full" />
-        </div>
-        <div className="flex gap-1">
-          <div className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full" />
-          <div className="w-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-full" />
-        </div>
       </div>
     </div>
   );
