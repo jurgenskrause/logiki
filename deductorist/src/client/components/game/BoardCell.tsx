@@ -70,20 +70,20 @@ const BoardCellComponent: React.FC<BoardCellProps> = ({
     return () => observer.disconnect();
   }, [cellSizeRef, cellId]);
   // Compute aspect ratio CSS dynamically based on subColumns (e.g. 3 cols / 2 rows = 3/2)
-  const aspectStyle = { aspectRatio: `${subColumns} / 2` };
+  const baseStyle: React.CSSProperties = { aspectRatio: `${subColumns} / 2`, WebkitTouchCallout: 'none' };
 
   return (
     <div 
       ref={containerRef}
       onMouseEnter={() => onHover?.(row, col)}
       onMouseLeave={() => onLeave?.()}
-      className={`relative w-full border transition-all duration-300
+      className={`relative w-full border transition-all duration-300 select-none
                   flex items-center justify-center overflow-hidden cursor-pointer
                   ${col % 2 === 0 ? 'bg-white/5' : 'bg-black/5'}
                   ${highlightItems.length > 0 
                     ? 'animate-hard-flash z-10' 
                     : 'border-white/10'}`}
-      style={aspectStyle}
+      style={baseStyle}
        
       onClick={() => onInteract(cellId, -1, 'zoom_trigger')}
     >
